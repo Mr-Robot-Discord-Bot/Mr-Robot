@@ -38,26 +38,27 @@ class Joinalert(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        embed = Embeds.emb(
-            Embeds.red,
-            guild.name,
-            f"""
-                Guild Id: {guild.id}
-                Owner Id: {guild.owner_id}
-                Vanity Invite Link: {guild.vanity_url_code}
-                Members Count: {guild.member_count}
-                """,
-        )
-        db.config.delete_one({"guild_id": guild.id})
-        db.traffic.delete_one({"guild_id": guild.id})
-        await send_webhook(
-            embed=embed,
-            webhook_url=os.getenv("whtraffic"),
-            username="Guild Leave Logger",
-            avatar_url="https://cdn.discordapp.com/avatars/10"
-            "87375480304451727/f780c7c8c052c66c89f9270aebd63b"
-            "c2.png?size=1024",
-        )
+        if guild.name:
+            embed = Embeds.emb(
+                Embeds.red,
+                guild.name,
+                f"""
+                    Guild Id: {guild.id}
+                    Owner Id: {guild.owner_id}
+                    Vanity Invite Link: {guild.vanity_url_code}
+                    Members Count: {guild.member_count}
+                    """,
+            )
+            db.config.delete_one({"guild_id": guild.id})
+            db.traffic.delete_one({"guild_id": guild.id})
+            await send_webhook(
+                embed=embed,
+                webhook_url=os.getenv("whtraffic"),
+                username="Guild Leave Logger",
+                avatar_url="https://cdn.discordapp.com/avatars/10"
+                "87375480304451727/f780c7c8c052c66c89f9270aebd63b"
+                "c2.png?size=1024",
+            )
 
 
 def setup(client: commands.Bot):
