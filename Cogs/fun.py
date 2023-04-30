@@ -80,7 +80,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: int = 1,
+        amount: commands.Range[1, 3] = 1,
     ):
         """
         Loads content from xnxx.com
@@ -90,8 +90,6 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        if amount > 10:
-            raise Exception("Amount Should be <= 10")
         ufrm_term = search
         term = search.replace(" ", "+")
         term_url = "https://www.xnxx.com/search/" + str(term)
@@ -147,7 +145,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: int = 1,
+        amount: commands.Range[1, 10] = 1,
     ):
         """
         Loads content from redtube.com
@@ -157,8 +155,6 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        if amount > 10:
-            raise Exception("Amount Should be <= 10")
         URL = (
             "https://api.redtube.com/?data=redtube.Videos.searchVideos"
             f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
@@ -227,7 +223,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = commands.Param(autocomplete=reddit_autocomp),
-        amount: int = 1,
+        amount: commands.Range[1, 10] = 1,
     ):
         """
         Loads content from reddit.com
@@ -237,8 +233,6 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        if amount > 10:
-            raise Exception("Amount Should be <= 10")
         header = {"User-Agent": "Magic Browser"}
         URL = (
             f"https://www.reddit.com/r/{search}.json?"
