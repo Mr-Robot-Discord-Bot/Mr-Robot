@@ -22,7 +22,6 @@ class Music(commands.Cog):
         ----------
         search: Search for music
         """
-        await interaction.response.defer(ephemeral=True)
 
         if interaction.guild.voice_client is None:
             if interaction.author.voice:
@@ -68,6 +67,7 @@ class Music(commands.Cog):
             f"Requested by: {interaction.author.mention}",
         )
 
+        await interaction.response.defer()
         await interaction.send(
             embed=embed, view=DeleteButton(author=interaction.author)
         )
