@@ -31,5 +31,5 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/mr-robot-discord-bot/mr-robot:latest
           cache-to: type=inline
           tags: |
-            ghcr.io/knownblackhat/mr-robot:latest
-            ghcr.io/knownblackhat/mr-robot:${{ github.sha }}
+            ghcr.io/mr-robot-discord-bot/mr-robot:latest
+            ghcr.io/mr-robot-discord-bot/mr-robot:${{ github.sha }}
