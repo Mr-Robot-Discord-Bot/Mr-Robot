@@ -1,3 +1,4 @@
+from ast import Delete
 from typing import Union
 
 import disnake
@@ -6,32 +7,71 @@ from disnake.ext import commands
 from utils import DeleteButton, Embeds
 
 
+class EmbedModal(disnake.ui.Modal):
+    def __init__(self, color):
+        self.color = color
+        components = [
+            disnake.ui.TextInput(
+                label="Image url",
+                placeholder="Enter image here",
+                custom_id="image",
+                style=disnake.TextInputStyle.short,
+                required=False,
+            ),
+            disnake.ui.TextInput(
+                label="Title",
+                placeholder="Enter title here",
+                custom_id="title",
+                style=disnake.TextInputStyle.short,
+            ),
+            disnake.ui.TextInput(
+                label="Body",
+                placeholder="Enter content here",
+                custom_id="body",
+                style=disnake.TextInputStyle.paragraph,
+            ),
+        ]
+        super().__init__(
+            title="Embed Generator", custom_id="embed_generator", components=components
+        )
+
+    async def callback(self, interaction: disnake.ModalInteraction):
+        title = interaction.text_values["title"]
+        content = interaction.text_values["body"]
+        image = interaction.text_values["image"]
+
+        embed = Embeds.emb(self.color, title, content)
+        embed.set_image(image)
+        embed.set_footer(text=interaction.guild.name)
+        await interaction.send(
+            embed=embed, view=DeleteButton(author=interaction.author)
+        )
+
+    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
+        await inter.response.send_message(
+            embed=Embeds.emb(Embeds.red, "Oops! Something went wrong :cry:"),
+            ephemeral=True,
+        )
+
+
 class Misc(commands.Cog):
     def __init__(self, client):
         self.bot = client
 
-    @commands.slash_command(name="embed")
+    @commands.slash_command(name="embed", dm_permission=False)
     async def slash_embed(
         self,
-        interaction,
-        title,
-        message,
-        color: Union[disnake.Colour, None] = None,
-        image=None,
+        interaction: disnake.CommandInteraction,
+        color: disnake.Color = disnake.Color.random(),
     ):
         """
-        Creates Embeds
+        Creates embed
 
         Parameters
         ----------
-        title : Title of the embed
-        message : Message of the embed
-        color : Color of the embed
-        image: Sets image of the embed
+        color: Hex code or name of colour
         """
-        await interaction.send(
-            embed=Embeds.emb(color, title, message.replace(";", "\n")).set_image(image)
-        )
+        await interaction.response.send_modal(modal=EmbedModal(color=color))
 
     @commands.slash_command(name="userinfo", dm_permission=False)
     async def slash_userinfo(
