@@ -1,0 +1,8 @@
+/env
+*.log
+.env
+__pycache__
+Servers.inf
+.python-version
+lavalink_server/logs
+ip.txt
