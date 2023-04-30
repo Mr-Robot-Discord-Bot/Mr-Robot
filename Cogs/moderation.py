@@ -514,7 +514,6 @@ class Moderation(commands.Cog):
             )
         except disnake.errors.Forbidden:
             await interaction.send(
-                view=DeleteButton(author=interaction.author),
                 embed=Embeds.emb(
                     Embeds.yellow,
                     "Missing Access",

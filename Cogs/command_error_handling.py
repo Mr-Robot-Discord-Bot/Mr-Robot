@@ -22,7 +22,6 @@ class Command_error_handling(commands.Cog):
     async def on_slash_command_error(self, interaction, error):
         if isinstance(error, commands.errors.CommandInvokeError):
             if isinstance(error.original, disnake.Forbidden):
-                print(error.original)
                 if error.original.code == 50013:
                     await interaction.send(
                         embed=Embeds.emb(

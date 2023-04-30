@@ -1,7 +1,7 @@
 import mafic
 from disnake.ext import commands
 
-from utils import Embeds
+from utils import DeleteButton, Embeds
 
 
 class Music(commands.Cog):
@@ -68,7 +68,9 @@ class Music(commands.Cog):
             f"Requested by: {interaction.author.mention}",
         )
 
-        await interaction.send(embed=embed, ephemeral=True)
+        await interaction.send(
+            embed=embed, view=DeleteButton(author=interaction.author)
+        )
 
     @music.sub_command(name="disconnect")
     async def slash_stop(self, interaction) -> None:
