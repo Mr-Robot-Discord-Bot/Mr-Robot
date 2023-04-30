@@ -50,7 +50,7 @@ class Command_handling(commands.Cog):
             )
         )
 
-    @commands.slash_command(name="status", description="Shows status")
+    @commands.slash_command(name="status", dm_permission=False)
     async def slash_status(self, interaction):
         """Shows status of the bot"""
 

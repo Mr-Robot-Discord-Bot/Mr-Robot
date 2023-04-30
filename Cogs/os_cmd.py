@@ -4,7 +4,7 @@ import subprocess
 import disnake
 from disnake.ext import commands
 
-from utils import Embeds
+from utils import DeleteButton, Embeds
 
 REPO_PATH = "mr-robot"
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
@@ -16,7 +16,7 @@ class Oscmd(commands.Cog):
         self._last_member = None
 
     @commands.is_owner()
-    @commands.slash_command(name="owner")
+    @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
     async def owner(self, interaction):
         """Bot Owner Commands"""
         ...
@@ -27,7 +27,8 @@ class Oscmd(commands.Cog):
         await interaction.send(
             embed=Embeds.emb(
                 Embeds.green, "Shell Console", f"```\n{output[:1900]}\n```"
-            )
+            ),
+            view=DeleteButton(author=interaction.author),
         )
 
     @owner.sub_command(name="update", description="Updates the code from gihub")
@@ -35,7 +36,10 @@ class Oscmd(commands.Cog):
         await self.bot.change_presence(
             status=disnake.Status.dnd, activity=disnake.Game(name="Update")
         )
-        await interaction.send(embed=Embeds.emb(Embeds.green, "Updating..."))
+        await interaction.send(
+            view=DeleteButton(author=interaction.author),
+            embed=Embeds.emb(Embeds.green, "Updating..."),
+        )
         os.system(f"git clone {REPO_URL}")
         for i in os.listdir():
             if i == REPO_PATH or i == ".env" or i == "Logs":
@@ -44,7 +48,10 @@ class Oscmd(commands.Cog):
                 os.system(f"rm -rf {i}")
         os.system(f"mv {REPO_PATH}/* .")
         os.system(f"rm -rf {REPO_PATH}")
-        await interaction.send(embed=Embeds.emb(Embeds.green, "Update Completed"))
+        await interaction.send(
+            view=DeleteButton(author=interaction.author),
+            embed=Embeds.emb(Embeds.green, "Update Completed"),
+        )
         os.system("python bot.py")
 
     @owner.sub_command(name="link")
@@ -62,7 +69,7 @@ class Oscmd(commands.Cog):
         link = await server.create_invite(
             temporary=True, max_age=int(expire), max_uses=int(number_of_uses)
         )
-        await interaction.send(link)
+        await interaction.send(link, view=DeleteButton(author=interaction.author))
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
     async def reboot(self, interaction):

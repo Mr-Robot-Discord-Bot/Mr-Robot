@@ -8,7 +8,7 @@ class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.slash_command(name="music")
+    @commands.slash_command(name="music", dm_permission=False)
     async def music(self, interaction):
         """Music Commands"""
         ...

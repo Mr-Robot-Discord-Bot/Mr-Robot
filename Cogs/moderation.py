@@ -4,7 +4,7 @@ from typing import Union
 import disnake
 from disnake.ext import commands
 
-from utils import Embeds
+from utils import DeleteButton, Embeds
 
 MISSING = "MISSING"
 
@@ -13,7 +13,7 @@ class Moderation(commands.Cog):
     def __init__(self, client):
         self.bot = client
 
-    @commands.slash_command(name="mod")
+    @commands.slash_command(name="mod", dm_permission=False)
     async def mod(self, interaction: disnake.CommandInteraction):
         """Moderation Commands"""
 
@@ -47,11 +47,12 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))
         await user.add_roles(role)
         await interaction.send(
+            view=DeleteButton(author=interaction.author),
             embed=Embeds.emb(
                 Embeds.green,
                 "Role Assigned",
                 f"{user.mention} Has Got  `{role}`  Role !",
-            )
+            ),
         )
         try:
             await user.send(
@@ -80,11 +81,12 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))
         await user.remove_roles(role)
         await interaction.send(
+            view=DeleteButton(author=interaction.author),
             embed=Embeds.emb(
                 Embeds.red,
                 "Role Removed",
                 f"{user.mention} Was Removed  `{role}` Role !",
-            )
+            ),
         )
         try:
             await user.send(
@@ -115,6 +117,7 @@ class Moderation(commands.Cog):
             if (user.name, user.discriminator) == (member_name, member_discriminator):
                 await interaction.guild.unban(user)
                 await interaction.send(
+                    view=DeleteButton(author=interaction.author),
                     embed=Embeds.emb(Embeds.green, "Unbanned", f"Unbanned: {user}"),
                 )
                 try:
@@ -152,7 +155,10 @@ class Moderation(commands.Cog):
         except disnake.Forbidden:
             pass
         await interaction.send(
-            embed=Embeds.emb(Embeds.red, "Banned", f"Banned: {member} Reason: {reason}")
+            view=DeleteButton(author=interaction.author),
+            embed=Embeds.emb(
+                Embeds.red, "Banned", f"Banned: {member} Reason: {reason}"
+            ),
         )
 
     @user.sub_command(name="timeout")
@@ -200,6 +206,7 @@ class Moderation(commands.Cog):
             except disnake.Forbidden:
                 pass
             await interaction.send(
+                view=DeleteButton(author=interaction.author),
                 embed=Embeds.emb(
                     Embeds.red,
                     "Temporarily Muted",
@@ -234,7 +241,10 @@ class Moderation(commands.Cog):
         except Exception:
             ...
         await interaction.send(
-            embed=Embeds.emb(Embeds.red, "Kicked", f"Kicked: {member} Reason: {reason}")
+            view=DeleteButton(author=interaction.author),
+            embed=Embeds.emb(
+                Embeds.red, "Kicked", f"Kicked: {member} Reason: {reason}"
+            ),
         )
 
     @user.sub_command(name="dm")
@@ -278,6 +288,7 @@ class Moderation(commands.Cog):
         msg : Message To Send
         """
         await interaction.send(
+            view=DeleteButton(author=interaction.author),
             embed=Embeds.emb(
                 Embeds.red,
                 f"WARNING {member}",
@@ -314,9 +325,9 @@ class Moderation(commands.Cog):
                 Embeds.yellow,
                 "Roleall",
                 f"""
-                                                Roleall initiated for {role}!
-                                                Kindly be patient until you get next notification as this is time taking process
-                                                """,
+                Roleall initiated for {role}!
+                Kindly be patient until you get next notification as this is time taking process
+                """,
             ),
             ephemeral=True,
         )
@@ -327,11 +338,12 @@ class Moderation(commands.Cog):
                 elif action == "remove":
                     await member.remove_roles(role)
             await interaction.send(
+                view=DeleteButton(author=interaction.author),
                 embed=Embeds.emb(
                     Embeds.green,
                     "Roleall",
                     f"{role.mention} has been {'added' if action == 'add' else 'removed'} to all members",
-                )
+                ),
             )
         except disnake.Forbidden:
             await interaction.send(
@@ -502,6 +514,7 @@ class Moderation(commands.Cog):
             )
         except disnake.errors.Forbidden:
             await interaction.send(
+                view=DeleteButton(author=interaction.author),
                 embed=Embeds.emb(
                     Embeds.yellow,
                     "Missing Access",

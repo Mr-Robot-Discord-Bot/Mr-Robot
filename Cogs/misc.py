@@ -33,7 +33,7 @@ class Misc(commands.Cog):
             embed=Embeds.emb(color, title, message.replace(";", "\n")).set_image(image)
         )
 
-    @commands.slash_command(name="userinfo")
+    @commands.slash_command(name="userinfo", dm_permission=False)
     async def slash_userinfo(
         self, interaction, member: Union[disnake.Member, None] = None
     ):

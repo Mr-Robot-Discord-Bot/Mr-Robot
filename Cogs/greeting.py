@@ -100,7 +100,7 @@ class Greetings(commands.Cog):
                     font=result["bye_img_txt_font"],
                 )
 
-    @commands.slash_command(name="greeter")
+    @commands.slash_command(name="greeter", dm_permission=False)
     async def greeter(self, interaction):
         """Greeter Settings"""
         ...
@@ -152,7 +152,8 @@ class Greetings(commands.Cog):
                     Embeds.green,
                     "Welcome Channel Set Successfully",
                     f"Channel: {channel}",
-                )
+                ),
+                ephemeral=True,
             )
         elif feature == "Goodbye Channel":
             db.traffic.update_one(
@@ -174,7 +175,8 @@ class Greetings(commands.Cog):
                     Embeds.green,
                     "Goodbye Channel Set Successfully",
                     f"Channel: {channel}",
-                )
+                ),
+                ephemeral=True,
             )
 
     @greeter.sub_command(
@@ -203,7 +205,8 @@ class Greetings(commands.Cog):
                 upsert=True,
             )
             await interaction.send(
-                embed=Embeds.emb(Embeds.red, "Welcome Channel Unset Sucessfully")
+                embed=Embeds.emb(Embeds.red, "Welcome Channel Unset Sucessfully"),
+                ephemeral=True,
             )
         elif feature == "Goodbye Channel":
             db.traffic.update_one(
@@ -212,7 +215,8 @@ class Greetings(commands.Cog):
                 upsert=True,
             )
             await interaction.send(
-                embed=Embeds.emb(Embeds.red, "Goodbye Channel Unset Sucessfully")
+                embed=Embeds.emb(Embeds.red, "Goodbye Channel Unset Sucessfully"),
+                ephemeral=True,
             )
 
 
