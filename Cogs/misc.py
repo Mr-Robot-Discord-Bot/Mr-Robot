@@ -1,4 +1,3 @@
-from ast import Delete
 from typing import Union
 
 import disnake
@@ -26,7 +25,7 @@ class EmbedModal(disnake.ui.Modal):
             ),
             disnake.ui.TextInput(
                 label="Body",
-                placeholder="Enter content here",
+                placeholder="Suggestion: Use <@User_Id> for mention & <#Channel_Id> for tagging the channel!",
                 custom_id="body",
                 style=disnake.TextInputStyle.paragraph,
             ),
