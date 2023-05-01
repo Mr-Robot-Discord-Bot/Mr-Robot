@@ -28,7 +28,7 @@ class DeleteButton(disnake.ui.View):
         self.author = author
         super().__init__(timeout=None)
 
-    @disnake.ui.button(label="💣", style=disnake.ButtonStyle.red)
+    @disnake.ui.button(emoji="💣", style=disnake.ButtonStyle.red)
     async def delete(
         self, button: disnake.ui.Button, interaction: disnake.CommandInteraction
     ):
