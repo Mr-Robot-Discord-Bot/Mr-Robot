@@ -104,17 +104,9 @@ class Command_error_handling(commands.Cog):
             embed = Embeds.emb(
                 Embeds.red,
                 "Oops! Something went wrong!",
-                "Error has been logged and will be fixed soon!",
+                "Kindly report this to the developer in our support server",
             )
             await interaction.send(embed=embed, ephemeral=True)
-            with open("error.log", "a+") as file:
-                file.write(
-                    f"Error in command {interaction.command} in "
-                    f"{interaction.guild.name if interaction.guild else 'dm'} "
-                    f"({interaction.guild.id if interaction.guild else None}) by "
-                    f"{interaction.author.name} ({interaction.author.id}) "
-                    f"with error {error}"
-                )
 
 
 def setup(client: commands.Bot):

@@ -2,7 +2,7 @@ import datetime
 import os
 import random
 import sys
-from typing import Any
+from typing import Any, Union
 
 import aiohttp
 import disnake
@@ -24,7 +24,7 @@ except Exception:
 class DeleteButton(disnake.ui.View):
     """Delete ui button"""
 
-    def __init__(self, author: disnake.Member):
+    def __init__(self, author: Union[disnake.Member, disnake.User]):
         self.author = author
         super().__init__(timeout=None)
 

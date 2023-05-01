@@ -252,7 +252,7 @@ class Moderation(commands.Cog):
         commands.is_owner(), commands.has_permissions(moderate_members=True)
     )
     async def slash_dm_custom(
-        self, interaction, member: disnake.Member, title: str, msg: str
+        self, interaction, member: disnake.Member, title: str, message: str
     ):
         """
         Dm's the user
@@ -261,12 +261,14 @@ class Moderation(commands.Cog):
         ----------
         member : Member To Dm
         title : Title Of Dm
-        msg : Message To Send
+        message : Message To Send. Use ; for newline
         """
         try:
-            await member.send(embed=Embeds.emb(Embeds.yellow, title, msg))
+            await member.send(
+                embed=Embeds.emb(Embeds.yellow, title, message.replace(";", "\n"))
+            )
             await interaction.send(
-                embed=Embeds.emb(Embeds.yellow, title, msg.replace(";", "\n")),
+                embed=Embeds.emb(Embeds.yellow, title, message.replace(";", "\n")),
                 ephemeral=True,
             )
         except disnake.Forbidden:
@@ -278,26 +280,26 @@ class Moderation(commands.Cog):
     @commands.check_any(
         commands.is_owner(), commands.has_permissions(moderate_members=True)
     )
-    async def slash_warn(self, interaction, member: disnake.Member, msg: str):
+    async def slash_warn(self, interaction, member: disnake.Member, message: str):
         """
         Warns the user
 
         Parameters
         ----------
         member : Member To Warn
-        msg : Message To Send
+        message : Message To Send. Use ; for newline
         """
         await interaction.send(
             view=DeleteButton(author=interaction.author),
             embed=Embeds.emb(
                 Embeds.red,
                 f"WARNING {member}",
-                f"{member.mention} --> " + msg.replace(";", "\n"),
+                f"{member.mention} --> " + message.replace(";", "\n"),
             ),
         )
         try:
             await member.send(
-                embed=Embeds.emb(Embeds.red, "WARNING", msg.replace(";", "\n"))
+                embed=Embeds.emb(Embeds.red, "WARNING", message.replace(";", "\n"))
             )
         except Exception:
             ...
