@@ -5,12 +5,12 @@ MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can u
 ## Features:
 
 - Custom Image Greeter
-- Moderation
-- Cool NSFW and Meme commands
+- Advance Moderation
+- Cool NSFW commands
+- Meme command
 - Music Player
 - Google Translation
 - Create Custom Embed
-- URL Shortner
 - Ai Text Generation
 - Ai Image Generation
 - Miscs
@@ -18,9 +18,9 @@ MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can u
 ## Installation:
 
 ```bash
-docker run -itd ghcr.io/knownblackhat/mr-robot:latest \
+docker run -itd ghcr.io/mr-robot-discord-bot/mr-robot:latest \
 <BOT_TOKEN> \
-<TRAFFIC_LOGGER_WEBHOOK_URL> <CONTENT_LOGGER_WEBHOOK_URL> \
+<TRAFFIC_LOGGER_WEBHOOK_URL>\
 <OPENAI_API_KEY> \
 <MONGODB_URI>
 ```
