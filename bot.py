@@ -36,7 +36,8 @@ class MrRobot(commands.InteractionBot):
                 )
                 break
             except Exception:
-                pass
+                print("[!] Unable to connect to Lavalink")
+                time.sleep(5)
 
     def load_extensions(self):
         """Loads extensions"""
