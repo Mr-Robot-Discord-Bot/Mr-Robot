@@ -74,7 +74,7 @@ class Oscmd(commands.Cog):
     @owner.sub_command(name="shutdown", description="Shutdown myself")
     async def reboot(self, interaction):
         await interaction.send(
-            embed=Embeds.emb(Embeds.red, "Shutting down"), delete_after=10
+            embed=Embeds.emb(Embeds.red, "Shutting down"), components=[delete_button]
         )
         await self.bot.change_presence(
             status=disnake.Status.dnd, activity=disnake.Game(name="Shutting down")
