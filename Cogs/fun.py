@@ -239,7 +239,7 @@ class Fun(commands.Cog):
                         )
 
                     else:
-                        url = data["data"]["thumbnail"]
+                        count -= 1
 
                     if not url.startswith("http"):
                         continue
