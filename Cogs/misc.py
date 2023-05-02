@@ -42,9 +42,7 @@ class EmbedModal(disnake.ui.Modal):
         embed = Embeds.emb(self.color, title, content)
         embed.set_image(image)
         embed.set_footer(text=interaction.guild.name)
-        await interaction.send(
-            embed=embed, view=DeleteButton(author=interaction.author)
-        )
+        await interaction.send(embed=embed, view=DeleteButton())
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
         await inter.response.send_message(
@@ -61,7 +59,7 @@ class Misc(commands.Cog):
     async def slash_embed(
         self,
         interaction: disnake.CommandInteraction,
-        color: disnake.Color = disnake.Color.random(),
+        color: Union[disnake.Color, None] = None,
     ):
         """
         Creates embed
@@ -117,9 +115,7 @@ class Misc(commands.Cog):
             value=", ".join([role.mention for role in member.roles]),
             inline=False,
         )
-        await interaction.send(
-            embed=embed, view=DeleteButton(author=interaction.author)
-        )
+        await interaction.send(embed=embed, view=DeleteButton())
 
 
 def setup(client: commands.Bot):

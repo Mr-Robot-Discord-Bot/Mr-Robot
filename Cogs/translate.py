@@ -35,7 +35,7 @@ class Translate(commands.Cog):
         translator = Translator()
         translation = translator.translate(message, dest=language)
         await interaction.send(
-            view=DeleteButton(author=interaction.author),
+            view=DeleteButton(),
             embed=Embeds.emb(
                 Embeds.yellow,
                 f"Translation {gt.LANGUAGES[translation.src]} to {language}",

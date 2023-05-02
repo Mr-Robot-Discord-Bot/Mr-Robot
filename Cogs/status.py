@@ -10,20 +10,27 @@ from bot import PROXY, client, start_time
 from utils import DeleteButton, Embeds, db
 
 
-class Command_handling(commands.Cog):
+class Status(commands.Cog):
     def __init__(self, client):
         self.bot = client
+        self.persistent_bot_added = False
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"\n [!] Logged in as {client.user}\n\n [!] Proxy: {PROXY}")
+        if not self.persistent_bot_added:
+            self.bot.add_view(DeleteButton())
+            self.persistent_bot_added = True
+
+        print(
+            f"\n [!] Logged in as {client.user}\n\n {'[!] Proxy: {PROXY}' if PROXY else ''}"
+        )
         os.system("echo '' > Servers.inf")
         present_guilds: list[str] = []
         for guild in self.bot.guilds:
             present_guilds.append(guild.id)
             with open("Servers.inf", "a+") as stats:
                 stats.write(
-                    f"""\n\n [+] {guild.name} --> {', '.join([ f'{channel.name} [{channel.id}]' for channel in guild.channels])} \n"""
+                    f"\n\n [+] {guild.name} --> {', '.join([ f'{channel.name} [{channel.id}]' for channel in guild.channels])} \n"
                 )
             data = {
                 "$set": {
@@ -87,7 +94,16 @@ class Command_handling(commands.Cog):
         )
         embed.add_field(
             "Available Usage: ",
-            f"{round(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)}%",
+            (
+                str(
+                    round(
+                        psutil.virtual_memory().available
+                        * 100
+                        / psutil.virtual_memory().total
+                    )
+                )
+                + "%"
+            ),
         )
         embed.add_field(
             "Users: ",
@@ -114,10 +130,8 @@ class Command_handling(commands.Cog):
                 ),
                 inline=False,
             )
-        await interaction.send(
-            embed=embed, view=DeleteButton(author=interaction.author)
-        )
+        await interaction.send(embed=embed, view=DeleteButton())
 
 
 def setup(client: commands.Bot):
-    client.add_cog(Command_handling(client))
+    client.add_cog(Status(client))

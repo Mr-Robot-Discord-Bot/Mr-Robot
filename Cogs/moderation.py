@@ -47,7 +47,7 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))
         await user.add_roles(role)
         await interaction.send(
-            view=DeleteButton(author=interaction.author),
+            view=DeleteButton(),
             embed=Embeds.emb(
                 Embeds.green,
                 "Role Assigned",
@@ -81,7 +81,7 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))
         await user.remove_roles(role)
         await interaction.send(
-            view=DeleteButton(author=interaction.author),
+            view=DeleteButton(),
             embed=Embeds.emb(
                 Embeds.red,
                 "Role Removed",
@@ -110,6 +110,7 @@ class Moderation(commands.Cog):
         ----------
         member : Member to unban
         """
+        await interaction.response.defer()
         banned_users = await interaction.guild.bans()
         member_name, member_discriminator = member.split("#")
         for ban_entry in banned_users:
@@ -117,7 +118,7 @@ class Moderation(commands.Cog):
             if (user.name, user.discriminator) == (member_name, member_discriminator):
                 await interaction.guild.unban(user)
                 await interaction.send(
-                    view=DeleteButton(author=interaction.author),
+                    view=DeleteButton(),
                     embed=Embeds.emb(Embeds.green, "Unbanned", f"Unbanned: {user}"),
                 )
                 try:
@@ -143,6 +144,7 @@ class Moderation(commands.Cog):
         member : Member to ban
         reason : Reason for ban
         """
+        await interaction.response.defer()
         await member.ban(reason=reason)
         try:
             await member.send(
@@ -155,7 +157,7 @@ class Moderation(commands.Cog):
         except disnake.Forbidden:
             pass
         await interaction.send(
-            view=DeleteButton(author=interaction.author),
+            view=DeleteButton(),
             embed=Embeds.emb(
                 Embeds.red, "Banned", f"Banned: {member} Reason: {reason}"
             ),
@@ -206,7 +208,7 @@ class Moderation(commands.Cog):
             except disnake.Forbidden:
                 pass
             await interaction.send(
-                view=DeleteButton(author=interaction.author),
+                view=DeleteButton(),
                 embed=Embeds.emb(
                     Embeds.red,
                     "Temporarily Muted",
@@ -228,6 +230,7 @@ class Moderation(commands.Cog):
         member : Member to kick
         reason : Reason for kick
         """
+        await interaction.response.defer()
         await member.kick(reason=reason)
 
         try:
@@ -241,7 +244,7 @@ class Moderation(commands.Cog):
         except Exception:
             ...
         await interaction.send(
-            view=DeleteButton(author=interaction.author),
+            view=DeleteButton(),
             embed=Embeds.emb(
                 Embeds.red, "Kicked", f"Kicked: {member} Reason: {reason}"
             ),
@@ -290,7 +293,7 @@ class Moderation(commands.Cog):
         message : Message To Send. Use ; for newline
         """
         await interaction.send(
-            view=DeleteButton(author=interaction.author),
+            view=DeleteButton(),
             embed=Embeds.emb(
                 Embeds.red,
                 f"WARNING {member}",
@@ -340,11 +343,11 @@ class Moderation(commands.Cog):
                 elif action == "remove":
                     await member.remove_roles(role)
             await interaction.send(
-                view=DeleteButton(author=interaction.author),
+                view=DeleteButton(),
                 embed=Embeds.emb(
                     Embeds.green,
                     "Roleall",
-                    f"{role.mention} has been {'added' if action == 'add' else 'removed'} to all members",
+                    f"{role.mention} has been {'added to' if action == 'add' else 'removed from'} all members",
                 ),
             )
         except disnake.Forbidden:

@@ -46,31 +46,31 @@ class Ai(commands.Cog):
                 stop=None,
             )
             await interaction.send(
-                view=DeleteButton(author=interaction.author),
+                view=DeleteButton(),
                 embed=Embeds.emb(
                     Embeds.green, "AI System", completion.choices[0].text.strip()
                 ),
             )
         except Exception:
             await interaction.send(
-                view=DeleteButton(author=interaction.author),
+                view=DeleteButton(),
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Limit Reached",
                     """
-                                                    Attention Discord users,
+                    Attention Discord users,
 
-                                                    We need your help! The free tier usage for our Mr. Robot Discord bot's AI feature has been exhausted, and we require the purchase of a premium API to continue offering this feature. We kindly ask for your support through donations in cryptocurrency, with a minimum donation of $1 and a maximum of $10.
+                    We need your help! The free tier usage for our Mr. Robot Discord bot's AI feature has been exhausted, and we require the purchase of a premium API to continue offering this feature. We kindly ask for your support through donations in cryptocurrency, with a minimum donation of $1 and a maximum of $10.
 
-                                                    Your contributions, no matter how small, will help us achieve our goals and continue providing you with an innovative and exciting way to interact with each other through the Mr. Robot Discord bot. Donations can be made to the following cryptocurrency address:
+                    Your contributions, no matter how small, will help us achieve our goals and continue providing you with an innovative and exciting way to interact with each other through the Mr. Robot Discord bot. Donations can be made to the following cryptocurrency address:
 
-                                                    `42XSJzfAXTjT5Vt5uatbH41SZRepyU2AJdWLVeGNkeZ3bbjUnyyL9X2Qq16BjzHLhkKYvWWcs3f3eKmuUbnJpjPeFm23v4v`
+                    `42XSJzfAXTjT5Vt5uatbH41SZRepyU2AJdWLVeGNkeZ3bbjUnyyL9X2Qq16BjzHLhkKYvWWcs3f3eKmuUbnJpjPeFm23v4v`
 
-                                                    Thank you for your support and generosity.
+                    Thank you for your support and generosity.
 
-                                                    Sincerely,
+                    Sincerely,
 
-                                                    Known Black Hat
+                    Known Black Hat
                                                     """,
                 ),
             )
@@ -87,12 +87,10 @@ class Ai(commands.Cog):
         await interaction.response.defer()
         try:
             response = await openai.Image.acreate(prompt=prompt, n=1, size="512x512")
-            await interaction.send(
-                response["data"][0]["url"], view=DeleteButton(author=interaction.author)
-            )
+            await interaction.send(response["data"][0]["url"], view=DeleteButton())
         except Exception:
             await interaction.send(
-                view=DeleteButton(author=interaction.author),
+                view=DeleteButton(),
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Limit Reached",

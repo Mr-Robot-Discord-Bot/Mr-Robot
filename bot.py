@@ -1,5 +1,4 @@
 import os
-import sys
 import time
 
 import disnake
@@ -9,12 +8,9 @@ from dotenv import load_dotenv
 
 from utils import proxy_generator
 
-PROXY = proxy_generator()
-with open("proxy_mode.conf", "r", encoding="utf-8") as file:
-    data = file.read()
-if data != "on":
-    PROXY = None
+proxy_mode = False
 start_time = time.time()
+PROXY = None
 
 
 class MrRobot(commands.InteractionBot):
@@ -42,35 +38,27 @@ class MrRobot(commands.InteractionBot):
             except Exception:
                 pass
 
+    def load_extensions(self):
+        """Loads extensions"""
+        for file in os.listdir("Cogs"):
+            if file.endswith(".py"):
+                try:
+                    self.load_extension(f"Cogs.{str(file[:-3])}")
+                except Exception as error:
+                    raise error
 
-client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
+
 load_dotenv()
 
 
-unloaded_cog_list = []
-loaded_cog_list = []
-
-
-try:
-    for file in os.listdir("Cogs"):
-        if file.endswith(".py"):
-            try:
-                client.load_extension(f"Cogs.{str(file[:-3])}")
-                loaded_cog_list.append(file[:-3])
-            except Exception as e:
-                unloaded_cog_list.append(file[:-3])
-                raise e
-
-except Exception as error:
-    raise error
-
-
-try:
-    client.loop.run_until_complete(client.start(os.getenv("Mr_Robot")))
-except disnake.errors.LoginFailure or disnake.errors.HTTPException:
-    print(" [!] Unable to connect to Discord")
-    with open("proxy_mode.conf", "w", encoding="utf-8") as file:
-        data = file.write("on")
-    sys.exit()
-finally:
-    client.loop.close()
+while True:
+    client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
+    client.load_extensions()
+    try:
+        client.loop.run_until_complete(client.start(os.getenv("Mr_Robot")))
+    except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
+        print(" [!] Unable to connect to Discord falling back to proxy mode")
+        proxy_mode = True
+        PROXY = proxy_generator() if proxy_mode else None
+    finally:
+        client.loop.close()

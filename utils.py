@@ -2,7 +2,7 @@ import datetime
 import os
 import random
 import sys
-from typing import Any, Union
+from typing import Any
 
 import aiohttp
 import disnake
@@ -24,19 +24,15 @@ except Exception:
 class DeleteButton(disnake.ui.View):
     """Delete ui button"""
 
-    def __init__(self, author: Union[disnake.Member, disnake.User]):
-        self.author = author
+    def __init__(self):
         super().__init__(timeout=None)
 
-    @disnake.ui.button(label="💣", style=disnake.ButtonStyle.red)
+    @disnake.ui.button(custom_id="delete", emoji="💣", style=disnake.ButtonStyle.red)
     async def delete(
         self, button: disnake.ui.Button, interaction: disnake.CommandInteraction
     ):
         await interaction.response.defer(ephemeral=True)
-        if (
-            interaction.author.id == self.author.id
-            or interaction.author.guild_permissions.manage_messages
-        ):
+        if interaction.author.id == interaction.message.interaction.author.id:
             await interaction.delete_original_response()
         else:
             await interaction.send(
@@ -68,23 +64,23 @@ class Embeds:
         return Em
 
 
-def typing_defered() -> disnake.Interaction:
-    """Decorator for typing and defering response"""
-
-    def typing_defer(func):
-        async def wrapper(interaction, *args, **kwargs):
-            await func(interaction, *args, **kwargs)
-
-        return wrapper
-
-    return typing_defer
-
-
 def proxy_generator() -> str:
     """Generates a proxy"""
     response = requests.get("https://sslproxies.org/")
     soup = BeautifulSoup(response.content, "html5lib")
-    proxy = f"http://{random.choice(list(map(lambda x:x[0]+':'+x[1], list(zip(map(lambda x:x.text, soup.findAll('td')[::8]), map(lambda x:x.text, soup.findAll('td')[1::8]))))))}"
+    proxy = "http://" + random.choice(
+        list(
+            map(
+                lambda x: x[0] + ":" + x[1],
+                list(
+                    zip(
+                        map(lambda x: x.text, soup.findAll("td")[::8]),
+                        map(lambda x: x.text, soup.findAll("td")[1::8]),
+                    )
+                ),
+            )
+        )
+    )
     return proxy
 
 

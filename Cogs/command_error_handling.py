@@ -27,7 +27,8 @@ class Command_error_handling(commands.Cog):
                         embed=Embeds.emb(
                             Embeds.yellow,
                             "Immune User",
-                            "The User on whom you are trying this command is immune :skull:",
+                            "The User on whom you are trying this command is "
+                            "immune :skull:",
                         ),
                         ephemeral=True,
                     )
@@ -36,7 +37,8 @@ class Command_error_handling(commands.Cog):
                         embed=Embeds.emb(
                             Embeds.yellow,
                             "Missing Access",
-                            "I don't have sufficient access to perform this task :cry:",
+                            "I don't have sufficient access to perform this "
+                            "task :cry:",
                         ),
                         ephemeral=True,
                     )
@@ -56,7 +58,7 @@ class Command_error_handling(commands.Cog):
         elif isinstance(error, commands.CheckAnyFailure):
             if isinstance(error.errors[1], commands.errors.MissingPermissions):
                 checks = error.errors[1].missing_permissions
-                parsed_str = "\n\n[-] -> " + "\n\n[-] -> ".join(checks)
+                parsed_str = "\n\n-> " + "\n\n-> ".join(checks)
                 embed = Embeds.emb(
                     Embeds.red,
                     "You are missing following permissions to use this command!",
@@ -66,7 +68,7 @@ class Command_error_handling(commands.Cog):
 
             elif isinstance(error.errors[1], commands.errors.BotMissingPermissions):
                 checks = error.errors[1].missing_permissions
-                parsed_str = "\n\n[-] -> " + "\n\n[-] -> ".join(checks)
+                parsed_str = "\n\n-> " + "\n\n-> ".join(checks)
                 embed = Embeds.emb(
                     Embeds.red,
                     "error",
@@ -104,7 +106,8 @@ class Command_error_handling(commands.Cog):
             embed = Embeds.emb(
                 Embeds.red,
                 "Oops! Something went wrong!",
-                "Kindly report this to the developer in our support server",
+                "Kindly report this to the developer in our support server\n"
+                f"```{str(error)}```",
             )
             await interaction.send(embed=embed, ephemeral=True)
 

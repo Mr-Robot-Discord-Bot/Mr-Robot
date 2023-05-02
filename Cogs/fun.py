@@ -105,7 +105,7 @@ class Fun(commands.Cog):
                 vid_dict = extract_video_link(page)
                 if vid_dict:
                     await interaction.send(
-                        view=DeleteButton(author=interaction.author),
+                        view=DeleteButton(),
                         embed=(
                             Embeds.emb(
                                 Embeds.blue,
@@ -182,7 +182,7 @@ class Fun(commands.Cog):
                             )
                             embed.set_thumbnail(url=content["video"]["default_thumb"])
                             await interaction.send(
-                                view=DeleteButton(author=interaction.author),
+                                view=DeleteButton(),
                                 embed=embed,
                             )
             else:
@@ -232,7 +232,7 @@ class Fun(commands.Cog):
                                 break
                             await interaction.send(
                                 value["s"]["u"],
-                                view=DeleteButton(author=interaction.author),
+                                view=DeleteButton(),
                             )
                             count = count + 1
 
@@ -270,9 +270,7 @@ class Fun(commands.Cog):
                                     delete_after=2,
                                 )
                                 return
-                            await interaction.send(
-                                url, view=DeleteButton(author=interaction.author)
-                            )
+                            await interaction.send(url, view=DeleteButton())
                     if count <= amount:
                         count = count + 1
                     else:

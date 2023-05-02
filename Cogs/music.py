@@ -68,9 +68,7 @@ class Music(commands.Cog):
         )
 
         await interaction.response.defer()
-        await interaction.send(
-            embed=embed, view=DeleteButton(author=interaction.author)
-        )
+        await interaction.send(embed=embed, view=DeleteButton())
 
     @music.sub_command(name="disconnect")
     async def slash_stop(self, interaction) -> None:
