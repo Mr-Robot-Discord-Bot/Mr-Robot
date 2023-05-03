@@ -16,7 +16,9 @@ class DeleteButtonListner(commands.Cog):
                 await interaction.delete_original_message()
             else:
                 await interaction.send(
-                    embed=Embeds.emb(Embeds.red, ":cry: This button is not for you"),
+                    embed=Embeds.emb(
+                        Embeds.red, ":cry: This button is not for you :cry:"
+                    ),
                     ephemeral=True,
                 )
         except AttributeError:
