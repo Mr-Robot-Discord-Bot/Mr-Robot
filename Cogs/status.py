@@ -6,23 +6,18 @@ import disnake
 import psutil
 from disnake.ext import commands
 
-from bot import PROXY, client, start_time
-from utils import DeleteButton, Embeds, db
+from bot import PROXY, start_time
+from utils import Embeds, db, delete_button
 
 
 class Status(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        self.persistent_bot_added = False
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if not self.persistent_bot_added:
-            self.bot.add_view(DeleteButton())
-            self.persistent_bot_added = True
-
         print(
-            f"\n [!] Logged in as {client.user}\n\n {'[!] Proxy: {PROXY}' if PROXY else ''}"
+            f"\n [!] Logged in as {self.bot.user}\n\n {'[!] Proxy: {PROXY}' if PROXY else ''}"
         )
         os.system("echo '' > Servers.inf")
         present_guilds: list[str] = []
@@ -52,7 +47,7 @@ class Status(commands.Cog):
             )
         await self.bot.change_presence(
             activity=disnake.Streaming(
-                name=f"In {len(client.guilds)} Servers",
+                name=f"In {len(self.bot.guilds)} Servers",
                 url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
             )
         )
@@ -78,7 +73,7 @@ class Status(commands.Cog):
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
             "Ping: ",
-            f"{round(client.latency * 1000)}ms",
+            f"{round(self.bot.latency * 1000)}ms",
         )
         embed.add_field(
             "Uptime: ",
@@ -130,7 +125,7 @@ class Status(commands.Cog):
                 ),
                 inline=False,
             )
-        await interaction.send(embed=embed, view=DeleteButton())
+        await interaction.send(embed=embed, components=[delete_button])
 
 
 def setup(client: commands.Bot):

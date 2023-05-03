@@ -4,7 +4,7 @@ import subprocess
 import disnake
 from disnake.ext import commands
 
-from utils import DeleteButton, Embeds
+from utils import Embeds, delete_button
 
 REPO_PATH = "mr-robot"
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
@@ -28,7 +28,7 @@ class Oscmd(commands.Cog):
             embed=Embeds.emb(
                 Embeds.green, "Shell Console", f"```\n{output[:1900]}\n```"
             ),
-            view=DeleteButton(),
+            components=[delete_button],
         )
 
     @owner.sub_command(name="update", description="Updates the code from gihub")
@@ -37,7 +37,7 @@ class Oscmd(commands.Cog):
             status=disnake.Status.dnd, activity=disnake.Game(name="Update")
         )
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(Embeds.green, "Updating..."),
         )
         os.system(f"git clone {REPO_URL}")
@@ -49,7 +49,7 @@ class Oscmd(commands.Cog):
         os.system(f"mv {REPO_PATH}/* .")
         os.system(f"rm -rf {REPO_PATH}")
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(Embeds.green, "Update Completed"),
         )
         os.system("python bot.py")
@@ -69,7 +69,7 @@ class Oscmd(commands.Cog):
         link = await server.create_invite(
             temporary=True, max_age=int(expire), max_uses=int(number_of_uses)
         )
-        await interaction.send(link, view=DeleteButton())
+        await interaction.send(link, components=[delete_button])
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
     async def reboot(self, interaction):

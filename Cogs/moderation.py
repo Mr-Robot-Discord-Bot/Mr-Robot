@@ -4,7 +4,7 @@ from typing import Union
 import disnake
 from disnake.ext import commands
 
-from utils import DeleteButton, Embeds
+from utils import Embeds, delete_button
 
 MISSING = "MISSING"
 
@@ -47,7 +47,7 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))
         await user.add_roles(role)
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(
                 Embeds.green,
                 "Role Assigned",
@@ -81,7 +81,7 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))
         await user.remove_roles(role)
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(
                 Embeds.red,
                 "Role Removed",
@@ -118,7 +118,7 @@ class Moderation(commands.Cog):
             if (user.name, user.discriminator) == (member_name, member_discriminator):
                 await interaction.guild.unban(user)
                 await interaction.send(
-                    view=DeleteButton(),
+                    components=[delete_button],
                     embed=Embeds.emb(Embeds.green, "Unbanned", f"Unbanned: {user}"),
                 )
                 try:
@@ -157,7 +157,7 @@ class Moderation(commands.Cog):
         except disnake.Forbidden:
             pass
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(
                 Embeds.red, "Banned", f"Banned: {member} Reason: {reason}"
             ),
@@ -208,7 +208,7 @@ class Moderation(commands.Cog):
             except disnake.Forbidden:
                 pass
             await interaction.send(
-                view=DeleteButton(),
+                components=[delete_button],
                 embed=Embeds.emb(
                     Embeds.red,
                     "Temporarily Muted",
@@ -244,7 +244,7 @@ class Moderation(commands.Cog):
         except Exception:
             ...
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(
                 Embeds.red, "Kicked", f"Kicked: {member} Reason: {reason}"
             ),
@@ -293,7 +293,7 @@ class Moderation(commands.Cog):
         message : Message To Send. Use ; for newline
         """
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(
                 Embeds.red,
                 f"WARNING {member}",
@@ -343,7 +343,7 @@ class Moderation(commands.Cog):
                 elif action == "remove":
                     await member.remove_roles(role)
             await interaction.send(
-                view=DeleteButton(),
+                components=[delete_button],
                 embed=Embeds.emb(
                     Embeds.green,
                     "Roleall",

@@ -52,14 +52,15 @@ class MrRobot(commands.InteractionBot):
 load_dotenv()
 
 
-while True:
-    client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
-    client.load_extensions()
-    try:
-        client.loop.run_until_complete(client.start(os.getenv("Mr_Robot")))
-    except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
-        print(" [!] Unable to connect to Discord falling back to proxy mode")
-        proxy_mode = True
-        PROXY = proxy_generator() if proxy_mode else None
-    finally:
-        client.loop.close()
+if __name__ == "__main__":
+    while True:
+        client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
+        client.load_extensions()
+        try:
+            client.loop.run_until_complete(client.start(os.getenv("Mr_Robot")))
+        except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
+            print(" [!] Unable to connect to Discord falling back to proxy mode")
+            proxy_mode = True
+            PROXY = proxy_generator() if proxy_mode else None
+        finally:
+            client.loop.close()

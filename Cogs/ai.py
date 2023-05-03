@@ -3,7 +3,7 @@ import os
 import openai
 from disnake.ext import commands
 
-from utils import DeleteButton, Embeds
+from utils import Embeds, delete_button
 
 openai.api_key = os.getenv("openai_api_key")
 
@@ -46,14 +46,14 @@ class Ai(commands.Cog):
                 stop=None,
             )
             await interaction.send(
-                view=DeleteButton(),
+                components=[delete_button],
                 embed=Embeds.emb(
                     Embeds.green, "AI System", completion.choices[0].text.strip()
                 ),
             )
         except Exception:
             await interaction.send(
-                view=DeleteButton(),
+                components=[delete_button],
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Limit Reached",
@@ -87,10 +87,12 @@ class Ai(commands.Cog):
         await interaction.response.defer()
         try:
             response = await openai.Image.acreate(prompt=prompt, n=1, size="512x512")
-            await interaction.send(response["data"][0]["url"], view=DeleteButton())
+            await interaction.send(
+                response["data"][0]["url"], components=[delete_button]
+            )
         except Exception:
             await interaction.send(
-                view=DeleteButton(),
+                components=[delete_button],
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Limit Reached",

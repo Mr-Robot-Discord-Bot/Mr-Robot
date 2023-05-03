@@ -3,7 +3,7 @@ from typing import Union
 import disnake
 from disnake.ext import commands
 
-from utils import DeleteButton, Embeds
+from utils import Embeds, delete_button
 
 
 class EmbedModal(disnake.ui.Modal):
@@ -42,7 +42,7 @@ class EmbedModal(disnake.ui.Modal):
         embed = Embeds.emb(self.color, title, content)
         embed.set_image(image)
         embed.set_footer(text=interaction.guild.name)
-        await interaction.send(embed=embed, view=DeleteButton())
+        await interaction.send(embed=embed, components=[delete_button])
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
         await inter.response.send_message(
@@ -115,7 +115,7 @@ class Misc(commands.Cog):
             value=", ".join([role.mention for role in member.roles]),
             inline=False,
         )
-        await interaction.send(embed=embed, view=DeleteButton())
+        await interaction.send(embed=embed, components=[delete_button])
 
 
 def setup(client: commands.Bot):

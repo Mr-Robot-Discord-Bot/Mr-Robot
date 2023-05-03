@@ -21,26 +21,9 @@ except Exception:
     sys.exit()
 
 
-class DeleteButton(disnake.ui.View):
-    """Delete ui button"""
-
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @disnake.ui.button(custom_id="delete", emoji="💣", style=disnake.ButtonStyle.red)
-    async def delete(
-        self, button: disnake.ui.Button, interaction: disnake.CommandInteraction
-    ):
-        await interaction.response.defer(ephemeral=True)
-        if interaction.author.id == interaction.message.interaction.author.id:
-            await interaction.delete_original_response()
-        else:
-            await interaction.send(
-                embed=Embeds.emb(
-                    Embeds.red, "Sorry, this delete button is not for you!"
-                ),
-                ephemeral=True,
-            )
+delete_button: disnake.ui.Button = disnake.ui.Button(
+    emoji="💣", style=disnake.ButtonStyle.red
+)
 
 
 class Embeds:

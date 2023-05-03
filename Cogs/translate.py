@@ -3,7 +3,7 @@ import googletrans as gt
 from disnake.ext import commands
 from googletrans import Translator
 
-from utils import DeleteButton, Embeds
+from utils import Embeds, delete_button
 
 
 async def autocomp_langs(inter: disnake.CommandInteraction, user_input: str):
@@ -35,7 +35,7 @@ class Translate(commands.Cog):
         translator = Translator()
         translation = translator.translate(message, dest=language)
         await interaction.send(
-            view=DeleteButton(),
+            components=[delete_button],
             embed=Embeds.emb(
                 Embeds.yellow,
                 f"Translation {gt.LANGUAGES[translation.src]} to {language}",
