@@ -9,14 +9,20 @@ class DeleteButtonListner(commands.Cog):
     @commands.Cog.listener()
     async def on_button_click(self, interaction: disnake.MessageInteraction):
         await interaction.response.defer()
-        if interaction.message.interaction is None and interaction.author.guild_permissions.manage_messages:  # type: ignore
-            await interaction.delete_original_message()
-        if interaction.author.id == interaction.message.interaction.author.id:  # type: ignore
-            await interaction.delete_original_message()
+        if not interaction.message.interaction:
+            if interaction.author.guild_permissions.manage_messages:  # type: ignore
+                await interaction.delete_original_message()
+            else:
+                await interaction.send(
+                    ":cry: This button is not for you", ephemeral=True
+                )
         else:
-            await interaction.send(
-                ":cry: This button is not for you :cry:", ephemeral=True
-            )
+            if interaction.message.interaction.author.id == interaction.author.id:
+                await interaction.delete_original_message()
+            else:
+                await interaction.send(
+                    ":cry: This button is not for you", ephemeral=True
+                )
 
 
 def setup(client: commands.Bot):

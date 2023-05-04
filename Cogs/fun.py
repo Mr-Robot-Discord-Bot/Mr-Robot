@@ -231,11 +231,12 @@ class Fun(commands.Cog):
                     "?source=fallback", ""
                 )
             else:
-                amount += 1  # type: ignore
-                if count + 1 == len(links_list):
+                if count + 1 >= len(links_list):
                     await interaction.send(
                         "This search have only :poop:", delete_after=5
                     )
+                    continue
+                amount += 1  # type: ignore
                 continue
 
             if not url.startswith("http"):

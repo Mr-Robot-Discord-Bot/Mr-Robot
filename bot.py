@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from utils import SESSION_CTX, proxy_generator
 
 proxy_mode = False
-start_time = time.time()
 PROXY = None
 
 
@@ -20,7 +19,6 @@ class MrRobot(commands.InteractionBot):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.start_time = time.time()
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
 

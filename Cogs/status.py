@@ -1,12 +1,11 @@
 import datetime
 import os
-import time
 
 import disnake
 import psutil
 from disnake.ext import commands
 
-from bot import PROXY, start_time
+from bot import PROXY
 from utils import Embeds, db, delete_button
 
 
@@ -67,17 +66,14 @@ class Status(commands.Cog):
                 except KeyError:
                     return ":x:"
 
-        current_time = time.time()
-        difference = int(round(current_time - start_time))
-        text = str(datetime.timedelta(seconds=difference))
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
-            "Ping: ",
+            "Latency: ",
             f"{round(self.bot.latency * 1000)}ms",
         )
         embed.add_field(
             "Uptime: ",
-            f"{text}",
+            disnake.utils.format_dt(datetime.datetime.now(), style="R"),
         )
         embed.add_field(
             "Cpu Usage: ",
@@ -101,7 +97,7 @@ class Status(commands.Cog):
             ),
         )
         embed.add_field(
-            "Users: ",
+            "Members: ",
             interaction.guild.member_count,
         )
         embed.add_field(
