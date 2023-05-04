@@ -112,15 +112,6 @@ class Status(commands.Cog):
             "Goodbyer: ",
             get_greeter_status("bye_channel"),
         )
-        if interaction.author.id == self.bot.owner.id:
-            embed.add_field(
-                "Servers List",
-                ":satellite: "
-                + "\n:satellite: ".join(
-                    [f"`{guild.name} {guild.id}`" for guild in self.bot.guilds]
-                ),
-                inline=False,
-            )
         await interaction.send(embed=embed, components=[delete_button])
 
 
