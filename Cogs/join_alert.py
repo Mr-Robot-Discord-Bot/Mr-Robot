@@ -1,5 +1,6 @@
 import os
 
+import disnake
 from disnake.ext import commands
 
 from utils import Embeds, db, send_webhook
@@ -8,11 +9,17 @@ from utils import Embeds, db, send_webhook
 class Joinalert(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         """Webhook get's triggered on joining any guild"""
+
+        await self.bot.change_presence(
+            activity=disnake.Streaming(
+                name=f"In {len(self.bot.guilds)} Servers",
+                url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            )
+        )
 
         embed = Embeds.emb(
             Embeds.green,
@@ -40,6 +47,14 @@ class Joinalert(commands.Cog):
     async def on_guild_remove(self, guild):
         if not guild.members:
             return
+
+        await self.bot.change_presence(
+            activity=disnake.Streaming(
+                name=f"In {len(self.bot.guilds)} Servers",
+                url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            )
+        )
+
         embed = Embeds.emb(
             Embeds.red,
             guild.name,
