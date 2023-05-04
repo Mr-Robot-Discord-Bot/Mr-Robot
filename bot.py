@@ -1,12 +1,14 @@
+import asyncio
 import os
 import time
 
+import aiohttp
 import disnake
 import mafic
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from utils import proxy_generator
+from utils import SESSION_CTX, proxy_generator
 
 proxy_mode = False
 start_time = time.time()
@@ -19,8 +21,7 @@ class MrRobot(commands.InteractionBot):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.start_time = time.time()
-
-        self.pool = mafic.NodePool(self)
+        self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
 
     async def add_nodes(self):
@@ -52,15 +53,21 @@ class MrRobot(commands.InteractionBot):
 load_dotenv()
 
 
-if __name__ == "__main__":
-    while True:
-        client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
+async def main():
+    global PROXY
+    client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
+    async with aiohttp.ClientSession() as session:
+        SESSION_CTX.set(session)
         client.load_extensions()
         try:
-            client.loop.run_until_complete(client.start(os.getenv("Mr_Robot")))
+            await client.start(os.getenv("Mr_Robot"))  # type: ignore
         except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
             print(" [!] Unable to connect to Discord falling back to proxy mode")
             proxy_mode = True
             PROXY = proxy_generator() if proxy_mode else None
         finally:
-            client.loop.close()
+            await client.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

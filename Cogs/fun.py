@@ -2,12 +2,11 @@ import json
 import random
 from typing import Any, Dict, Set, Union
 
-import aiohttp
 import disnake
 from bs4 import BeautifulSoup
 from disnake.ext import commands
 
-from utils import Embeds, delete_button
+from utils import SESSION_CTX, Embeds, delete_button
 
 
 def extract_video_link(soup: BeautifulSoup) -> Union[dict, None]:
@@ -30,7 +29,7 @@ def extract_video_link(soup: BeautifulSoup) -> Union[dict, None]:
 class Fun(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        self.session = aiohttp.ClientSession()
+        self.session = SESSION_CTX.get()
 
     @commands.slash_command(name="nsfw", nsfw=True, dm_permission=False)
     async def slash_nsfw(
@@ -204,6 +203,7 @@ class Fun(commands.Cog):
         for count, data in enumerate(links_list):
             if count >= amount:  # type: ignore
                 break
+
             elif data["data"]["is_video"]:
                 url = data["data"]["media"]["reddit_video"]["fallback_url"]
 
@@ -232,20 +232,20 @@ class Fun(commands.Cog):
                 )
             else:
                 amount += 1  # type: ignore
+                if count + 1 == len(links_list):
+                    await interaction.send(
+                        "This search have only :poop:", delete_after=5
+                    )
                 continue
 
             if not url.startswith("http"):
                 amount += 1  # type: ignore
                 continue
-            if url:
-                await interaction.send(url, components=[delete_button])
-            else:
-                await interaction.send(
-                    f":dizzy_face: We don't have any content for `{search}`!"
-                )
+
+            await interaction.send(url, components=[delete_button])
 
     @reddit.autocomplete("search")
-    async def reddit_autocomp(self, interacton, name: str) -> Union[Set[str], None]:
+    async def reddit_autocomp(self, interaction, name: str) -> Union[Set[str], None]:
         name = name.lower()
         url = (
             "https://www.reddit.com/api/search_reddit_names.json?"

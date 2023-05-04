@@ -2,6 +2,7 @@ import datetime
 import os
 import random
 import sys
+from contextvars import ContextVar
 from typing import Any
 
 import aiohttp
@@ -20,6 +21,7 @@ except Exception:
     print("utils.py: DB Error")
     sys.exit()
 
+SESSION_CTX = ContextVar("session")
 
 delete_button: disnake.ui.Button = disnake.ui.Button(
     emoji="💣", style=disnake.ButtonStyle.red
