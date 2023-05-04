@@ -1,6 +1,6 @@
 import json
 import random
-from typing import Set, Union
+from typing import Any, Dict, Set, Union
 
 import aiohttp
 import disnake
@@ -14,7 +14,7 @@ def extract_video_link(soup: BeautifulSoup) -> Union[dict, None]:
     link = soup.find("script", type="application/ld+json")
     if not link:
         return
-    link = json.loads(link.string)
+    link = json.loads(link.string)  # type: ignore
     name = link["name"]
     description = link["description"]
     thumbnailUrl = link["thumbnailUrl"][0]
@@ -43,14 +43,11 @@ class Fun(commands.Cog):
         await interaction.response.defer()
 
     async def get(self, url: str) -> BeautifulSoup:
-        while True:
-            try:
-                async with self.session.get(url, ssl=False, timeout=7) as response:
-                    htmlcontent = await response.text()
-                    break
-            except Exception as e:
-                print(e)
-                continue
+        try:
+            async with self.session.get(url, ssl=False, timeout=7) as response:
+                htmlcontent = await response.text()
+        except Exception:
+            raise Exception("Web not responding")
         soup = BeautifulSoup(htmlcontent, "html.parser")
         return soup
 
@@ -60,7 +57,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 3] = 1,
+        amount: commands.Range[1, 3] = 1,  # type: ignore
     ):
         """
         Loads content from xnxx.com
@@ -78,10 +75,10 @@ class Fun(commands.Cog):
             search_term = await self.get(term_url)
             page = search_term.find("div", class_="mozaique cust-nb-cols")
             if page is None:
-                await self.xnxx(interaction, search, amount)
+                await self.xnxx(interaction, search, amount)  # type: ignore
             items = random.sample(
-                list(page.find_all("a")),
-                k=amount,
+                list(page.find_all("a")),  # type: ignore
+                k=amount,  # type: ignore
             )
             for i in items:
                 link = i.get("href")
@@ -109,7 +106,7 @@ class Fun(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Error",
-                    "Something went wrong, please try again later :slight_frown:",
+                    "Please try again later :slight_frown:",
                 ),
                 delete_after=5,
             )
@@ -119,7 +116,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 10] = 1,
+        amount: commands.Range[1, 10] = 1,  # type: ignore
     ):
         """
         Loads content from redtube.com
@@ -148,7 +145,7 @@ class Fun(commands.Cog):
                     if resp.status == 200:
                         random.shuffle(data["videos"])
                         for content in data["videos"]:
-                            if count >= amount:
+                            if count >= amount:  # type: ignore
                                 break
                             else:
                                 count = count + 1
@@ -176,7 +173,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str,
-        amount: commands.Range[1, 10] = 1,
+        amount: commands.Range[1, 10] = 1,  # type: ignore
     ):
         """
         Loads content from reddit.com
@@ -186,64 +183,66 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        header = {"User-Agent": "Magic Browser"}
         URL = (
             f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
             f"include_over_18=True"
             "&type=link"
         )
-        async with self.session.get(URL, headers=header) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                count = 0
-                links: Set[str] = set()
-                links_list = data["data"]["children"]
-                random.shuffle(links_list)
-                for data in links_list:
-                    if count < amount:
-                        count += 1
-                    else:
-                        break
-                    if data["kind"] != "t3" or data["data"]["url"] in links:
-                        continue
-                    elif data["data"]["url"] not in links:
-                        links.add(data["data"]["url"])
 
-                    if data["data"]["is_video"]:
-                        url = data["data"]["media"]["reddit_video"]["fallback_url"]
+        async def _request(url: str) -> Dict[Any, Any]:
+            async with self.session.get(
+                url, headers={"User-Agent": "Magic Browser"}
+            ) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    raise Exception(f"Unexpected response code {resp.status}")
 
-                    elif data["data"].get("is_gallery"):
-                        url = str(
-                            "\n".join([data for data in data["data"]["media_metadata"]])
-                        )
+        data = await _request(URL)
+        links_list = data["data"]["children"]
+        random.shuffle(links_list)
+        for count, data in enumerate(links_list):
+            if count >= amount:  # type: ignore
+                break
+            elif data["data"]["is_video"]:
+                url = data["data"]["media"]["reddit_video"]["fallback_url"]
 
-                    elif "redgifs.com" in data["data"]["url"]:
-                        url = data["data"]["url_overridden_by_dest"]
+            elif data["data"].get("is_gallery"):
+                url = str("\n".join({data for data in data["data"]["media_metadata"]}))
 
-                    elif data["data"]["url"].endswith(
-                        (
-                            ".gifv",
-                            ".mp4",
-                            ".webm",
-                            ".gif",
-                            ".png",
-                            ".jpg",
-                            ".jpeg",
-                            ".mov",
-                            ".mkv",
-                            "?source=fallback",
-                        )
-                    ):
-                        url = data["data"]["url_overridden_by_dest"].replace(
-                            "?source=fallback"
-                        )
+            elif "redgifs.com" in data["data"]["url"]:
+                url = data["data"]["url_overridden_by_dest"]
 
-                    else:
-                        count -= 1
+            elif data["data"]["url"].endswith(
+                (
+                    ".gifv",
+                    ".mp4",
+                    ".webm",
+                    ".gif",
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".mov",
+                    ".mkv",
+                    "?source=fallback",
+                )
+            ):
+                url = data["data"]["url_overridden_by_dest"].replace(
+                    "?source=fallback", ""
+                )
+            else:
+                amount += 1  # type: ignore
+                continue
 
-                    if not url.startswith("http"):
-                        continue
-                    await interaction.send(url, components=[delete_button])
+            if not url.startswith("http"):
+                amount += 1  # type: ignore
+                continue
+            if url:
+                await interaction.send(url, components=[delete_button])
+            else:
+                await interaction.send(
+                    f":dizzy_face: We don't have any content for `{search}`!"
+                )
 
     @reddit.autocomplete("search")
     async def reddit_autocomp(self, interacton, name: str) -> Union[Set[str], None]:
