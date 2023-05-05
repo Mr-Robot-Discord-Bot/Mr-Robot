@@ -133,7 +133,7 @@ class Greetings(commands.Cog):
         font: The font size of the text
         theme: The theme of the text
         """
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         if feature == "Welcome Channel":
             db.traffic.update_one(
                 {"guild_id": interaction.guild.id},
@@ -200,6 +200,7 @@ class Greetings(commands.Cog):
         ----------
         greeter: Greeter to unplug
         """
+        await interaction.response.defer(ephemeral=True)
         if feature == "Welcome Channel":
             db.traffic.update_one(
                 {"guild_id": interaction.guild.id},
