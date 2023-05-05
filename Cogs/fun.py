@@ -3,6 +3,7 @@ import random
 from typing import Any, Dict, Set, Union
 
 import disnake
+from aiocache import cached
 from bs4 import BeautifulSoup
 from disnake.ext import commands
 
@@ -31,6 +32,16 @@ class Fun(commands.Cog):
         self.bot = client
         self.session = SESSION_CTX.get()
 
+    @cached(ttl=60 * 60 * 12)
+    async def _request(self, url: str) -> Dict[Any, Any]:
+        async with self.session.get(
+            url, headers={"User-Agent": "Magic Browser"}
+        ) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            else:
+                raise Exception(f"Unexpected response code {resp.status}")
+
     @commands.slash_command(name="nsfw", nsfw=True, dm_permission=False)
     async def slash_nsfw(
         self,
@@ -41,12 +52,15 @@ class Fun(commands.Cog):
         """
         await interaction.response.defer()
 
-    async def get(self, url: str) -> BeautifulSoup:
-        try:
-            async with self.session.get(url, ssl=False, timeout=7) as response:
-                htmlcontent = await response.text()
-        except Exception:
-            raise Exception("Web not responding")
+    @cached(ttl=60 * 60 * 2)
+    async def xnxx_request(self, url: str) -> BeautifulSoup:
+        async with self.session.get(
+            url, headers={"User-Agent": "Magic Browser"}
+        ) as resp:
+            if resp.status == 200:
+                htmlcontent = await resp.text()
+            else:
+                raise Exception(f"Unexpected response code {resp.status}")
         soup = BeautifulSoup(htmlcontent, "html.parser")
         return soup
 
@@ -71,7 +85,7 @@ class Fun(commands.Cog):
             ufrm_term = search
             term = search.replace(" ", "+")
             term_url = domain + "/search/" + str(term)
-            search_term = await self.get(term_url)
+            search_term = await self.xnxx_request(term_url)
             page = search_term.find("div", class_="mozaique cust-nb-cols")
             if page is None:
                 await self.xnxx(interaction, search, amount)  # type: ignore
@@ -81,7 +95,7 @@ class Fun(commands.Cog):
             )
             for i in items:
                 link = i.get("href")
-                page = await self.get(domain + link)
+                page = await self.xnxx_request(domain + link)
                 vid_dict = extract_video_link(page)
                 if vid_dict:
                     await interaction.send(
@@ -129,43 +143,29 @@ class Fun(commands.Cog):
             "https://api.redtube.com/?data=redtube.Videos.searchVideos"
             f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
         )
-        async with self.session.get(URL) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                total_pages = data["count"] // len(data["videos"])
-                page = random.randint(1, total_pages)
-                count = 0
-                URL = (
-                    "https://api.redtube.com/?"
-                    "data=redtube.Videos.searchVideos&output=json&"
-                    f"search={search}&thumbsize=all&page={page}&sort=new"
-                )
-                async with self.session.get(URL) as resp:
-                    if resp.status == 200:
-                        random.shuffle(data["videos"])
-                        for content in data["videos"]:
-                            if count >= amount:  # type: ignore
-                                break
-                            else:
-                                count = count + 1
-                            embed = Embeds.emb(
-                                Embeds.red,
-                                "Showing Results for:" f" {search}",
-                                f"""
-                                 Title: {content["video"]["title"]}
-                                 Duration: {content["video"]["duration"]}
-                                 Views: {content["video"]["views"]}
-                                 Rating: {content["video"]["rating"]}
-                                 [Watch now]({content["video"]["url"]})
-                                                """,
-                            )
-                            embed.set_thumbnail(url=content["video"]["default_thumb"])
-                            await interaction.send(
-                                components=[delete_button],
-                                embed=embed,
-                            )
+        data = await self._request(URL)
+        random.shuffle(data["videos"])
+        for count, content in enumerate(data["videos"]):
+            if count >= amount:  # type: ignore
+                break
             else:
-                raise Exception("API Error")
+                count = count + 1
+            embed = Embeds.emb(
+                Embeds.red,
+                "Showing Results for:" f" {search}",
+                f"""
+                 Title: {content["video"]["title"]}
+                 Duration: {content["video"]["duration"]}
+                 Views: {content["video"]["views"]}
+                 Rating: {content["video"]["rating"]}
+                 [Watch now]({content["video"]["url"]})
+                                """,
+            )
+            embed.set_thumbnail(url=content["video"]["default_thumb"])
+            await interaction.send(
+                components=[delete_button],
+                embed=embed,
+            )
 
     @slash_nsfw.sub_command()
     async def reddit(
@@ -188,16 +188,7 @@ class Fun(commands.Cog):
             "&type=link"
         )
 
-        async def _request(url: str) -> Dict[Any, Any]:
-            async with self.session.get(
-                url, headers={"User-Agent": "Magic Browser"}
-            ) as resp:
-                if resp.status == 200:
-                    return await resp.json()
-                else:
-                    raise Exception(f"Unexpected response code {resp.status}")
-
-        data = await _request(URL)
+        data = await self._request(URL)
         links_list = data["data"]["children"]
         random.shuffle(links_list)
         for count, data in enumerate(links_list):
@@ -252,11 +243,8 @@ class Fun(commands.Cog):
             "https://www.reddit.com/api/search_reddit_names.json?"
             f"query={name or 'porn'}&include_over_18=True"
         )
-        header = {"User-Agent": "Magic Browser"}
-        async with self.session.get(url, headers=header) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                return set(name for name in data["names"])
+        data = await self._request(url)
+        return set(name for name in data["names"])
 
     @commands.slash_command(name="meme")
     async def slash_meme(self, interaction, amount: int = 1):
