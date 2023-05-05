@@ -41,7 +41,7 @@ class EmbedModal(disnake.ui.Modal):
 
         embed = Embeds.emb(self.color, title, content)
         embed.set_image(image)
-        embed.set_footer(text=interaction.guild.name)
+        embed.set_footer(text=interaction.guild.name)  # type: ignore
         await interaction.send(embed=embed, components=[delete_button])
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
@@ -72,7 +72,9 @@ class Misc(commands.Cog):
 
     @commands.slash_command(name="userinfo", dm_permission=False)
     async def slash_userinfo(
-        self, interaction, member: Union[disnake.Member, None] = None
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        member: disnake.Member = commands.Param(lambda interaction: interaction.author),
     ):
         """
         Shows user info
@@ -81,8 +83,6 @@ class Misc(commands.Cog):
         ----------
         member : Member to show info
         """
-        if member is None:
-            member = interaction.author
         embed = Embeds.emb(member.color, f"{member} Information")
         try:
             embed.set_thumbnail(url=member.display_avatar.url)
@@ -101,10 +101,10 @@ class Misc(commands.Cog):
         )
         embed.add_field(
             name="Joined",
-            value=member.joined_at.strftime("%a %#d %B %Y, %I:%M %p UTC"),
+            value=member.joined_at.strftime("%a %#d %B %Y, %I:%M %p UTC"),  # type: ignore
             inline=False,
         )
-        members = sorted(interaction.guild.members, key=lambda m: m.joined_at)
+        members = sorted(interaction.guild.members, key=lambda m: m.joined_at)  # type: ignore
         embed.add_field(
             name="Join Position", value=str(members.index(member) + 1), inline=False
         )

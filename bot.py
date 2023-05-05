@@ -21,6 +21,7 @@ class MrRobot(commands.InteractionBot):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
+        self.start_time = time.time()
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""

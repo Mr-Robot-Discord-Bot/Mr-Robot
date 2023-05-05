@@ -1,4 +1,3 @@
-import datetime
 import os
 
 import disnake
@@ -69,11 +68,11 @@ class Status(commands.Cog):
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
             "Latency: ",
-            f"{round(self.bot.latency * 1000)}ms",
+            f"{int(self.bot.latency * 1000)}ms",
         )
         embed.add_field(
             "Uptime: ",
-            disnake.utils.format_dt(datetime.datetime.now(), style="R"),
+            disnake.utils.format_dt(self.bot.start_time, style="R"),
         )
         embed.add_field(
             "Cpu Usage: ",

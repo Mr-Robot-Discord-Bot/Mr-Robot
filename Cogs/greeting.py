@@ -1,3 +1,5 @@
+from typing import Union
+
 import disnake
 from disnake.ext import commands
 from easy_pil import Editor, Font, load_image_async
@@ -20,13 +22,13 @@ class Greetings(commands.Cog):
         channel: disnake.TextChannel,
         member: disnake.Member,
         url: str,
-        msg: str = None,
+        msg: Union[str, None] = None,
         font: int = 20,
         theme: str = "white",
     ):
         """Sends Manipulated Images"""
         bg_img = Editor(await load_image_async(url)).resize((625, 355), crop=True)
-        width, height = bg_img.image.size
+        width, height = bg_img.image.size  # type: ignore
 
         SIZE = (height // 3, height // 3)
         USER_COORDINATES = ((width // 2) - 50, height // 4)
@@ -113,7 +115,7 @@ class Greetings(commands.Cog):
         self,
         interaction,
         channel: disnake.TextChannel,
-        feature: str = commands.Param(choices=["Welcome", "Goodbye"]),
+        feature: str = commands.Param(choices=["Welcome Channel", "Goodbye Channel"]),
         img_url: str = WELCOME_IMG_URL,
         font: int = 20,
         theme: str = commands.Param(
