@@ -1,3 +1,4 @@
+import logging
 import os
 
 import disnake
@@ -5,10 +6,13 @@ from disnake.ext import commands
 
 from utils import Embeds, db, send_webhook
 
+logger = logging.getLogger(__name__)
+
 
 class Joinalert(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        logger.debug("Joinalert Cog Loaded")
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):

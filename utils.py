@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import random
 import sys
@@ -13,12 +14,13 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 try:
     mongo_client = pymongo.MongoClient(os.getenv("mongodb_uri"))
     db = mongo_client.mr_robot
 except Exception:
-    print("utils.py: DB Error")
+    logger.critical("Unable to connect to Database!")
     sys.exit()
 
 SESSION_CTX = ContextVar("session")
@@ -28,7 +30,9 @@ delete_button: disnake.ui.Button = disnake.ui.Button(
 )
 
 
-class Embeds:
+class Embeds(disnake.Embed):
+    """Embeds"""
+
     red = 0xFF0000
     green = 0x00FF00
     blue = 0x0000FF

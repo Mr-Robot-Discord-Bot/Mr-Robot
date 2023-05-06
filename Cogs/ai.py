@@ -1,3 +1,4 @@
+import logging
 import os
 
 import openai
@@ -6,11 +7,13 @@ from disnake.ext import commands
 from utils import Embeds, delete_button
 
 openai.api_key = os.getenv("openai_api_key")
+logger = logging.getLogger(__name__)
 
 
 class Ai(commands.Cog):
     def __init__(self, client):
         self.bot = client
+        logger.debug("AI Cog Loaded")
 
     @commands.slash_command(name="ai")
     async def ai(self, interaction):
@@ -48,7 +51,7 @@ class Ai(commands.Cog):
             await interaction.send(
                 components=[delete_button],
                 embed=Embeds.emb(
-                    Embeds.green, "AI System", completion.choices[0].text.strip()
+                    Embeds.green, "AI System", completion.choices[0].text.strip()  # type: ignore
                 ),
             )
         except Exception:
@@ -88,7 +91,7 @@ class Ai(commands.Cog):
         try:
             response = await openai.Image.acreate(prompt=prompt, n=1, size="512x512")
             await interaction.send(
-                response["data"][0]["url"], components=[delete_button]
+                response["data"][0]["url"], components=[delete_button]  # type: ignore
             )
         except Exception:
             await interaction.send(

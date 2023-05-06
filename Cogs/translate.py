@@ -1,3 +1,5 @@
+import logging
+
 import disnake
 import googletrans as gt
 from disnake.ext import commands
@@ -13,9 +15,13 @@ async def autocomp_langs(inter: disnake.CommandInteraction, user_input: str):
         return [lang for lang in gt.LANGUAGES.values() if user_input.lower() in lang]
 
 
+logger = logging.getLogger(__name__)
+
+
 class Translate(commands.Cog):
     def __init__(self, client):
         self.bot = client
+        logger.debug("Translate cog loaded")
 
     @commands.slash_command(name="translate", dm_permission=False)
     async def slash_translate(

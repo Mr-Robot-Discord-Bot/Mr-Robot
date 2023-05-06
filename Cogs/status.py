@@ -1,3 +1,4 @@
+import logging
 import os
 
 import disnake
@@ -7,16 +8,18 @@ from disnake.ext import commands
 from bot import PROXY
 from utils import Embeds, db, delete_button
 
+logger = logging.getLogger(__name__)
+
 
 class Status(commands.Cog):
     def __init__(self, client):
         self.bot = client
+        logger.debug("Status Cog Loaded")
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(
-            f"\n [!] Logged in as {self.bot.user}\n\n {'[!] Proxy: {PROXY}' if PROXY else ''}"
-        )
+        if PROXY:
+            logger.info("Using Proxy: %s", PROXY)
         os.system("echo '' > Servers.inf")
         present_guilds: list[str] = []
         for guild in self.bot.guilds:

@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 
@@ -8,12 +9,13 @@ from utils import Embeds, delete_button
 
 REPO_PATH = "mr-robot"
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
+logger = logging.getLogger(__name__)
 
 
 class Oscmd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
+        logger.debug("Oscmd Cog Loaded")
 
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])

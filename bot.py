@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import time
 
@@ -12,6 +13,16 @@ from utils import SESSION_CTX, proxy_generator
 
 proxy_mode = False
 PROXY = None
+console_handler = logging.StreamHandler()
+file_handler = logging.FileHandler("mr-robot.log")
+console_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(module)-15s - %(name)s - %(message)s",
+    handlers=[console_handler, file_handler],
+)
+logger = logging.getLogger(__name__)
 
 
 class MrRobot(commands.InteractionBot):
@@ -22,22 +33,17 @@ class MrRobot(commands.InteractionBot):
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
         self.start_time = time.time()
+        logger.info("Mr Robot is ready")
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""
-        while True:
-            try:
-                await self.wait_until_ready()
-                await self.pool.create_node(
-                    host="localhost",
-                    port=2333,
-                    label="MAIN",
-                    password="youshallnotpass",
-                )
-                break
-            except Exception:
-                print("[!] Unable to connect to Lavalink")
-                time.sleep(5)
+        await self.wait_until_ready()
+        await self.pool.create_node(
+            host="localhost",
+            port=2333,
+            label="MAIN",
+            password="youshallnotpass",
+        )
 
     def load_extensions(self):
         """Loads extensions"""
@@ -61,7 +67,7 @@ async def main():
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore
         except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
-            print(" [!] Unable to connect to Discord falling back to proxy mode")
+            logger.warning("Unable to connect to Discord falling back to proxy mode")
             proxy_mode = True
             PROXY = proxy_generator() if proxy_mode else None
         finally:

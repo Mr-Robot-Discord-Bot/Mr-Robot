@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 
 import disnake
@@ -11,11 +12,13 @@ WELCOME_IMG_URL = (
     "hexagon-grid-pattern-black-background-vector_53876-166795.jpg"
 )
 
+logger = logging.getLogger(__name__)
+
 
 class Greetings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
+        logger.debug("Greetings Cog Loaded")
 
     async def send_img(
         self,

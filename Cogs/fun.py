@@ -1,4 +1,5 @@
 import json
+import logging
 import random
 from typing import Any, Dict, Set, Union
 
@@ -8,6 +9,8 @@ from bs4 import BeautifulSoup
 from disnake.ext import commands
 
 from utils import SESSION_CTX, Embeds, delete_button
+
+logger = logging.getLogger(__name__)
 
 
 def extract_video_link(soup: BeautifulSoup) -> Union[dict, None]:
@@ -31,6 +34,7 @@ class Fun(commands.Cog):
     def __init__(self, client):
         self.bot = client
         self.session = SESSION_CTX.get()
+        logger.debug("Fun Cog Loaded")
 
     @cached(ttl=60 * 60 * 12)
     async def _request(self, url: str) -> Dict[Any, Any]:
@@ -38,8 +42,10 @@ class Fun(commands.Cog):
             url, headers={"User-Agent": "Magic Browser"}
         ) as resp:
             if resp.status == 200:
+                logger.debug(f"Sending Http Request to {url}")
                 return await resp.json()
             else:
+                logger.error(f"Unexpected response code {resp.status}")
                 raise Exception(f"Unexpected response code {resp.status}")
 
     @commands.slash_command(name="nsfw", nsfw=True, dm_permission=False)
@@ -52,14 +58,16 @@ class Fun(commands.Cog):
         """
         await interaction.response.defer()
 
-    @cached(ttl=60 * 60 * 2)
+    @cached(ttl=60 * 60 * 5)
     async def xnxx_request(self, url: str) -> BeautifulSoup:
         async with self.session.get(
             url, headers={"User-Agent": "Magic Browser"}
         ) as resp:
             if resp.status == 200:
+                logger.debug(f"Sending Http Request to {url}")
                 htmlcontent = await resp.text()
             else:
+                logger.error(f"Unexpected response code {resp.status}")
                 raise Exception(f"Unexpected response code {resp.status}")
         soup = BeautifulSoup(htmlcontent, "html.parser")
         return soup
@@ -115,6 +123,7 @@ class Fun(commands.Cog):
                 else:
                     await self.xnxx(interaction, search, amount)
         except Exception:
+            logger.error("Error in Xnxx", exc_info=True)
             await interaction.send(
                 embed=Embeds.emb(
                     Embeds.red,
