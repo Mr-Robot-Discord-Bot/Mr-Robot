@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class Translate(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("Translate cog loaded")
+        logger.info("Translate cog loaded")
 
     @commands.slash_command(name="translate", dm_permission=False)
     async def slash_translate(

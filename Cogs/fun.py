@@ -34,7 +34,7 @@ class Fun(commands.Cog):
     def __init__(self, client):
         self.bot = client
         self.session = SESSION_CTX.get()
-        logger.debug("Fun Cog Loaded")
+        logger.info("Fun Cog Loaded")
 
     @cached(ttl=60 * 60 * 12)
     async def _request(self, url: str) -> Dict[Any, Any]:
@@ -42,7 +42,7 @@ class Fun(commands.Cog):
             url, headers={"User-Agent": "Magic Browser"}
         ) as resp:
             if resp.status == 200:
-                logger.debug(f"Sending Http Request to {url}")
+                logger.info(f"Sending Http Request to {url}")
                 return await resp.json()
             else:
                 logger.error(f"Unexpected response code {resp.status}")
@@ -64,7 +64,7 @@ class Fun(commands.Cog):
             url, headers={"User-Agent": "Magic Browser"}
         ) as resp:
             if resp.status == 200:
-                logger.debug(f"Sending Http Request to {url}")
+                logger.info(f"Sending Http Request to {url}")
                 htmlcontent = await resp.text()
             else:
                 logger.error(f"Unexpected response code {resp.status}")
@@ -197,7 +197,13 @@ class Fun(commands.Cog):
             "&type=link"
         )
 
-        data = await self._request(URL)
+        try:
+            data = await self._request(URL)
+        except Exception:
+            await interaction.send(
+                "Please choose from given suggestions :disappointed:", delete_after=3
+            )
+            return
         links_list = data["data"]["children"]
         random.shuffle(links_list)
         for count, data in enumerate(links_list):

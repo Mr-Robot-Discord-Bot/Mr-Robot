@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class Music(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        logger.debug("Music Cog Loaded")
+        logger.info("Music Cog Loaded")
 
     @commands.slash_command(name="music", dm_permission=False)
     async def music(self, interaction):

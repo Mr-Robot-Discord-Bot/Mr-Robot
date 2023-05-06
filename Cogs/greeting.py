@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class Greetings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        logger.debug("Greetings Cog Loaded")
+        logger.info("Greetings Cog Loaded")
 
     async def send_img(
         self,

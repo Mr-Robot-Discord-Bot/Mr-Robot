@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class Moderation(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("Moderation Cog Loaded")
+        logger.info("Moderation Cog Loaded")
 
     @commands.slash_command(name="mod", dm_permission=False)
     async def mod(self, interaction: disnake.CommandInteraction):

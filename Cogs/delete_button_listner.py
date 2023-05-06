@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class DeleteButtonListner(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("DeleteButtonListner Cog Loaded")
+        logger.info("DeleteButtonListner Cog Loaded")
 
     @commands.Cog.listener()
     async def on_button_click(self, interaction: disnake.MessageInteraction):

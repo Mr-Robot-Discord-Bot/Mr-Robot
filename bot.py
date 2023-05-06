@@ -16,9 +16,9 @@ PROXY = None
 console_handler = logging.StreamHandler()
 file_handler = logging.FileHandler("mr-robot.log")
 console_handler.setLevel(logging.INFO)
-file_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.INFO)
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(module)-15s - %(name)s - %(message)s",
     handlers=[console_handler, file_handler],
 )

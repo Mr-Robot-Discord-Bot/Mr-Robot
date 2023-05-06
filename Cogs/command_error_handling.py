@@ -21,7 +21,7 @@ def fetch_entry(param) -> str:
 class Command_error_handling(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("Command Error Handling Cog Loaded")
+        logger.info("Command Error Handling Cog Loaded")
 
     @commands.Cog.listener()
     async def on_slash_command_error(self, interaction, error):

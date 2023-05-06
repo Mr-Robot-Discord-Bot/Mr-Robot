@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class Ai(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("AI Cog Loaded")
+        logger.info("AI Cog Loaded")
 
     @commands.slash_command(name="ai")
     async def ai(self, interaction):

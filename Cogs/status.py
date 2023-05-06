@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class Status(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("Status Cog Loaded")
+        logger.info("Status Cog Loaded")
 
     @commands.Cog.listener()
     async def on_ready(self):

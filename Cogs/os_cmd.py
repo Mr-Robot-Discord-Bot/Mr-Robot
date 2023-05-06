@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class Oscmd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        logger.debug("Oscmd Cog Loaded")
+        logger.info("Oscmd Cog Loaded")
 
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])

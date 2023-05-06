@@ -57,7 +57,7 @@ class EmbedModal(disnake.ui.Modal):
 class Misc(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        logger.debug("Misc Cog Loaded")
+        logger.info("Misc Cog Loaded")
 
     @commands.slash_command(name="embed", dm_permission=False)
     async def slash_embed(
