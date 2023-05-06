@@ -30,6 +30,7 @@ class Music(commands.Cog):
 
         if interaction.guild.voice_client is None:
             if interaction.author.voice:
+                await interaction.response.defer()
                 await interaction.author.voice.channel.connect(cls=mafic.Player)
 
             else:
@@ -72,7 +73,6 @@ class Music(commands.Cog):
             f"Requested by: {interaction.author.mention}",
         )
 
-        await interaction.response.defer()
         await interaction.send(embed=embed, components=[delete_button])
 
     @music.sub_command(name="disconnect")

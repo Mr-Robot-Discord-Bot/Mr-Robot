@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-RUN apt update -y && apt install -y python3.11 python3-pip openjdk-11-jre
+RUN apt update -y && apt install -y python3.11 python3-pip
 
 COPY . /root
 WORKDIR /root

@@ -39,7 +39,7 @@ class MrRobot(commands.InteractionBot):
         """Adds Nodes to the pool"""
         await self.wait_until_ready()
         await self.pool.create_node(
-            host="localhost",
+            host="lavalink",
             port=2333,
             label="MAIN",
             password="youshallnotpass",

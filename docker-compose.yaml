@@ -1,0 +1,34 @@
+version: "3.7"
+
+
+x-restart-policy: &restart_policy
+  restart: unless-stopped
+
+
+services:
+
+  mr-robot:
+    <<: *restart_policy
+    image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
+    container_name: mr-robot
+    command: <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <MONGODB_URI>
+    networks:
+        - lavalink
+
+  lavalink:
+    <<: *restart_policy
+    image: ghcr.io/freyacodes/lavalink:latest
+    container_name: lavalink
+    environment:
+        - _JAVA_OPTIONS=-Xmx6G
+        - SERVER_PORT=2333
+        - LAVALINK_SERVER_PASSWORD=youshallnotpass
+    networks:
+        - lavalink
+    expose:
+        - 2333
+    ports:
+        - 2333:2333
+networks:
+    lavalink:
+        name: lavalink
