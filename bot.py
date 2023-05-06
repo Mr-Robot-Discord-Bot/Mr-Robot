@@ -2,14 +2,16 @@ import asyncio
 import logging
 import os
 import time
+from typing import Any
 
 import aiohttp
 import disnake
 import mafic
+from aiocache import cached
 from disnake.ext import commands
 from dotenv import load_dotenv
 
-from utils import SESSION_CTX, proxy_generator
+from utils import proxy_generator
 
 proxy_mode = False
 PROXY = None
@@ -28,12 +30,25 @@ logger = logging.getLogger(__name__)
 class MrRobot(commands.InteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, session, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
         self.start_time = time.time()
+        self.session = session
         logger.info("Mr Robot is ready")
+
+    @cached(ttl=60 * 60 * 12)
+    async def _request(self, url: str) -> Any:
+        async with self.session.get(
+            url, headers={"User-Agent": "Magic Browser"}
+        ) as resp:
+            if resp.status == 200:
+                logger.info(f"Sending Http Request to {url}")
+                return await resp.json()
+            else:
+                logger.error(f"Unexpected response code {resp.status}")
+                raise Exception(f"Unexpected response code {resp.status}")
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""
@@ -60,9 +75,8 @@ load_dotenv()
 
 async def main():
     global PROXY
-    client = MrRobot(proxy=PROXY, intents=disnake.Intents.all())
     async with aiohttp.ClientSession() as session:
-        SESSION_CTX.set(session)
+        client = MrRobot(proxy=PROXY, intents=disnake.Intents.all(), session=session)
         client.load_extensions()
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore

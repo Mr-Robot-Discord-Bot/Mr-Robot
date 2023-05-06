@@ -1,14 +1,14 @@
 import json
 import logging
 import random
-from typing import Any, Dict, Set, Union
+from typing import Set, Union
 
 import disnake
 from aiocache import cached
 from bs4 import BeautifulSoup
 from disnake.ext import commands
 
-from utils import SESSION_CTX, Embeds, delete_button
+from utils import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 
@@ -33,20 +33,7 @@ def extract_video_link(soup: BeautifulSoup) -> Union[dict, None]:
 class Fun(commands.Cog):
     def __init__(self, client):
         self.bot = client
-        self.session = SESSION_CTX.get()
         logger.info("Fun Cog Loaded")
-
-    @cached(ttl=60 * 60 * 12)
-    async def _request(self, url: str) -> Dict[Any, Any]:
-        async with self.session.get(
-            url, headers={"User-Agent": "Magic Browser"}
-        ) as resp:
-            if resp.status == 200:
-                logger.info(f"Sending Http Request to {url}")
-                return await resp.json()
-            else:
-                logger.error(f"Unexpected response code {resp.status}")
-                raise Exception(f"Unexpected response code {resp.status}")
 
     @commands.slash_command(name="nsfw", nsfw=True, dm_permission=False)
     async def slash_nsfw(
@@ -60,7 +47,7 @@ class Fun(commands.Cog):
 
     @cached(ttl=60 * 60 * 5)
     async def xnxx_request(self, url: str) -> BeautifulSoup:
-        async with self.session.get(
+        async with self.bot.session.get(
             url, headers={"User-Agent": "Magic Browser"}
         ) as resp:
             if resp.status == 200:
@@ -152,7 +139,7 @@ class Fun(commands.Cog):
             "https://api.redtube.com/?data=redtube.Videos.searchVideos"
             f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
         )
-        data = await self._request(URL)
+        data = await self.bot._request(URL)
         random.shuffle(data["videos"])
         for count, content in enumerate(data["videos"]):
             if count >= amount:  # type: ignore
@@ -198,7 +185,7 @@ class Fun(commands.Cog):
         )
 
         try:
-            data = await self._request(URL)
+            data = await self.bot._request(URL)
         except Exception:
             await interaction.send(
                 "Please choose from given suggestions :disappointed:", delete_after=3
@@ -258,7 +245,7 @@ class Fun(commands.Cog):
             "https://www.reddit.com/api/search_reddit_names.json?"
             f"query={name or 'porn'}&include_over_18=True"
         )
-        data = await self._request(url)
+        data = await self.bot._request(url)
         return set(name for name in data["names"])
 
     @commands.slash_command(name="meme")

@@ -3,7 +3,6 @@ import logging
 import os
 import random
 import sys
-from contextvars import ContextVar
 from typing import Any
 
 import aiohttp
@@ -23,7 +22,6 @@ except Exception:
     logger.critical("Unable to connect to Database!")
     sys.exit()
 
-SESSION_CTX = ContextVar("session")
 
 delete_button: disnake.ui.Button = disnake.ui.Button(
     emoji="💣", style=disnake.ButtonStyle.red

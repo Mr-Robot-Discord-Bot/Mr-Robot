@@ -1,19 +1,9 @@
 version: "3.7"
 
-
 x-restart-policy: &restart_policy
   restart: unless-stopped
 
-
 services:
-
-  mr-robot:
-    <<: *restart_policy
-    image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
-    container_name: mr-robot
-    command: <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <MONGODB_URI>
-    networks:
-        - lavalink
 
   lavalink:
     <<: *restart_policy
@@ -29,6 +19,19 @@ services:
         - 2333
     ports:
         - 2333:2333
+
+
+  mr-robot:
+    <<: *restart_policy
+    image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
+    container_name: mr-robot
+    command: <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <MONGODB_URI>
+    networks:
+        - lavalink
+    depends_on:
+        - lavalink
+
+
 networks:
     lavalink:
         name: lavalink

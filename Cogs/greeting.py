@@ -30,7 +30,9 @@ class Greetings(commands.Cog):
         theme: str = "white",
     ):
         """Sends Manipulated Images"""
-        bg_img = Editor(await load_image_async(url)).resize((625, 355), crop=True)
+        bg_img = Editor(await load_image_async(url, session=self.bot.session)).resize(
+            (625, 355), crop=True
+        )
         width, height = bg_img.image.size  # type: ignore
 
         SIZE = (height // 3, height // 3)
