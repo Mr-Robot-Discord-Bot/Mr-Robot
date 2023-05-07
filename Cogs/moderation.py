@@ -37,7 +37,10 @@ class Moderation(commands.Cog):
         commands.is_owner(), commands.has_permissions(manage_roles=True)
     )
     async def slash_addrole(
-        self, interaction, user: disnake.Member, role: disnake.Role
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        user: disnake.Member,
+        role: disnake.Role,
     ):
         """
         Assign the roles
@@ -47,7 +50,7 @@ class Moderation(commands.Cog):
         user : User to add role
         role : Role to add
         """
-        role = disnake.utils.get(user.guild.roles, name=str(role))
+        role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore
         await user.add_roles(role)
         await interaction.send(
             components=[delete_button],
@@ -544,13 +547,23 @@ class Moderation(commands.Cog):
         ----------
         channel: Channel to delete
         """
-        await channel.delete()
-        await interaction.send(
-            embed=Embeds.emb(
-                Embeds.green, "Deleted", f"{channel.mention} has been deleted!"
-            ),
-            ephemeral=True,
-        )
+        try:
+            await channel.delete()
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.green, "Deleted", f"{channel.mention} has been deleted!"
+                ),
+                ephemeral=True,
+            )
+        except disnake.errors.Forbidden:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.yellow,
+                    "Missing Access",
+                    "I don't have sufficient access to perform this task :cry:",
+                ),
+                ephemeral=True,
+            )
 
     @server.sub_command(name="clone")
     @commands.check_any(
