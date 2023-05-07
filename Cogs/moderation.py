@@ -199,6 +199,7 @@ class Moderation(commands.Cog):
                 ephemeral=True,
             )
         else:
+            await interaction.response.defer()
             await member.edit(
                 timeout=datetime.timedelta(days=days, hours=hours).total_seconds()
             )
