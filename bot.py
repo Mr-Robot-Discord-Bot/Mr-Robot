@@ -27,7 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class MrRobot(commands.InteractionBot):
+class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
     def __init__(self, session, **kwargs):

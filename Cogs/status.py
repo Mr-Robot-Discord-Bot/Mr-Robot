@@ -70,6 +70,10 @@ class Status(commands.Cog):
 
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
+            "Shards: ",
+            self.bot.shard_count,
+        )
+        embed.add_field(
             "Latency: ",
             f"{int(self.bot.latency * 1000)}ms",
         )
