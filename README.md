@@ -1,4 +1,6 @@
 # MR ROBOT Discord Bot
+![Lint](https://github.com/mr-robot-discord-bot/mr-robot/actions/workflows/lint.yml/badge.svg)
+![Container_Image](https://github.com/mr-robot-discord-bot/mr-robot/actions/workflows/docker_image.yml/badge.svg)
 
 MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can use for free in your Discord server.
 
