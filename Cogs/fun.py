@@ -201,7 +201,9 @@ class Fun(commands.Cog):
                 break
 
             elif data["data"]["is_video"]:
-                url = data["data"]["media"]["reddit_video"]["fallback_url"]
+                url = data["data"]["media"]["reddit_video"]["fallback_url"].replace(
+                    "?source=fallback", ""
+                )
 
             elif data["data"].get("is_gallery"):
                 url = str("\n".join({data for data in data["data"]["media_metadata"]}))
