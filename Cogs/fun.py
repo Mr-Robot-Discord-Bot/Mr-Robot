@@ -180,17 +180,16 @@ class Fun(commands.Cog):
         """
         URL = (
             f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
-            f"include_over_18=True"
-            "&type=link"
+            f"include_over_18=True&type=link"
         )
 
-        try:
-            data = await self.bot._request(URL)
-        except Exception:
-            await interaction.send(
-                "Please choose from given suggestions :disappointed:", delete_after=3
-            )
-            return
+        if search not in (await (self.reddit_autocomp(interaction, name=search))):
+            URL = (
+                    "https://www.reddit.com/r/porn_gifs/search.json"
+                    "?raw_json=1&limit=100&include_over_18=True&type=link"
+                    f"&q={search}"
+                    )
+        data = await self.bot._request(URL)
         links_list = data["data"]["children"]
         random.shuffle(links_list)
         for count, data in enumerate(links_list):

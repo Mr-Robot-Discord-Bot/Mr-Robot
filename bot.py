@@ -47,8 +47,8 @@ class MrRobot(commands.AutoShardedInteractionBot):
                 logger.info(f"Sending Http Request to {url}")
                 return await resp.json()
             else:
-                logger.error(f"Unexpected response code {resp.status}")
-                raise Exception(f"Unexpected response code {resp.status}")
+                logger.error(f"Unexpected response code {resp.status} for {url}")
+                raise Exception(f"Unexpected response code {resp.status} for {url}")
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""
