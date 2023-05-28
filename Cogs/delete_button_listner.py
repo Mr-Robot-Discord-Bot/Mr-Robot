@@ -19,14 +19,14 @@ class DeleteButtonListner(commands.Cog):
                 await interaction.delete_original_message()
             else:
                 await interaction.send(
-                    ":cry: This button is not for you", ephemeral=True
+                    ":cry: This delete button is not for you", ephemeral=True
                 )
         else:
             if interaction.message.interaction.author.id == interaction.author.id:
                 await interaction.delete_original_message()
             else:
                 await interaction.send(
-                    ":cry: This button is not for you", ephemeral=True
+                    ":cry: This delete button is not for you", ephemeral=True
                 )
 
 

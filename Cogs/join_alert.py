@@ -4,7 +4,7 @@ import os
 import disnake
 from disnake.ext import commands
 
-from utils import Embeds, db, send_webhook
+from utils import Embeds, send_webhook
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +36,10 @@ class Joinalert(commands.Cog):
                 """,
         )
 
-        data = {"$set": {"guild_id": guild.id, "guild_name": guild.name}}
-        db.config.update_one({"guild_id": guild.id}, data, upsert=True)
+        await self.bot.db.execute(
+            "insert into guilds values (?, ?)", (guild.id, guild.name)
+        )
+        await self.bot.db.commit()
         await send_webhook(
             embed=embed,
             webhook_url=os.getenv("whtraffic"),
@@ -69,8 +71,8 @@ class Joinalert(commands.Cog):
                 Members Count: {guild.member_count}
                 """,
         )
-        db.config.delete_one({"guild_id": guild.id})
-        db.traffic.delete_one({"guild_id": guild.id})
+        await self.bot.db.execute("delete from guilds where guild_id = ?", (guild.id,))
+        await self.bot.db.commit()
         await send_webhook(
             embed=embed,
             webhook_url=os.getenv("whtraffic"),

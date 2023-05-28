@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 import aiohttp
+import aiosqlite
 import disnake
 import mafic
 from aiocache import cached
@@ -30,12 +31,13 @@ logger = logging.getLogger(__name__)
 class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, session, **kwargs):
+    def __init__(self, session, db, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
         self.start_time = time.time()
         self.session = session
+        self.db = db
         logger.info("Mr Robot is ready")
 
     @cached(ttl=60 * 60 * 12)
@@ -76,7 +78,12 @@ load_dotenv()
 async def main():
     global PROXY
     async with aiohttp.ClientSession() as session:
-        client = MrRobot(proxy=PROXY, intents=disnake.Intents.all(), session=session)
+        client = MrRobot(
+            proxy=PROXY,
+            intents=disnake.Intents.all(),
+            session=session,
+            db=await aiosqlite.connect("mr-robot.db"),
+        )
         client.load_extensions()
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore
