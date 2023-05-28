@@ -1,12 +1,13 @@
 import logging
 import os
+from typing import Literal
 
 import disnake
 import psutil
 from disnake.ext import commands
 
 from bot import PROXY
-from utils import Embeds, db, delete_button
+from utils import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 
@@ -18,27 +19,42 @@ class Status(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        await self.bot.db.execute(
+            "CREATE TABLE IF NOT EXISTS guilds (guild_id int, name text)"
+        )
         if PROXY:
             logger.info("Using Proxy: %s", PROXY)
         os.system("echo '' > Servers.inf")
-        present_guilds: list[str] = []
+        exsisting_guilds = await (
+            await self.bot.db.execute("select guild_id, name from guilds")
+        ).fetchall()
+        logger.info(exsisting_guilds)
         for guild in self.bot.guilds:
-            present_guilds.append(guild.id)
             with open("Servers.inf", "a+") as stats:
                 stats.write(
                     f"\n\n [+] {guild.name} --> {', '.join([ f'{channel.name} [{channel.id}]' for channel in guild.channels])} \n"
                 )
-            data = {
-                "$set": {
-                    "guild_id": guild.id,
-                    "guild_name": guild.name,
-                }
-            }
-            db.config.update_one({"guild_id": guild.id}, data, upsert=True)
-        for guild in db.config.find():
-            if guild["guild_id"] not in present_guilds:
-                db.config.delete_one({"guild_id": guild["guild_id"]})
-                db.traffic.delete_one({"guild_id": guild["guild_id"]})
+            if guild.id not in {guild[0] for guild in exsisting_guilds}:
+                logger.info("Adding Guild: %s", guild)
+                await self.bot.db.execute(
+                    "INSERT INTO guilds (guild_id, name) VALUES (?, ?)",
+                    (guild.id, guild.name),
+                )
+            else:
+                logger.info("Updating Guild: %s", guild)
+                await self.bot.db.execute(
+                    "update guilds set name = ? where guild_id = ?",
+                    (guild.name, guild.id),
+                )
+
+        for guild in exsisting_guilds:
+            if guild[0] not in {guild.id for guild in self.bot.guilds}:
+                logger.info("Removing Guild: %s", guild[1])
+                await self.bot.db.execute(
+                    "delete from guilds where guild_id = ?", (guild[0],)
+                )
+
+        await self.bot.db.commit()
         with open("proxy_mode.conf", "r") as file:
             proxy_mode = file.read()
         if proxy_mode == "on":
@@ -57,16 +73,20 @@ class Status(commands.Cog):
     async def slash_status(self, interaction):
         """Shows status of the bot"""
 
-        def get_greeter_status(feature):
-            result = db.traffic.find_one({"guild_id": interaction.guild.id})
-            if result is not None:
-                try:
-                    if len(str(result[feature])) > 0:
-                        return ":white_check_mark:"
-                    else:
-                        raise KeyError()
-                except KeyError:
-                    return ":x:"
+        async def get_greeter_status(feature: Literal["wlcm_channel", "bye_channel"]):
+            result = await (
+                await self.bot.db.execute(
+                    """
+                                               select ? from greeter
+                                               where guild_id = ?
+                                               """,
+                    (feature, interaction.guild.id),
+                )
+            ).fetchone()
+            if result and result != (None,):
+                return ":white_check_mark:"
+            else:
+                return ":x:"
 
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
@@ -112,11 +132,11 @@ class Status(commands.Cog):
         )
         embed.add_field(
             "Welcomer: ",
-            get_greeter_status("welcome_channel"),
+            await get_greeter_status("wlcm_channel"),
         )
         embed.add_field(
             "Goodbyer: ",
-            get_greeter_status("bye_channel"),
+            await get_greeter_status("bye_channel"),
         )
         await interaction.send(embed=embed, components=[delete_button])
 
