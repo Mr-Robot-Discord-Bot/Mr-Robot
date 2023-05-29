@@ -166,6 +166,15 @@ class Fun(commands.Cog):
                 delete_after=5,
             )
 
+    @xnxx.autocomplete("search")
+    async def xnxx_autocomplete(
+        self, interaction: disnake.GuildCommandInteraction, name: str
+    ):
+        data = await self.bot._request(
+            f"https://www.xnxx.tv/search-suggest/{name or 'porn'}"
+        )
+        return {keywords.get("N") for keywords in data.get("keywords", [])}
+
     @commands.is_nsfw()
     @slash_nsfw.sub_command(name="xvideos")
     async def xvideos(
@@ -186,7 +195,7 @@ class Fun(commands.Cog):
             xnxx = AdultScrapper(
                 base_url="https://www.xvideos.com", session=self.bot.session
             )
-            data = await xnxx.send_video(search=search, amount=amount, xvideos=true)  # type: ignore
+            data = await xnxx.send_video(search=search, amount=amount, xvideos=True)  # type: ignore
             for vid in data:
                 await interaction.send(
                     components=[delete_button],
@@ -213,6 +222,15 @@ class Fun(commands.Cog):
                 ),
                 delete_after=5,
             )
+
+    @xvideos.autocomplete("search")
+    async def xvideos_autocomplete(
+        self, interaction: disnake.GuildCommandInteraction, name: str
+    ):
+        data = await self.bot._request(
+            f"https://www.xvideos.com/search-suggest/{name or 'porn'}"
+        )
+        return {keywords.get("N") for keywords in data.get("keywords", [])}
 
     @slash_nsfw.sub_command(name="redtube")
     async def redtube(
