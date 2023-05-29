@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Union
+from typing import Optional, Union
 
 import disnake
 from disnake.ext import commands
@@ -220,7 +220,8 @@ class Moderation(commands.Cog):
                     Embeds.red,
                     "Temporarily Muted",
                     f"{member.mention} is muted "
-                    f"for {datetime.timedelta(days=days,hours=hours)}",
+                    f"for {datetime.timedelta(days=days,hours=hours)}"
+                    f"\n Reason: {reason}",
                 ),
             )
 
@@ -341,7 +342,7 @@ class Moderation(commands.Cog):
                 Kindly be patient until you get next notification as this is time taking process
                 """,
             ),
-            ephemeral=True,
+            components=[delete_button],
         )
         try:
             for member in interaction.guild.members:
@@ -391,9 +392,9 @@ class Moderation(commands.Cog):
     )
     async def lock(
         self,
-        interaction: disnake.CommandInteraction,
+        interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: disnake.Role = None,
+        role: Optional[disnake.Role] = None,
     ):
         """
         Locks out the channel from messaging
@@ -410,7 +411,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.red, "Locked", f"{channel.mention} has been locked!"
             ),
-            ephemeral=True,
+            components=[delete_button],
         )
 
     @server.sub_command(name="unlock")
@@ -438,7 +439,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.green, "Unlocked", f"{channel.mention} has been unlocked!"
             ),
-            ephemeral=True,
+            components=[delete_button],
         )
 
     @server.sub_command(name="hide")
@@ -466,7 +467,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.red, "Hidden", f"{channel.mention} has been hidden!"
             ),
-            ephemeral=True,
+            components=[delete_button],
         )
 
     @server.sub_command(name="unhide")
@@ -494,7 +495,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.green, "Unhidden", f"{channel.mention} has been unhidden!"
             ),
-            ephemeral=True,
+            components=[delete_button],
         )
 
     @server.sub_command(name="nuke")
@@ -516,7 +517,7 @@ class Moderation(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.yellow, "Nuke", f"Nuke for {channel.mention} initiated!"
                 ),
-                ephemeral=True,
+                components=[delete_button],
             )
             new_channel = await channel.clone()
             await channel.delete()
@@ -554,7 +555,7 @@ class Moderation(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.green, "Deleted", f"{channel.mention} has been deleted!"
                 ),
-                ephemeral=True,
+                components=[delete_button],
             )
         except disnake.errors.Forbidden:
             await interaction.send(
@@ -585,7 +586,7 @@ class Moderation(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.yellow, "Clone", f"Clone for {channel.mention} initiated!"
                 ),
-                ephemeral=True,
+                components=[delete_button],
             )
             new_channel = await channel.clone()
             await new_channel.send(

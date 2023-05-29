@@ -8,7 +8,7 @@ from aiocache import cached
 from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
-from utils import Embeds
+from utils import Embeds, delete_button
 
 WELCOME_IMG_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"
@@ -237,7 +237,7 @@ class Greetings(commands.Cog):
     )
     async def slash_set(
         self,
-        interaction,
+        interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
         font_style: FontDir,
         feature: str = commands.Param(choices=["Welcome Channel", "Goodbye Channel"]),
@@ -262,11 +262,10 @@ class Greetings(commands.Cog):
         message: The message to send
         """
         await self.db_init()
-        await interaction.response.defer(ephemeral=True)
         try:
             await interaction.send("This is how it will look like:")
             await self.send_img(
-                channel=interaction.channel,
+                channel=interaction.channel,  # type: ignore
                 member=interaction.author,
                 img_url=img_url,
                 message=message,
@@ -276,9 +275,7 @@ class Greetings(commands.Cog):
                 welcome=feature == "Welcome Channel",
             )
         except UnidentifiedImageError:
-            await interaction.edit_original_message(
-                content="Invalid Image URL", ephemeral=True
-            )
+            await interaction.send(content="Invalid Image URL")
             return
         if feature == "Welcome Channel":
             if await (
@@ -323,13 +320,13 @@ class Greetings(commands.Cog):
                     ),
                 )
 
-            await interaction.send(
+            await interaction.followup.send(
                 embed=Embeds.emb(
                     Embeds.green,
                     "Welcome Channel Set Successfully",
                     f"Channel: {channel}",
                 ),
-                ephemeral=True,
+                components=[delete_button],
             )
         elif feature == "Goodbye Channel":
             if await (
@@ -374,13 +371,13 @@ class Greetings(commands.Cog):
                     ),
                 )
 
-            await interaction.send(
+            await interaction.followup.send(
                 embed=Embeds.emb(
                     Embeds.green,
                     "Goodbye Channel Set Successfully",
                     f"Channel: {channel}",
                 ),
-                ephemeral=True,
+                components=[delete_button],
             )
         await self.bot.db.commit()
 
