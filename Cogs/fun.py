@@ -1,33 +1,106 @@
 import json
 import logging
 import random
-from typing import Set, Union
+from datetime import datetime
+from typing import Dict, List, Set, Union
 
+import aiohttp
 import disnake
 from aiocache import cached
-from bs4 import BeautifulSoup
 from disnake.ext import commands
+from selectolax.parser import HTMLParser
 
 from utils import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 
 
-def extract_video_link(soup: BeautifulSoup) -> Union[dict, None]:
-    link = soup.find("script", type="application/ld+json")
-    if not link:
-        return
-    link = json.loads(link.string)  # type: ignore
-    name = link["name"]
-    description = link["description"]
-    thumbnailUrl = link["thumbnailUrl"][0]
-    url = link["contentUrl"]
-    return {
-        "name": name,
-        "description": description,
-        "thumbnailUrl": thumbnailUrl,
-        "url": url,
-    }
+class AdultScrapper:
+    """
+    Scraps Adult Content from Xnxx and Xvideos
+    """
+
+    def __init__(self, base_url: str, session: aiohttp.ClientSession):
+        self.session = session
+        self.base_url = base_url
+
+    @cached(ttl=60 * 60 * 12)
+    async def _get_html(self, url: str) -> HTMLParser:
+        async with self.session.get(
+            url, headers={"User-Agent": "Magic Browser"}, ssl=False
+        ) as resp:
+            return HTMLParser(await resp.text())
+
+    @cached(ttl=60 * 60 * 12)
+    async def extract_videos(self, url: str) -> Dict:
+        """
+        Extracts Video Data from Xnxx and Xvideos
+
+        Parameters
+        ----------
+        url: Url of the video
+        """
+        dom = await self._get_html(url=url)
+        data = dom.css_first('script[type="application/ld+json"]').text()
+        data = dict(eval(data))
+        parsed_date = datetime.strptime(
+            data.get("uploadDate", "0000-00-00T00:00:00+00:00"), "%Y-%m-%dT%H:%M:%S%z"
+        )
+        payload = {
+            "thumbnail": data.get("thumbnailUrl", [])[0],
+            "upload_date": parsed_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "name": data.get("name"),
+            "description": data.get("description", "").strip(),
+            "content_url": data.get("contentUrl"),
+        }
+        return payload
+
+    @cached(ttl=60 * 60 * 12)
+    async def get_link(self, search: str, xvideos: bool) -> Set[str]:
+        """
+        Gets the link of the video
+
+        Parameters
+        ----------
+        search: What to search?
+        xvideos: Search on xvideos or xnxx?
+        """
+        search.replace(" ", "+")
+        search_payload = (
+            f"https://www.xvideos.com/?k={search}&top"
+            if xvideos
+            else f"https://www.xnxx.tv/search/{search.replace(' ', '+')}?top"
+        )
+        dom = await self._get_html(url=search_payload)
+        return {
+            f'{self.base_url}{anchor.css_first("a").attrs.get("href")}'
+            for anchor in dom.css_first("div.mozaique.cust-nb-cols").css("div.thumb")
+        }
+
+    async def send_video(
+        self, search: str, amount: int = 1, xvideos: bool = False
+    ) -> List[Dict]:
+        """
+        Sends the video
+
+        Parameters
+        ----------
+        search: What to search?
+        amount: How much?
+        xvideos: Search on xvideos or xnxx?
+        """
+        links = list(await self.get_link(search=search, xvideos=xvideos))
+        random.shuffle(links)
+        data = []
+        for index, link in enumerate(set(links)):
+            if index > amount:
+                break
+            try:
+                data.append(await self.extract_videos(url=link))
+            except Exception:
+                amount += 1
+                continue
+        return data
 
 
 class Fun(commands.Cog):
@@ -44,20 +117,6 @@ class Fun(commands.Cog):
         Shows You Nsfw Content
         """
         await interaction.response.defer()
-
-    @cached(ttl=60 * 60 * 5)
-    async def xnxx_request(self, url: str) -> BeautifulSoup:
-        async with self.bot.session.get(
-            url, headers={"User-Agent": "Magic Browser"}
-        ) as resp:
-            if resp.status == 200:
-                logger.info(f"Sending Http Request to {url}")
-                htmlcontent = await resp.text()
-            else:
-                logger.error(f"Unexpected response code {resp.status}")
-                raise Exception(f"Unexpected response code {resp.status}")
-        soup = BeautifulSoup(htmlcontent, "html.parser")
-        return soup
 
     @commands.is_nsfw()
     @slash_nsfw.sub_command(name="xnxx")
@@ -76,39 +135,74 @@ class Fun(commands.Cog):
         amount: How much?
         """
         try:
-            domain = "https://www.xnxx.tv"
-            ufrm_term = search
-            term = search.replace(" ", "+")
-            term_url = domain + "/search/" + str(term)
-            search_term = await self.xnxx_request(term_url)
-            page = search_term.find("div", class_="mozaique cust-nb-cols")
-            if page is None:
-                await self.xnxx(interaction, search, amount)  # type: ignore
-            items = random.sample(
-                list(page.find_all("a")),  # type: ignore
-                k=amount,  # type: ignore
+            xnxx = AdultScrapper(
+                base_url="https://www.xnxx.tv", session=self.bot.session
             )
-            for i in items:
-                link = i.get("href")
-                page = await self.xnxx_request(domain + link)
-                vid_dict = extract_video_link(page)
-                if vid_dict:
-                    await interaction.send(
-                        components=[delete_button],
-                        embed=(
-                            Embeds.emb(
-                                Embeds.blue,
-                                f"Showing Result for: {ufrm_term}",
-                                f"""
-                            Name: {vid_dict['name'][:20]}
-                            Description: {vid_dict['description'][:100]}
-                            Video: [Watch Now]({vid_dict['url']})
-                            """,
-                            )
-                        ).set_image(url=vid_dict["thumbnailUrl"]),
-                    )
-                else:
-                    await self.xnxx(interaction, search, amount)
+            data = await xnxx.send_video(search=search, amount=amount, xvideos=False)  # type: ignore
+            for vid in data:
+                await interaction.send(
+                    components=[delete_button],
+                    embed=(
+                        Embeds.emb(
+                            Embeds.blue,
+                            f"Showing Result for: {search}",
+                            f"""
+                        Name: {vid["name"]}
+                        Description: {vid["description"]}
+                        Video: [Watch Now]({vid["content_url"]})
+                        Upload Date: {vid["upload_date"]}
+                        """,
+                        )
+                    ).set_image(url=vid["thumbnail"]),
+                )
+        except Exception:
+            logger.error("Error in Xnxx", exc_info=True)
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    "Api Error",
+                    "Please try again later :slight_frown:",
+                ),
+                delete_after=5,
+            )
+
+    @commands.is_nsfw()
+    @slash_nsfw.sub_command(name="xvideos")
+    async def xvideos(
+        self,
+        interaction: disnake.CommandInteraction,
+        search: str = "porn",
+        amount: commands.Range[1, 3] = 1,  # type: ignore
+    ):
+        """
+        Loads content from xvideos.com
+
+        Parameters
+        ----------
+        search: What to search?
+        amount: How much?
+        """
+        try:
+            xnxx = AdultScrapper(
+                base_url="https://www.xvideos.com", session=self.bot.session
+            )
+            data = await xnxx.send_video(search=search, amount=amount, xvideos=true)  # type: ignore
+            for vid in data:
+                await interaction.send(
+                    components=[delete_button],
+                    embed=(
+                        Embeds.emb(
+                            Embeds.blue,
+                            f"Showing Result for: {search}",
+                            f"""
+                        Name: {vid["name"]}
+                        Description: {vid["description"]}
+                        Video: [Watch Now]({vid["content_url"]})
+                        Upload Date: {vid["upload_date"]}
+                        """,
+                        )
+                    ).set_image(url=vid["thumbnail"]),
+                )
         except Exception:
             logger.error("Error in Xnxx", exc_info=True)
             await interaction.send(
