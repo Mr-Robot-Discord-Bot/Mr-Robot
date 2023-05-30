@@ -15,7 +15,7 @@ class Ai(commands.Cog):
         self.bot = client
         logger.info("AI Cog Loaded")
 
-    @commands.slash_command(name="ai")
+    @commands.slash_command(name="ai", dm_permission=False)
     async def ai(self, interaction):
         """Interact with openai"""
         ...

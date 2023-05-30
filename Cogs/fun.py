@@ -1,7 +1,8 @@
 import logging
 import random
 from datetime import datetime
-from typing import Dict, List, Set, Union
+from textwrap import shorten
+from typing import Dict, Generator, List, Set, Union
 
 import aiohttp
 import disnake
@@ -9,7 +10,7 @@ from aiocache import cached
 from disnake.ext import commands
 from selectolax.parser import HTMLParser
 
-from utils import Embeds, delete_button
+from utils import Embeds, delete_button, url_button_builder
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,7 @@ class AdultScrapper:
         }
         return payload
 
-    @cached(ttl=60 * 60 * 12)
-    async def get_link(self, search: str, xvideos: bool) -> Set[str]:
+    async def get_link(self, search: str, amount: int, xvideos: bool) -> Set[str]:
         """
         Gets the link of the video
 
@@ -64,21 +64,20 @@ class AdultScrapper:
         search: What to search?
         xvideos: Search on xvideos or xnxx?
         """
-        search.replace(" ", "+")
         search_payload = (
             f"https://www.xvideos.com/?k={search}&top"
             if xvideos
-            else f"https://www.xnxx.tv/search/{search.replace(' ', '+')}?top"
+            else f"https://www.xnxx.tv/search/{search}?top"
         )
         dom = await self._get_html(url=search_payload)
-        return {
-            f'{self.base_url}{anchor.css_first("a").attrs.get("href")}'
-            for anchor in dom.css_first("div.mozaique.cust-nb-cols").css("div.thumb")
-        }
+        dom = dom.css_first("div.mozaique.cust-nb-cols").css("div.thumb")
+        random.shuffle(dom)
+        data: Generator = (
+            f'{self.base_url}{link.css_first("a").attrs.get("href")}' for link in dom
+        )
+        return {next(data) for _ in range(amount)}
 
-    async def send_video(
-        self, search: str, amount: int = 1, xvideos: bool = False
-    ) -> List[Dict]:
+    async def send_video(self, search: str, amount: int, xvideos: bool = False) -> List:
         """
         Sends the video
 
@@ -88,18 +87,8 @@ class AdultScrapper:
         amount: How much?
         xvideos: Search on xvideos or xnxx?
         """
-        links = list(await self.get_link(search=search, xvideos=xvideos))
-        random.shuffle(links)
-        data = []
-        for index, link in enumerate(set(links)):
-            if index > amount:
-                break
-            try:
-                data.append(await self.extract_videos(url=link))
-            except Exception:
-                amount += 1
-                continue
-        return data
+        links = await self.get_link(search=search, amount=amount, xvideos=xvideos)
+        return [await self.extract_videos(url=link) for link in links]
 
 
 class Fun(commands.Cog):
@@ -134,26 +123,43 @@ class Fun(commands.Cog):
         amount: How much?
         """
         try:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.blue,
+                    f"Searching {search}",
+                    "Please wait while we search for your content",
+                )
+            )
             xnxx = AdultScrapper(
                 base_url="https://www.xnxx.tv", session=self.bot.session
             )
             data = await xnxx.send_video(search=search, amount=amount, xvideos=False)  # type: ignore
             for vid in data:
-                await interaction.send(
-                    components=[delete_button],
+                await interaction.channel.send(
                     embed=(
                         Embeds.emb(
                             Embeds.blue,
-                            f"Showing Result for: {search}",
-                            f"""
-                        Name: {vid["name"]}
-                        Description: {vid["description"]}
-                        Video: [Watch Now]({vid["content_url"]})
-                        Upload Date: {vid["upload_date"]}
-                        """,
+                            value=f"""
+                            **Name:** {shorten(vid["name"], 35, placeholder="...").strip()}
+                            **Description:** {shorten(vid["description"], 70, placeholder="...").strip()}
+                            **Upload Date:** {vid["upload_date"]}
+                            """,
                         )
                     ).set_image(url=vid["thumbnail"]),
+                    components=[
+                        url_button_builder(
+                            url=vid["content_url"], label="Watch Now", emoji="📺"
+                        ),
+                        delete_button,
+                    ],
                 )
+            await interaction.edit_original_response(
+                embed=Embeds.emb(
+                    Embeds.green,
+                    "Search Completed",
+                    f"Showing {len(data)} results for `{search}`",
+                )
+            )
         except Exception:
             logger.error("Error in Xnxx", exc_info=True)
             await interaction.send(
@@ -162,7 +168,7 @@ class Fun(commands.Cog):
                     "Api Error",
                     "Please try again later :slight_frown:",
                 ),
-                delete_after=5,
+                ephemeral=True,
             )
 
     @xnxx.autocomplete("search")
@@ -191,35 +197,52 @@ class Fun(commands.Cog):
         amount: How much?
         """
         try:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.blue,
+                    f"Searching {search}",
+                    "Please wait while we search for your content",
+                )
+            )
             xnxx = AdultScrapper(
                 base_url="https://www.xvideos.com", session=self.bot.session
             )
             data = await xnxx.send_video(search=search, amount=amount, xvideos=True)  # type: ignore
             for vid in data:
-                await interaction.send(
-                    components=[delete_button],
+                await interaction.channel.send(
                     embed=(
                         Embeds.emb(
                             Embeds.blue,
-                            f"Showing Result for: {search}",
-                            f"""
-                        Name: {vid["name"]}
-                        Description: {vid["description"]}
-                        Video: [Watch Now]({vid["content_url"]})
-                        Upload Date: {vid["upload_date"]}
-                        """,
+                            value=f"""
+                            **Name:** {shorten(vid["name"], 35, placeholder="...").strip()}
+                            **Description:** {shorten(vid["description"], 70, placeholder="...").strip()}
+                            **Upload Date:** {vid["upload_date"]}
+                            """,
                         )
                     ).set_image(url=vid["thumbnail"]),
+                    components=[
+                        url_button_builder(
+                            url=vid["content_url"], label="Watch Now", emoji="📺"
+                        ),
+                        delete_button,
+                    ],
                 )
+            await interaction.edit_original_response(
+                embed=Embeds.emb(
+                    Embeds.green,
+                    "Search Completed",
+                    f"Showing {len(data)} results for `{search}`",
+                )
+            )
         except Exception:
-            logger.error("Error in Xnxx", exc_info=True)
+            logger.error("Error in Xvideos", exc_info=True)
             await interaction.send(
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Error",
                     "Please try again later :slight_frown:",
                 ),
-                delete_after=5,
+                ephemeral=True,
             )
 
     @xvideos.autocomplete("search")
@@ -246,32 +269,59 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        URL = (
-            "https://api.redtube.com/?data=redtube.Videos.searchVideos"
-            f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
-        )
-        data = await self.bot._request(URL)
-        random.shuffle(data["videos"])
-        for count, content in enumerate(data["videos"]):
-            if count >= amount:  # type: ignore
-                break
-            else:
-                count = count + 1
-            embed = Embeds.emb(
-                Embeds.red,
-                "Showing Results for:" f" {search}",
-                f"""
-                 Title: {content["video"]["title"]}
-                 Duration: {content["video"]["duration"]}
-                 Views: {content["video"]["views"]}
-                 Rating: {content["video"]["rating"]}
-                 [Watch now]({content["video"]["url"]})
-                                """,
-            )
-            embed.set_thumbnail(url=content["video"]["default_thumb"])
+        try:
             await interaction.send(
-                components=[delete_button],
-                embed=embed,
+                embed=Embeds.emb(
+                    Embeds.blue,
+                    f"Searching {search}",
+                    "Please wait while we search for your content",
+                )
+            )
+            URL = (
+                "https://api.redtube.com/?data=redtube.Videos.searchVideos"
+                f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
+            )
+            data = await self.bot._request(URL)
+            random.shuffle(data["videos"])
+            for count, content in enumerate(data["videos"]):
+                if count >= amount:  # type: ignore
+                    break
+                else:
+                    count = count + 1
+                embed = Embeds.emb(
+                    Embeds.red,
+                    "Showing Results for:" f" {search}",
+                    f"""
+                     Title: {content["video"]["title"]}
+                     Duration: {content["video"]["duration"]}
+                     Rating: {content["video"]["rating"]}
+                                    """,
+                )
+                embed.set_thumbnail(url=content["video"]["default_thumb"])
+                await interaction.channel.send(
+                    components=[
+                        url_button_builder(
+                            url=content["video"]["url"], label="Watch Now", emoji="📺"
+                        ),
+                        delete_button,
+                    ],
+                    embed=embed,
+                )
+                await interaction.edit_original_response(
+                    embed=Embeds.emb(
+                        Embeds.green,
+                        "Search Completed",
+                        f"Showing {len(data['videos'])} results for `{search}`",
+                    )
+                )
+        except Exception:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    "Api Error",
+                    "Please try again later :slight_frown:",
+                ),
+                ephemeral=True,
             )
 
     @slash_nsfw.sub_command()
@@ -289,11 +339,17 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
+        await interaction.send(
+            embed=Embeds.emb(
+                Embeds.blue,
+                f"Searching {search}",
+                "Please wait while we search for your content",
+            )
+        )
         URL = (
             f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
             f"include_over_18=True&type=link"
         )
-
         if search not in (await self.reddit_autocomp(interaction, name=search)):
             URL = (
                 "https://www.reddit.com/r/porn_gifs/search.json"
@@ -304,7 +360,8 @@ class Fun(commands.Cog):
         links_list = data["data"]["children"]
         if not links_list:
             await interaction.send(
-                "No Results Found, Try something else :face_holding_back_tears:"
+                "No Results Found, Try something else :face_holding_back_tears:",
+                ephemeral=True,
             )
         random.shuffle(links_list)
         for count, data in enumerate(links_list):
@@ -342,7 +399,7 @@ class Fun(commands.Cog):
             else:
                 if count + 1 >= len(links_list):
                     await interaction.send(
-                        "This search have only :poop:", delete_after=5
+                        "This search have only :poop:", ephemeral=True
                     )
                     continue
                 amount += 1  # type: ignore
@@ -352,7 +409,14 @@ class Fun(commands.Cog):
                 amount += 1  # type: ignore
                 continue
 
-            await interaction.send(url, components=[delete_button])
+            await interaction.channel.send(url, components=[delete_button])
+        await interaction.edit_original_response(
+            embed=Embeds.emb(
+                Embeds.green,
+                "Search Completed",
+                f"Showing {len(links_list)} results for `{search}`",
+            )
+        )
 
     @reddit.autocomplete("search")
     async def reddit_autocomp(self, interaction, name: str) -> Union[Set[str], None]:
@@ -364,7 +428,7 @@ class Fun(commands.Cog):
         data = await self.bot._request(url)
         return set(name for name in data["names"])
 
-    @commands.slash_command(name="meme")
+    @commands.slash_command(name="meme", dm_permission=False)
     async def slash_meme(self, interaction, amount: int = 1):
         """
         Shows You Memes

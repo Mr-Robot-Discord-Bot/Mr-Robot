@@ -24,8 +24,15 @@ except Exception:
 
 
 delete_button: disnake.ui.Button = disnake.ui.Button(
-    emoji="💣", style=disnake.ButtonStyle.red
+    emoji="💣", style=disnake.ButtonStyle.red, custom_id="delete"
 )
+
+
+def url_button_builder(label: str, url: str, emoji: str) -> disnake.ui.Button:
+    """Returns a url button"""
+    return disnake.ui.Button(
+        label=label, url=url, style=disnake.ButtonStyle.link, emoji=emoji
+    )
 
 
 class Embeds(disnake.Embed):

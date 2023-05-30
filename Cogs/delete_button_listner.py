@@ -13,6 +13,8 @@ class DeleteButtonListner(commands.Cog):
 
     @commands.Cog.listener()
     async def on_button_click(self, interaction: disnake.MessageInteraction):
+        if interaction.component.custom_id != "delete":
+            return
         await interaction.response.defer()
         if not interaction.message.interaction:
             if interaction.author.guild_permissions.manage_messages:  # type: ignore
