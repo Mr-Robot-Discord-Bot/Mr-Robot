@@ -151,7 +151,7 @@ class Moderation(commands.Cog):
         reason : Reason for ban
         """
         await interaction.response.defer()
-        await member.ban(reason=reason)
+        await member.ban(clean_history_duration=604800, reason=reason)
         try:
             await member.send(
                 embed=Embeds.emb(
@@ -553,7 +553,7 @@ class Moderation(commands.Cog):
             await channel.delete()
             await interaction.send(
                 embed=Embeds.emb(
-                    Embeds.green, "Deleted", f"{channel.mention} has been deleted!"
+                    Embeds.green, "Deleted", f"{channel.name} has been deleted!"
                 ),
                 components=[delete_button],
             )
