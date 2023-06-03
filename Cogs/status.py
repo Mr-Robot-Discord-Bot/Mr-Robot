@@ -76,13 +76,14 @@ class Status(commands.Cog):
         async def get_greeter_status(feature: Literal["wlcm_channel", "bye_channel"]):
             result = await (
                 await self.bot.db.execute(
-                    """
-                                               select ? from greeter
-                                               where guild_id = ?
-                                               """,
-                    (feature, interaction.guild.id),
+                    f"""
+                    select {feature} from greeter
+                    where guild_id = ?
+                    """,
+                    (interaction.guild.id,),
                 )
             ).fetchone()
+            logger.info(result)
             if result and result != (None,):
                 return ":white_check_mark:"
             else:

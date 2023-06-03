@@ -54,6 +54,12 @@ class Greetings(commands.Cog):
         )
         await self.bot.db.commit()
 
+    @cached(60 * 60 * 24)
+    async def __request(self, url: str):
+        async with self.bot.session.get(url=url) as resp:
+            logger.info(f"Requesting background: {url}")
+            return BytesIO(await resp.read())
+
     async def send_img(
         self,
         channel: disnake.TextChannel,
@@ -84,12 +90,7 @@ class Greetings(commands.Cog):
         ) as resp:
             usr_img = BytesIO(await resp.read())
 
-        @cached(60 * 60 * 24)
-        async def __request(url: str):
-            async with self.bot.session.get(url=url) as resp:
-                return BytesIO(await resp.read())
-
-        bg = Image.open(await __request(img_url)).convert("RGBA")
+        bg = Image.open(await self.__request(img_url)).convert("RGBA")
         usr = Image.open(usr_img).convert("RGBA")
         usr = usr.resize((128, 128), Image.ANTIALIAS)
         background = Image.new("RGBA", size=usr.size, color=(255, 255, 255, 0))
