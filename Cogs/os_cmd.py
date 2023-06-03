@@ -44,9 +44,7 @@ class Oscmd(commands.Cog):
         )
         os.system(f"git clone {REPO_URL}")
         for i in os.listdir():
-            if i == REPO_PATH or i == ".env" or i == "Logs":
-                ...
-            else:
+            if i != REPO_PATH or i != ".env" or i != "Logs" or not i.endswith(".db"):
                 os.system(f"rm -rf {i}")
         os.system(f"mv {REPO_PATH}/* .")
         os.system(f"rm -rf {REPO_PATH}")
