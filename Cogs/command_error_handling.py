@@ -24,7 +24,9 @@ class Command_error_handling(commands.Cog):
         logger.info("Command Error Handling Cog Loaded")
 
     @commands.Cog.listener()
-    async def on_slash_command_error(self, interaction, error):
+    async def on_slash_command_error(
+        self, interaction: disnake.CommandInteraction, error
+    ):
         if isinstance(error, commands.errors.CommandInvokeError):
             if isinstance(error.original, disnake.Forbidden):
                 if error.original.code == 50013:
@@ -92,7 +94,7 @@ class Command_error_handling(commands.Cog):
             await interaction.send(embed=embed, ephemeral=True)
 
         elif isinstance(error, commands.BadArgument):
-            embed = Embeds.emb(Embeds.red, "Argument Error", "Pass valid argument")
+            embed = Embeds.emb(Embeds.red, "Invalid Value Passed", str(error))
             await interaction.send(embed=embed, ephemeral=True)
 
         elif isinstance(error, commands.NotOwner):

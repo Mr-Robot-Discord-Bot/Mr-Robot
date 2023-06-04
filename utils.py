@@ -1,13 +1,12 @@
 import datetime
 import logging
-import os
 import random
-import sys
+import re
+from functools import partial
 from typing import Any
 
 import aiohttp
 import disnake
-import pymongo
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -15,12 +14,38 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-try:
-    mongo_client = pymongo.MongoClient(os.getenv("mongodb_uri"))
-    db = mongo_client.mr_robot
-except Exception:
-    logger.critical("Unable to connect to Database!")
-    sys.exit()
+
+def parse_time(duration: str):
+    PATTERNS = {
+        "seconds": r"(\d+)\s*(?:seconds?|secs?|s)\b",
+        "minutes": r"(\d+)\s*(?:minutes?|mins?|m)\b",
+        "hours": r"(\d+)\s*(?:hours?|hrs?|h)\b",
+        "days": r"(\d+)\s*(?:days?|day)\b",
+        "weeks": r"(\d+)\s*(?:weeks?|wk|w)\b",
+        "months": r"(\d+)\s*(?:months?)\b",
+    }
+    result = dict.fromkeys(PATTERNS, 0)
+
+    def _extract(key: str, match: re.Match[str]) -> str:
+        value = int(match.group(1))
+        result[key] = value
+        return " "
+
+    for key, pattern in PATTERNS.items():
+        extractor = partial(_extract, key)
+        duration = re.sub(pattern, extractor, duration, count=1)
+
+    if duration.isspace():
+        return datetime.timedelta(
+            seconds=result["seconds"],
+            minutes=result["minutes"],
+            days=result["days"],
+            weeks=result["weeks"] + result["months"] * 4,
+            hours=result["hours"],
+        )
+    keys = re.findall(r"\d+\s*\S+", duration)
+    keys = ", ".join(map(repr, keys))
+    raise ValueError(f"Failed to parse {keys}")
 
 
 delete_button: disnake.ui.Button = disnake.ui.Button(
@@ -91,5 +116,5 @@ async def send_webhook(
     async with aiohttp.ClientSession() as session:
         webhook = disnake.Webhook.from_url(webhook_url, session=session)
         await webhook.send(
-            content, embed=embed, username=username, avatar_url=avatar_url
+            content, embed=embed, username=username, avatar_url=avatar_url  # type: ignore
         )

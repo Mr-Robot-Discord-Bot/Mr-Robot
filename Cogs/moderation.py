@@ -3,9 +3,9 @@ import logging
 from typing import Optional, Union
 
 import disnake
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 
-from utils import Embeds, delete_button
+from utils import Embeds, delete_button, parse_time
 
 MISSING = "MISSING"
 logger = logging.getLogger(__name__)
@@ -15,6 +15,10 @@ class Moderation(commands.Cog):
     def __init__(self, client):
         self.bot = client
         logger.info("Moderation Cog Loaded")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.check_temprole.start()
 
     @commands.slash_command(name="mod", dm_permission=False)
     async def mod(self, interaction: disnake.CommandInteraction):
@@ -34,14 +38,14 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="temprole")
     @commands.check_any(
-            commands.is_owner(), commands.has_permissions(manage_roles=True)
-        )
+        commands.is_owner(), commands.has_permissions(manage_roles=True)
+    )
     async def slash_temprole(
-            self,
-            interaction: disnake.GuildCommandInteraction,
-            user: disnake.Member,
-            role: disnake.Role,
-            duration: datetime.timedelta
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        user: disnake.Member,
+        role: disnake.Role,
+        duration: str,
     ):
         """
         Assign the roles for a specific duration
@@ -50,31 +54,37 @@ class Moderation(commands.Cog):
         ----------
         user : User to add role
         role : Role to add
-        duration : Time for which the role is assigned
+        duration: Duration for which role will be assigned
         """
-        await interaction.send(duration)
-        return
-        role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore
+        try:
+            tenure = datetime.datetime.utcnow() + parse_time(duration)
+        except ValueError:
+            raise commands.BadArgument(
+                "Invalid Duration, try eg: `3 week`, `9 day`, `27 hour`"
+            )
+        expiry = tenure.timestamp()
         await user.add_roles(role)
-        await self.bot.db.execute(
-                """
-                CREATE TABLE IF NOT EXISTS temprole (
-                    guild_id int, user_id int, role_id int, expiration int
-                )
-                """)
-        if await self.bot.db.execute(
+        if await (
+            await self.bot.db.execute(
                 """
                 SELECT * FROM temprole WHERE guild_id = ? AND user_id = ? AND role_id = ?
-                """, (interaction.guild.id, user.id, role.id)):
+                """,
+                (interaction.guild.id, user.id, role.id),
+            )
+        ).fetchone():
             await self.bot.db.execute(
                 """
                 UPDATE temprole SET expiration = ? WHERE guild_id = ? AND user_id = ? AND role_id = ?
-                """, (duration, interaction.guild.id, user.id, role.id))
+                """,
+                (expiry, interaction.guild.id, user.id, role.id),
+            )
         else:
             await self.bot.db.execute(
                 """
                 INSERT INTO temprole (guild_id, user_id, role_id, expiration) VALUES (?, ?, ?, ?)
-                """, (interaction.guild.id, user.id, role.id, duration))
+                """,
+                (interaction.guild.id, user.id, role.id, expiry),
+            )
         await self.bot.db.commit()
         await interaction.send(
             components=[delete_button],
@@ -82,7 +92,67 @@ class Moderation(commands.Cog):
                 Embeds.green,
                 "Temporarily Role Assigned",
                 f"{user.mention} Has Got  `{role}` Role For `{duration}`!",
-            ))
+            ),
+        )
+        try:
+            await user.send(
+                embed=Embeds.emb(
+                    Embeds.green,
+                    "Temporarily Role Assigned",
+                    f"You Have Got  `{role}` Role For `{duration}` In {interaction.guild.name}!",
+                )
+            )
+        except (disnake.Forbidden, disnake.errors.HTTPException):
+            ...
+
+    @tasks.loop()
+    async def check_temprole(self):
+        await self.bot.db.execute(
+            """
+                CREATE TABLE IF NOT EXISTS temprole (
+                    guild_id int, user_id int, role_id int, expiration decimal
+                )
+                """
+        )
+        await self.bot.db.commit()
+        rows = await (
+            await self.bot.db.execute(
+                """
+            SELECT guild_id, user_id, role_id, expiration FROM temprole
+            """
+            )
+        ).fetchall()
+        for row in rows:
+            (guild_id, user_id, role_id, expiration) = row
+            guild = self.bot.get_guild(guild_id)
+            user = guild.get_member(user_id)
+            role = disnake.utils.get(guild.roles, id=role_id)
+            if not (guild or user or role):
+                continue
+            if expiration <= datetime.datetime.utcnow().timestamp():
+                logger.info(f"Removing {role} from {user}")
+                await user.remove_roles(role)
+                await self.bot.db.execute(
+                    """
+                    DELETE FROM temprole WHERE guild_id = ? AND user_id = ? AND role_id = ?
+                    """,
+                    (guild_id, user_id, role_id),
+                )
+                await self.bot.db.commit()
+                try:
+                    await user.send(
+                        embed=Embeds.emb(
+                            Embeds.red,
+                            "Role Expired",
+                            f"Your `{role}` Role Has Expired In `{guild.name}`!",
+                        )
+                    )
+                except (
+                    disnake.Forbidden,
+                    disnake.errors.HTTPException,
+                    AttributeError,
+                ):
+                    ...
 
     @user.sub_command(name="addrole")
     @commands.check_any(
@@ -136,7 +206,7 @@ class Moderation(commands.Cog):
         user : User to remove role
         role : Role to remove
         """
-        role = disnake.utils.get(user.guild.roles, name=str(role))
+        role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore
         await user.remove_roles(role)
         await interaction.send(
             components=[delete_button],
@@ -229,8 +299,7 @@ class Moderation(commands.Cog):
         self,
         interaction,
         member: disnake.Member,
-        hours: int = 1,
-        days: int = 0,
+        duration: str,
         reason: Union[None, str] = None,
     ):
         """
@@ -239,43 +308,34 @@ class Moderation(commands.Cog):
         Parameters
         ----------
         member : Member To Mute
-        hours : Hours To Mute
-        days : Days To Mute
+        duration : Duration Of Mute
         reason : Reason For Mute
         """
-        if days == 0 and hours == 0:
-            await interaction.send(
-                embed=Embeds.emb(
-                    Embeds.red, "Error", "User can't be muted for 0 minutes"
-                ),
-                ephemeral=True,
-            )
-        else:
-            await interaction.response.defer()
-            await member.edit(
-                timeout=datetime.timedelta(days=days, hours=hours).total_seconds()
-            )
-            try:
-                await member.send(
-                    embed=Embeds.emb(
-                        Embeds.red,
-                        "You are Temporarily Muted "
-                        f"in the {interaction.guild.name} server",
-                        f"Reason: {reason}",
-                    )
-                )
-            except disnake.Forbidden:
-                pass
-            await interaction.send(
-                components=[delete_button],
+        try:
+            tenure = parse_time(duration)
+        except ValueError:
+            raise commands.BadArgument("Invalid duration, try eg: `1 hour`, `2 days`")
+        await interaction.response.defer()
+        await member.edit(timeout=tenure, reason=reason, mute=True, deafen=True)
+        try:
+            await member.send(
                 embed=Embeds.emb(
                     Embeds.red,
-                    "Temporarily Muted",
-                    f"{member.mention} is muted "
-                    f"for {datetime.timedelta(days=days,hours=hours)}"
-                    f"\n Reason: {reason}",
-                ),
+                    "You are Temporarily Muted "
+                    f"in the {interaction.guild.name} server",
+                    f"Reason: {reason}",
+                )
             )
+        except (disnake.Forbidden, disnake.errors.HTTPException):
+            ...
+        await interaction.send(
+            components=[delete_button],
+            embed=Embeds.emb(
+                Embeds.red,
+                "Temporarily Muted",
+                f"{member.mention} is muted " f"for {duration}" f"\n Reason: {reason}",
+            ),
+        )
 
     @user.sub_command(name="kick")
     @commands.check_any(
@@ -373,7 +433,7 @@ class Moderation(commands.Cog):
     )
     async def roleall(
         self,
-        interaction: disnake.CommandInteraction,
+        interaction: disnake.GuildCommandInteraction,
         role: disnake.Role,
         action: str = commands.Param(choices=["add", "remove"]),
     ):
@@ -472,9 +532,9 @@ class Moderation(commands.Cog):
     )
     async def unlock(
         self,
-        interaction: disnake.CommandInteraction,
+        interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: disnake.Role = None,
+        role: Optional[disnake.Role] = None,
     ):
         """
         Unlocks out the channel from messaging
@@ -500,9 +560,9 @@ class Moderation(commands.Cog):
     )
     async def hide(
         self,
-        interaction: disnake.CommandInteraction,
+        interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: disnake.Role = None,
+        role: Optional[disnake.Role] = None,
     ):
         """
         Hides the channel
@@ -528,9 +588,9 @@ class Moderation(commands.Cog):
     )
     async def unhide(
         self,
-        interaction: disnake.CommandInteraction,
+        interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: disnake.Role = None,
+        role: Optional[disnake.Role] = None,
     ):
         """
         Unhides the channel
