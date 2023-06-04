@@ -32,6 +32,58 @@ class Moderation(commands.Cog):
         """Commands for user"""
         ...
 
+    @user.sub_command(name="temprole")
+    @commands.check_any(
+            commands.is_owner(), commands.has_permissions(manage_roles=True)
+        )
+    async def slash_temprole(
+            self,
+            interaction: disnake.GuildCommandInteraction,
+            user: disnake.Member,
+            role: disnake.Role,
+            duration: datetime.timedelta
+    ):
+        """
+        Assign the roles for a specific duration
+
+        Parameters
+        ----------
+        user : User to add role
+        role : Role to add
+        duration : Time for which the role is assigned
+        """
+        await interaction.send(duration)
+        return
+        role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore
+        await user.add_roles(role)
+        await self.bot.db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS temprole (
+                    guild_id int, user_id int, role_id int, expiration int
+                )
+                """)
+        if await self.bot.db.execute(
+                """
+                SELECT * FROM temprole WHERE guild_id = ? AND user_id = ? AND role_id = ?
+                """, (interaction.guild.id, user.id, role.id)):
+            await self.bot.db.execute(
+                """
+                UPDATE temprole SET expiration = ? WHERE guild_id = ? AND user_id = ? AND role_id = ?
+                """, (duration, interaction.guild.id, user.id, role.id))
+        else:
+            await self.bot.db.execute(
+                """
+                INSERT INTO temprole (guild_id, user_id, role_id, expiration) VALUES (?, ?, ?, ?)
+                """, (interaction.guild.id, user.id, role.id, duration))
+        await self.bot.db.commit()
+        await interaction.send(
+            components=[delete_button],
+            embed=Embeds.emb(
+                Embeds.green,
+                "Temporarily Role Assigned",
+                f"{user.mention} Has Got  `{role}` Role For `{duration}`!",
+            ))
+
     @user.sub_command(name="addrole")
     @commands.check_any(
         commands.is_owner(), commands.has_permissions(manage_roles=True)
