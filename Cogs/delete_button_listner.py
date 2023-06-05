@@ -16,19 +16,13 @@ class DeleteButtonListner(commands.Cog):
         if interaction.component.custom_id != "delete":
             return
         await interaction.response.defer()
-        if not interaction.message.interaction:
-            if interaction.author.guild_permissions.manage_messages:  # type: ignore
-                await interaction.delete_original_message()
-            else:
-                await interaction.send(
-                    ":cry: This delete button is not for you", ephemeral=True
-                )
-        else:
+        if interaction.message.interaction:
             if interaction.message.interaction.author.id == interaction.author.id:
                 await interaction.delete_original_message()
             else:
                 await interaction.send(
-                    ":cry: This delete button is not for you", ephemeral=True
+                    ":octagonal_sign: This delete button is not for you :octagonal_sign:",
+                    ephemeral=True,
                 )
 
 

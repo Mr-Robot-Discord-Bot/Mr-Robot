@@ -56,7 +56,7 @@ class Ticket(disnake.ui.Modal):
             ),
         ]
         super().__init__(
-            title="Embed Generator", custom_id="embed_generator", components=components
+            title="Ticket Setup", custom_id="ticket_setup", components=components
         )
 
     async def callback(self, interaction: disnake.ModalInteraction):
@@ -70,9 +70,12 @@ class Ticket(disnake.ui.Modal):
         embed.set_image(image)
         embed.set_footer(text=interaction.guild.name, icon_url=interaction.guild.icon)
         if not self.db:
-            await interaction.send(
-                "Ticket Interface Generated", ephemeral=True, delete_after=1
+            complete_embed = Embeds.emb(
+                Embeds.green,
+                "Ticket Interface Generated",
+                "Use the button below to create a tickets!",
             )
+            await interaction.send(embed=complete_embed, ephemeral=True)
             await interaction.channel.send(embed=embed, components=[new_ticket_button])
             return
         if not self.category or not self.user_or_role:
@@ -121,7 +124,12 @@ class Ticket(disnake.ui.Modal):
                 ),
             )
         await self.db.commit()
-        await interaction.send("Ticket Setup Complete", ephemeral=True)
+        complete_embed = Embeds.emb(
+            Embeds.green,
+            "Ticket Setup Complete",
+            "Use `/ticket interface` to create a ticket interface where users can create ticket!",
+        )
+        await interaction.send(embed=complete_embed, ephemeral=True)
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
         logger.exception(error)
