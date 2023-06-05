@@ -316,7 +316,10 @@ class Moderation(commands.Cog):
         except ValueError:
             raise commands.BadArgument("Invalid duration, try eg: `1 hour`, `2 days`")
         await interaction.response.defer()
-        await member.edit(timeout=tenure, reason=reason, mute=True, deafen=True)
+        try:
+            await member.edit(timeout=tenure, reason=reason)
+        except disnake.errors.HTTPException:
+            raise commands.BadArgument("Duration upto 28 days are supported")
         try:
             await member.send(
                 embed=Embeds.emb(
