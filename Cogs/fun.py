@@ -414,7 +414,7 @@ class Fun(commands.Cog):
             embed=Embeds.emb(
                 Embeds.green,
                 "Search Completed",
-                f"Showing {len(links_list)} results for `{search}`",
+                f"Showing {amount} results for `{search}`",
             )
         )
 
