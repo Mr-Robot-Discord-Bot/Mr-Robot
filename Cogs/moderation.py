@@ -263,9 +263,20 @@ class Moderation(commands.Cog):
     async def unban_autocomplete(
         self, interaction: disnake.GuildCommandInteraction, name
     ):
-        return {
+        members = {
             ban.user.name: str(ban.user.id) async for ban in interaction.guild.bans()
         }
+        sorted_dict = {}
+        matching_items = {}
+
+        for key, value in members.items():
+            if name in key:
+                matching_items[key] = value
+
+        sorted_items = sorted(matching_items.items(), key=lambda x: x[0].index(name))
+        sorted_dict = dict(sorted_items)
+
+        return sorted_dict
 
     @user.sub_command(name="ban")
     @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))
