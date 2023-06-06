@@ -237,8 +237,10 @@ class Moderation(commands.Cog):
             ...
 
     @user.sub_command(name="unban")
-    @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))
-    async def self_unban(self, interaction, member):
+    @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))  # type: ignore
+    async def slash_unban(
+        self, interaction: disnake.GuildCommandInteraction, member: str
+    ):
         """
         Unbans the member
 
@@ -246,28 +248,24 @@ class Moderation(commands.Cog):
         ----------
         member : Member to unban
         """
-        await interaction.response.defer()
-        banned_users = await interaction.guild.bans()
-        member_name, member_discriminator = member.split("#")
-        for ban_entry in banned_users:
-            user = ban_entry.user
-            if (user.name, user.discriminator) == (member_name, member_discriminator):
-                await interaction.guild.unban(user)
-                await interaction.send(
-                    components=[delete_button],
-                    embed=Embeds.emb(Embeds.green, "Unbanned", f"Unbanned: {user}"),
-                )
-                try:
-                    await member.send(
-                        embed=Embeds.emb(
-                            name="You Were Unbanned From "
-                            f"{interaction.guild.name} Server!"
-                        )
-                    )
-                except disnake.Forbidden:
-                    pass
+        try:
+            await interaction.guild.unban(disnake.Object(int(member)))
+            await interaction.send(
+                components=[delete_button],
+                embed=Embeds.emb(Embeds.green, "Unbanned", f"Unbanned: <@{member}>"),
+            )
+        except Exception:
+            raise commands.BadArgument(
+                ":cry: No Such User Found, Select from the suggestion shown!"
+            )
 
-                return
+    @slash_unban.autocomplete("member")
+    async def unban_autocomplete(
+        self, interaction: disnake.GuildCommandInteraction, name
+    ):
+        return {
+            ban.user.name: str(ban.user.id) async for ban in interaction.guild.bans()
+        }
 
     @user.sub_command(name="ban")
     @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))

@@ -94,7 +94,7 @@ class Command_error_handling(commands.Cog):
             await interaction.send(embed=embed, ephemeral=True)
 
         elif isinstance(error, commands.BadArgument):
-            embed = Embeds.emb(Embeds.red, "Invalid Value Passed", str(error))
+            embed = Embeds.emb(Embeds.red, "Invalid Option", str(error))
             await interaction.send(embed=embed, ephemeral=True)
 
         elif isinstance(error, commands.NotOwner):
