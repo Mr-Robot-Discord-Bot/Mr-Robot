@@ -292,9 +292,8 @@ class Fun(commands.Cog):
                     Embeds.red,
                     "Showing Results for:" f" {search}",
                     f"""
-                     Title: {content["video"]["title"]}
-                     Duration: {content["video"]["duration"]}
-                     Rating: {content["video"]["rating"]}
+                     **Title**: {content["video"]["title"]}
+                     **Duration**: {content["video"]["duration"]}
                                     """,
                 )
                 embed.set_thumbnail(url=content["video"]["default_thumb"])
@@ -311,7 +310,7 @@ class Fun(commands.Cog):
                     embed=Embeds.emb(
                         Embeds.green,
                         "Search Completed",
-                        f"Showing {len(data['videos'])} results for `{search}`",
+                        f"Showing {amount} results for `{search}`",
                     )
                 )
         except Exception:
