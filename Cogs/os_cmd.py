@@ -23,6 +23,21 @@ class Oscmd(commands.Cog):
         """Bot Owner Commands"""
         ...
 
+    @owner.sub_command(name="db", description="Runs SQL Query")
+    async def db(self, interaction, query):
+        try:
+            await self.bot.db.execute(query)
+            await self.bot.db.commit()
+            await interaction.send(
+                embed=Embeds.emb(Embeds.green, "Query Executed"),
+                components=[delete_button],
+            )
+        except Exception as e:
+            await interaction.send(
+                embed=Embeds.emb(Embeds.red, "Error", f"```{e}```"),
+                components=[delete_button],
+            )
+
     @owner.sub_command(name="cmd", description="Runs Console Commands")
     async def cmd(self, interaction, command_string):
         output = subprocess.getoutput(command_string)

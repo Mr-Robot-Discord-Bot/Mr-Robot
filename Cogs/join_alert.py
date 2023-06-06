@@ -71,7 +71,15 @@ class Joinalert(commands.Cog):
                 Members Count: {guild.member_count}
                 """,
         )
-        await self.bot.db.execute("delete from guilds where guild_id = ?", (guild.id,))
+        tables = await (
+            await self.bot.db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        ).fetchall()
+        for (table,) in tables:
+            await self.bot.db.execute(
+                f"delete from {table} where guild_id = ?", (guild.id,)
+            )
         await self.bot.db.commit()
         await send_webhook(
             embed=embed,
