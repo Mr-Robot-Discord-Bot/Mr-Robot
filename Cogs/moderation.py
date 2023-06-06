@@ -38,7 +38,7 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="temprole")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_roles=True)
+        commands.is_owner(), commands.has_permissions(manage_roles=True)  # type: ignore
     )
     async def slash_temprole(
         self,
@@ -127,7 +127,15 @@ class Moderation(commands.Cog):
             guild = self.bot.get_guild(guild_id)
             user = guild.get_member(user_id)
             role = disnake.utils.get(guild.roles, id=role_id)
-            if not (guild or user or role):
+            if not (guild or role):
+                continue
+            elif not user:
+                await self.bot.db.execute(
+                    """
+                    DELETE FROM temprole WHERE guild_id = ? AND user_id = ?
+                    """,
+                    (guild_id, user_id),
+                )
                 continue
             if expiration <= datetime.datetime.utcnow().timestamp():
                 logger.info(f"Removing {role} from {user}")

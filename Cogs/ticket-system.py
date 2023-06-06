@@ -145,6 +145,9 @@ class TicketSystem(commands.Cog):
         logger.info("TicketSystem Cog Loaded")
 
     @commands.slash_command(name="ticket", dm_permission=False)
+    @commands.check_any(
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+    )
     async def ticket(self, interaction: disnake.GuildCommandInteraction):
         """Ticket System"""
 
@@ -222,13 +225,17 @@ class TicketSystem(commands.Cog):
                             read_messages=False
                         ),
                         interaction.user: disnake.PermissionOverwrite(
-                            read_messages=True
+                            read_messages=True,
+                            send_messages=True,
                         ),
                         interaction.guild.get_role(
                             user_or_role_id
-                        ): disnake.PermissionOverwrite(read_messages=True),
+                        ): disnake.PermissionOverwrite(
+                            read_messages=True, send_messages=True
+                        ),
                         interaction.guild.me: disnake.PermissionOverwrite(
-                            read_messages=True
+                            read_messages=True,
+                            send_messages=True,
                         ),
                     },
                 )
