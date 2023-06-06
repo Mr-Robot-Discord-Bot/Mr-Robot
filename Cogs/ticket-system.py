@@ -227,15 +227,19 @@ class TicketSystem(commands.Cog):
                         interaction.user: disnake.PermissionOverwrite(
                             read_messages=True,
                             send_messages=True,
+                            attach_files=True,
                         ),
                         interaction.guild.get_role(
                             user_or_role_id
                         ): disnake.PermissionOverwrite(
-                            read_messages=True, send_messages=True
+                            read_messages=True,
+                            send_messages=True,
+                            attach_files=True,
                         ),
                         interaction.guild.me: disnake.PermissionOverwrite(
                             read_messages=True,
                             send_messages=True,
+                            attach_files=True,
                         ),
                     },
                 )
