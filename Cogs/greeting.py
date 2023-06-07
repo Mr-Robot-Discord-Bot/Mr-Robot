@@ -273,8 +273,7 @@ class Greetings(commands.Cog):
                 welcome=feature == "Welcome Channel",
             )
         except UnidentifiedImageError:
-            await interaction.send(content="Invalid Image URL")
-            return
+            raise commands.BadArgument("Invalid Image URL")
         if feature == "Welcome Channel":
             if await (
                 await self.bot.db.execute(
@@ -322,9 +321,9 @@ class Greetings(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.green,
                     "Welcome Channel Set Successfully",
-                    f"Channel: {channel}",
+                    f"Channel: {channel.mention}",
                 ),
-                components=[delete_button],
+                ephemeral=True,
             )
         elif feature == "Goodbye Channel":
             if await (
@@ -373,9 +372,9 @@ class Greetings(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.green,
                     "Goodbye Channel Set Successfully",
-                    f"Channel: {channel}",
+                    f"Channel: {channel.mention}",
                 ),
-                components=[delete_button],
+                ephemeral=True,
             )
         await self.bot.db.commit()
 
