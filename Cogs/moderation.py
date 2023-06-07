@@ -18,6 +18,14 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        await self.bot.db.execute(
+            """
+                CREATE TABLE IF NOT EXISTS temprole (
+                    guild_id bigint, user_id bigint, role_id bigint, expiration decimal
+                    )
+                """
+        )
+        await self.bot.db.commit()
         self.check_temprole.start()
 
     @commands.slash_command(name="mod", dm_permission=False)
@@ -102,19 +110,11 @@ class Moderation(commands.Cog):
                     f"You Have Got  `{role}` Role For `{duration}` In {interaction.guild.name}!",
                 )
             )
-        except (disnake.Forbidden, disnake.errors.HTTPException):
+        except (disnake.Forbidden, disnake.errors.HTTPException, AttributeError):
             ...
 
     @tasks.loop()
     async def check_temprole(self):
-        await self.bot.db.execute(
-            """
-                CREATE TABLE IF NOT EXISTS temprole (
-                    guild_id int, user_id int, role_id int, expiration decimal
-                )
-                """
-        )
-        await self.bot.db.commit()
         rows = await (
             await self.bot.db.execute(
                 """
@@ -127,7 +127,7 @@ class Moderation(commands.Cog):
             guild = self.bot.get_guild(guild_id)
             user = guild.get_member(user_id)
             role = disnake.utils.get(guild.roles, id=role_id)
-            if not (guild or role):
+            if not guild or not role:
                 continue
             elif not user:
                 await self.bot.db.execute(

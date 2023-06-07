@@ -20,7 +20,7 @@ class Status(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         await self.bot.db.execute(
-            "CREATE TABLE IF NOT EXISTS guilds (guild_id int, name text)"
+            "CREATE TABLE IF NOT EXISTS guilds (guild_id bigint primary key, name text)"
         )
         if PROXY:
             logger.info("Using Proxy: %s", PROXY)
@@ -50,9 +50,16 @@ class Status(commands.Cog):
         for guild in exsisting_guilds:
             if guild[0] not in {guild.id for guild in self.bot.guilds}:
                 logger.info("Removing Guild: %s", guild[1])
-                await self.bot.db.execute(
-                    "delete from guilds where guild_id = ?", (guild[0],)
-                )
+                tables = await (
+                    await self.bot.db.execute(
+                        "SELECT name FROM sqlite_master WHERE type='table'"
+                    )
+                ).fetchall()
+                for (table,) in tables:
+                    await self.bot.db.execute(
+                        f"delete from {table} where guild_id = ?", (guild[0],)
+                    )
+                await self.bot.db.commit()
 
         await self.bot.db.commit()
         with open("proxy_mode.conf", "r") as file:

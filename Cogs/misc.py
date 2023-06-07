@@ -27,7 +27,7 @@ class EmbedModal(disnake.ui.Modal):
                 style=disnake.TextInputStyle.short,
             ),
             disnake.ui.TextInput(
-                label="Body",
+                label="Description",
                 placeholder="Suggestion: Use <@User_Id> for mention & <#Channel_Id> for tagging the channel!",
                 custom_id="body",
                 style=disnake.TextInputStyle.paragraph,

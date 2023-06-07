@@ -31,25 +31,25 @@ class Greetings(commands.Cog):
         self.bot = bot
         logger.info("Greetings Cog Loaded")
 
-    async def db_init(self) -> None:
-        """Initializes the database"""
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
         await self.bot.db.execute(
             """
                 CREATE TABLE IF NOT EXISTS greeter (
-                    guild_id int,
-                    wlcm_channel int,
-                    wlcm_img string,
-                    wlcm_theme string,
-                    wlcm_font_style string,
-                    wlcm_outline int,
-                    wlcm_message string,
-                    bye_channel int,
-                    bye_img string,
-                    bye_theme string,
-                    bye_font_style string,
-                    bye_outline int,
-                    bye_message string
-                )
+                    guild_id bigint primary key,
+                    wlcm_channel bigint,
+                    wlcm_img text,
+                    wlcm_theme text,
+                    wlcm_font_style text,
+                    wlcm_outline tinyint,
+                    wlcm_message text,
+                    bye_channel bigint,
+                    bye_img text,
+                    bye_theme text,
+                    bye_font_style text,
+                    bye_outline tinyint,
+                    bye_message text
+                    )
                 """
         )
         await self.bot.db.commit()
@@ -156,7 +156,6 @@ class Greetings(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        await self.db_init()
         result = await (
             await self.bot.db.execute(
                 """
@@ -192,7 +191,6 @@ class Greetings(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        await self.db_init()
         result = await (
             await self.bot.db.execute(
                 """
@@ -262,7 +260,6 @@ class Greetings(commands.Cog):
         outline: The outline of the text
         message: The message to send
         """
-        await self.db_init()
         try:
             await interaction.send("This is how it will look like:")
             await self.send_img(
@@ -401,7 +398,6 @@ class Greetings(commands.Cog):
         ----------
         greeter: Greeter to unplug
         """
-        await self.db_init()
         await interaction.response.defer(ephemeral=True)
         if feature == "Welcome Channel":
             if await (
