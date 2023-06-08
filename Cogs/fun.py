@@ -10,7 +10,7 @@ from aiocache import cached
 from disnake.ext import commands
 from selectolax.parser import HTMLParser
 
-from utils import Embeds, delete_button, url_button_builder
+from utils import Embeds, url_button_builder
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,6 @@ class Fun(commands.Cog):
                         url_button_builder(
                             url=vid["content_url"], label="Watch Now", emoji="📺"
                         ),
-                        delete_button,
                     ],
                 )
             await interaction.edit_original_response(
@@ -224,7 +223,6 @@ class Fun(commands.Cog):
                         url_button_builder(
                             url=vid["content_url"], label="Watch Now", emoji="📺"
                         ),
-                        delete_button,
                     ],
                 )
             await interaction.edit_original_response(
@@ -302,7 +300,6 @@ class Fun(commands.Cog):
                         url_button_builder(
                             url=content["video"]["url"], label="Watch Now", emoji="📺"
                         ),
-                        delete_button,
                     ],
                     embed=embed,
                 )
@@ -363,6 +360,7 @@ class Fun(commands.Cog):
                 ephemeral=True,
             )
         random.shuffle(links_list)
+        urls = set()
         for count, data in enumerate(links_list):
             if count >= amount:  # type: ignore
                 break
@@ -396,11 +394,6 @@ class Fun(commands.Cog):
                     "?source=fallback", ""
                 )
             else:
-                if count + 1 >= len(links_list):
-                    await interaction.send(
-                        "This search have only :poop:", ephemeral=True
-                    )
-                    continue
                 amount += 1  # type: ignore
                 continue
 
@@ -408,12 +401,22 @@ class Fun(commands.Cog):
                 amount += 1  # type: ignore
                 continue
 
-            await interaction.channel.send(url, components=[delete_button])
+            urls.add(url)
+        for url in urls:
+            await interaction.channel.send(url)
+        if not urls:
+            await interaction.edit_original_response(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    f"No Result Found for `{search}`",
+                    "Try something else :face_holding_back_tears:",
+                )
+            )
         await interaction.edit_original_response(
             embed=Embeds.emb(
                 Embeds.green,
                 "Search Completed",
-                f"Showing {amount} results for `{search}`",
+                f"Showing {len(urls)} results for `{search}`",
             )
         )
 

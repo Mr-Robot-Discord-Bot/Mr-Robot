@@ -48,7 +48,7 @@ class EmbedModal(disnake.ui.Modal):
         embed.set_image(image)
         embed.set_footer(text=interaction.guild.name, icon_url=interaction.guild.icon)
         await interaction.send("Embed Created", ephemeral=True, delete_after=1)
-        await interaction.channel.send(embed=embed, components=[delete_button])
+        await interaction.channel.send(embed=embed)
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
         await inter.response.send_message(
