@@ -402,8 +402,6 @@ class Fun(commands.Cog):
                 continue
 
             urls.add(url)
-        for url in urls:
-            await interaction.channel.send(url)
         if not urls:
             await interaction.edit_original_response(
                 embed=Embeds.emb(
@@ -412,6 +410,9 @@ class Fun(commands.Cog):
                     "Try something else :face_holding_back_tears:",
                 )
             )
+            return
+        for url in urls:
+            await interaction.channel.send(url)
         await interaction.edit_original_response(
             embed=Embeds.emb(
                 Embeds.green,
