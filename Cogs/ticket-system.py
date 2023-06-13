@@ -233,7 +233,7 @@ class TicketSystem(commands.Cog):
                 ephemeral=True,
             )
             return
-        embed = disnake.Embed(title="Ticket Configs", color=Embeds.green)
+        embeds = list()
         for (
             config,
             color,
@@ -243,18 +243,21 @@ class TicketSystem(commands.Cog):
             title,
             description,
         ) in result:
-            embed.add_field(
-                name=Configs(config).name,
-                value=f"""
-                **Title:** {title}
-                **Description:** {description}
-                **Color:** {disnake.Color(color) if color else "None"}
-                **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
-                **Category:** {interaction.guild.get_channel(category_id)}
-                **Image:** {f"[Click To See]({image})" if image else "None"}
-                            """,
+            embeds.append(
+                Embeds.emb(
+                    color,
+                    Configs(config).name,
+                    f"""
+                        **Title:** {title}
+                        **Description:** {description}
+                        **Color:** {disnake.Color(color) if color else "None"}
+                        **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
+                        **Category:** {interaction.guild.get_channel(category_id)}
+                        **Image:** {f"[Click To See]({image})" if image else "None"}
+                        """,
+                )
             )
-        await interaction.send(embed=embed)
+        await interaction.send(embeds=embeds)
 
     @ticket.sub_command(name="set_config")
     async def setup(
