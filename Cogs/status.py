@@ -99,11 +99,11 @@ class Status(commands.Cog):
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
             "Shards: ",
-            self.bot.shard_count,
+            f"`{self.bot.shard_count}`",
         )
         embed.add_field(
             "Latency: ",
-            f"{int(self.bot.latency * 1000)}ms",
+            f"`{int(self.bot.latency * 1000)}ms`",
         )
         embed.add_field(
             "Uptime: ",
@@ -111,15 +111,15 @@ class Status(commands.Cog):
         )
         embed.add_field(
             "Cpu Usage: ",
-            f"{psutil.cpu_percent()}%",
+            f"`{psutil.cpu_percent()}%`",
         )
         embed.add_field(
             "Memory Usage: ",
-            f"{psutil.virtual_memory().percent}%",
+            f"`{psutil.virtual_memory().percent}%`",
         )
         embed.add_field(
             "Available Usage: ",
-            (
+            f"""`{
                 str(
                     round(
                         psutil.virtual_memory().available
@@ -128,15 +128,15 @@ class Status(commands.Cog):
                     )
                 )
                 + "%"
-            ),
+                }`""",
         )
         embed.add_field(
             "Members: ",
-            interaction.guild.member_count,
+            f"`{interaction.guild.member_count}`",
         )
         embed.add_field(
             "Channels: ",
-            len(interaction.guild.channels),
+            f"`{len(interaction.guild.channels)}`",
         )
         embed.add_field(
             "Welcomer: ",

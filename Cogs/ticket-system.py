@@ -1,4 +1,5 @@
 import logging
+from enum import Enum
 from typing import Optional, Union
 
 import aiosqlite
@@ -17,35 +18,36 @@ delete_channel_button: disnake.ui.Button = disnake.ui.Button(
 )
 
 
+class Configs(Enum):
+    Slot_1 = 1
+    Slot_2 = 2
+    Slot_3 = 3
+    Slot_4 = 4
+    Slot_5 = 5
+
+
 class Ticket(disnake.ui.Modal):
     def __init__(
         self,
         db: Connection,
         category: Optional[disnake.CategoryChannel],
-        color=None,
+        color: Optional[disnake.Color],
+        config: Configs,
         user_or_role: Optional[Union[disnake.Role, disnake.Member]] = None,
-        images_url: Optional[str] = None,
     ):
         self.color = color
-        _image_url = images_url.split(" ") if images_url else [None, None]
-        self.image_creator = _image_url[0] if len(_image_url) > 0 else None
-        self.image_channel = _image_url[1] if len(_image_url) > 1 else None
         self.db = db
         self.category = category
         self.user_or_role = user_or_role
+        self.config = config
 
         components = [
             disnake.ui.TextInput(
-                label="Title for Ticket Creator",
-                placeholder="Enter title here",
-                custom_id="title_creator",
+                label="Image url",
+                placeholder="Image url here",
+                custom_id="image",
                 style=disnake.TextInputStyle.short,
-            ),
-            disnake.ui.TextInput(
-                label="Description for Ticket Creator",
-                placeholder="Tips:<@Member_Id> for mention, <#Channel_Id> for tagging the channel",
-                custom_id="description_creator",
-                style=disnake.TextInputStyle.paragraph,
+                required=False,
             ),
             disnake.ui.TextInput(
                 label="Title for Ticket Channel",
@@ -65,59 +67,56 @@ class Ticket(disnake.ui.Modal):
     async def callback(self, interaction: disnake.ModalInteraction):
         if not interaction.guild or not self.category or not self.user_or_role:
             return
-        title_creator = interaction.text_values["title_creator"]
         title_channel = interaction.text_values["title_channel"]
-        description_creator = interaction.text_values["description_creator"]
         description_channel = interaction.text_values["description_channel"]
-        image_creator = self.image_creator
-        image_channel = self.image_channel
+        image_channel = interaction.text_values["image"]
 
-        embed = Embeds.emb(self.color, title_creator, description_creator)
-        embed.set_image(image_creator)
-        embed.set_footer(text=interaction.guild.name, icon_url=interaction.guild.icon)
-        result = await (
+        try:
             await self.db.execute(
                 """
-                                            select ticket_config_id from tickets_config
-                                            where guild_id = ? order by ticket_config_id desc limit 1
-                                            """,
-                (interaction.guild.id,),
+                    insert into tickets_config
+                    (guild_id, color, ticket_config_id, user_or_role_id, category_id,
+                     image, title, description)
+                    values (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                (
+                    interaction.guild.id,
+                    self.color.value if self.color else None,
+                    self.config,
+                    self.user_or_role.id,
+                    self.category.id,
+                    image_channel,
+                    title_channel,
+                    description_channel,
+                ),
             )
-        ).fetchone()
-        logger.info(f"{result} was retrieved ticket_config_id")
-        if result:
-            ticket_config_id = result[0] + 1
-        else:
-            ticket_config_id = 0
-        new_ticket_button: disnake.ui.Button = disnake.ui.Button(
-            emoji="🎫",
-            style=disnake.ButtonStyle.blurple,
-            custom_id=f"ticket-{ticket_config_id}",
-        )
-        await self.db.execute(
-            """
-                insert into tickets_config
-                (guild_id, ticket_config_id, user_or_role_id, category_id,
-                 image, title, description)
-                values (?, ?, ?, ?, ?, ?, ?)
+        except aiosqlite.IntegrityError:
+            await self.db.execute(
+                """
+                update tickets_config set
+                color = ?, user_or_role_id = ?, category_id = ?,
+                image = ?, title = ?, description = ?
+                where guild_id = ? and ticket_config_id = ?
                 """,
-            (
-                interaction.guild.id,
-                ticket_config_id,
-                self.user_or_role.id,
-                self.category.id,
-                image_channel,
-                title_channel,
-                description_channel,
-            ),
-        )
+                (
+                    self.color.value if self.color else None,
+                    self.user_or_role.id,
+                    self.category.id,
+                    image_channel,
+                    title_channel,
+                    description_channel,
+                    interaction.guild.id,
+                    self.config,
+                ),
+            )
         await self.db.commit()
         await interaction.send(
-            embed=Embeds.emb(Embeds.green, "Ticket Setup Complete!"),
+            embed=Embeds.emb(
+                Embeds.green, f"{Configs(self.config).name} Config Created!"
+            ),
             ephemeral=True,
-            delete_after=5,
+            delete_after=2,
         )
-        await interaction.channel.send(embed=embed, components=[new_ticket_button])
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
         logger.exception(error)
@@ -138,7 +137,7 @@ class TicketSystem(commands.Cog):
             """
                 create table if not exists tickets_config
                 (guild_id bigint, ticket_config_id bigint, user_or_role_id bigint,
-                 category_id bigint, image text,
+                 category_id bigint, image text, color bigint,
                  title text, description text, primary key (guild_id, ticket_config_id))
                 """
         )
@@ -158,14 +157,119 @@ class TicketSystem(commands.Cog):
     async def ticket(self, interaction: disnake.GuildCommandInteraction):
         """Ticket System"""
 
-    @ticket.sub_command(name="setup")
+    @ticket.sub_command(name="set_button")
+    async def add_btn_msg(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        message_link_or_id: disnake.Message,
+        config: Configs,
+    ):
+        """
+        Add a ticket button to a message
+
+        Parameters
+        ----------
+        message_link_or_id : Bot Message Link or Message ID
+        config : Choose a config
+        """
+        result = await (
+            await self.bot.db.execute(
+                """
+                select ticket_config_id from
+                tickets_config where
+                guild_id = ? and ticket_config_id = ?
+                """,
+                (interaction.guild.id, config),
+            )
+        ).fetchone()
+        if not result:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    f"{Configs(config).name} Was Empty!",
+                    "Use `/ticket set_config` to create one",
+                ),
+                ephemeral=True,
+            )
+            return
+        if self.bot.user.id != message_link_or_id.author.id:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    "Message is not from the bot!",
+                    "Use `/embed` to create one",
+                )
+            )
+            return
+        await message_link_or_id.edit(
+            components=[
+                disnake.ui.Button(
+                    emoji="🎫",
+                    style=disnake.ButtonStyle.blurple,
+                    custom_id=f"ticket-{config}",
+                )
+            ]
+        )
+        await interaction.send(
+            embed=Embeds.emb(Embeds.green, "Ticket Button Added!"),
+            ephemeral=True,
+            delete_after=2,
+        )
+
+    @ticket.sub_command(name="list_config")
+    async def list_config(self, interaction: disnake.GuildCommandInteraction):
+        """List all the configs"""
+        result = await (
+            await self.bot.db.execute(
+                """
+            select ticket_config_id, color, user_or_role_id, category_id,
+            image, title, description from tickets_config where
+            guild_id = ?
+            """,
+                (interaction.guild.id,),
+            )
+        ).fetchall()
+        if not result:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    "No Configs Found!",
+                    "Use `/ticket set_config` to create one",
+                ),
+                ephemeral=True,
+            )
+            return
+        embed = disnake.Embed(title="Ticket Configs", color=Embeds.green)
+        for (
+            config,
+            color,
+            user_or_role_id,
+            category_id,
+            image,
+            title,
+            description,
+        ) in result:
+            embed.add_field(
+                name=Configs(config).name,
+                value=f"""
+                **Title:** {title}
+                **Description:** {description}
+                **Color:** {disnake.Color(color) if color else "None"}
+                **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
+                **Category:** {interaction.guild.get_channel(category_id)}
+                **Image:** {f"[Click To See]({image})" if image else "None"}
+                            """,
+            )
+        await interaction.send(embed=embed)
+
+    @ticket.sub_command(name="set_config")
     async def setup(
         self,
         interaction: disnake.GuildCommandInteraction,
         category: disnake.CategoryChannel,
         user_or_role: Union[disnake.Role, disnake.Member],
+        config: Configs,
         color: Optional[disnake.Color] = None,
-        images_url: Optional[str] = None,
     ):
         """
         Setup Ticket System
@@ -174,16 +278,16 @@ class TicketSystem(commands.Cog):
         ----------
         category : CategoryChannel where the ticket channel will be created
         user_or_role : Role or Member who can see the ticket channel
+        config : Choose a slot to store your config
         color : Color of the embed
-        images_url : Input <Ticket_creator_img_url> then <Ticket_channel_img_url> with space
         """
         await interaction.response.send_modal(
             modal=Ticket(
                 db=self.bot.db,
                 category=category,
+                config=config,
                 user_or_role=user_or_role,
                 color=color,
-                images_url=images_url,
             )
         )
 
@@ -204,20 +308,25 @@ class TicketSystem(commands.Cog):
 
         elif interaction.component.custom_id.startswith("ticket"):
             ticket_config_id = interaction.component.custom_id.split("-")[-1]
-            logger.info(f"ticket_config_id: {ticket_config_id}")
             result = await (
                 await self.bot.db.execute(
                     """
-                    select user_or_role_id,
+                    select user_or_role_id, color,
                     category_id, image, title, description
                     from tickets_config where guild_id = ? and ticket_config_id = ?
                     """,
                     (interaction.guild.id, ticket_config_id),
                 )
             ).fetchone()  # type: ignore
-            logger.info(f"{result} was retrieved from tickets_config")
             if result:
-                (user_or_role_id, category_id, image, title, description) = result
+                (
+                    user_or_role_id,
+                    color,
+                    category_id,
+                    image,
+                    title,
+                    description,
+                ) = result
                 try:
                     await self.bot.db.execute(
                         "insert into ticket_status (guild_id, user_id, ticket_config_id) values (?, ?, ?)",
@@ -234,7 +343,6 @@ class TicketSystem(commands.Cog):
                     )
                     return
                 category = interaction.guild.get_channel(category_id)
-                logger.info(f"{category} was retrieved from guild")
                 if not category:
                     return
                 user_or_role = interaction.guild.get_role(user_or_role_id)
@@ -277,7 +385,7 @@ class TicketSystem(commands.Cog):
                 )
                 await channel.send(
                     embed=Embeds.emb(
-                        Embeds.green,
+                        disnake.Color(color) if color else None,
                         title,
                         description.replace("%user%", interaction.author.mention),
                     )
@@ -288,7 +396,10 @@ class TicketSystem(commands.Cog):
                     components=[delete_channel_button],
                 )
                 await interaction.send(
-                    f"Ticket has been created {channel.mention}", ephemeral=True
+                    embed=Embeds.emb(
+                        Embeds.green, "Ticket Created!", f"### {channel.mention}"
+                    ),
+                    ephemeral=True,
                 )
                 await self.bot.db.commit()
 

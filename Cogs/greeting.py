@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import logging
 from enum import Enum
 from io import BytesIO
@@ -29,6 +31,7 @@ class FontDir(Enum):
 class Greetings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.loop = asyncio.get_running_loop()
         logger.info("Greetings Cog Loaded")
 
     @commands.Cog.listener()
@@ -55,22 +58,27 @@ class Greetings(commands.Cog):
         await self.bot.db.commit()
 
     @cached(60 * 60 * 24)
-    async def __request(self, url: str):
+    async def __request_bg(self, url: str):
         async with self.bot.session.get(url=url) as resp:
             logger.info(f"Requesting background: {url}")
             return BytesIO(await resp.read())
 
-    async def send_img(
+    async def __request_usr(self, url: str):
+        async with self.bot.session.get(url=url) as resp:
+            return BytesIO(await resp.read())
+
+    def send_img(
         self,
         channel: disnake.TextChannel,
         member: disnake.Member,
-        img_url: str,
         message: Optional[str],
         font_style: FontDir,
         theme: str,
         outline: int,
+        usr_img: BytesIO,
+        bg_img: BytesIO,
         welcome: bool = True,
-    ):
+    ) -> disnake.File:
         """
         Sends a welcome/goodbye image to the channel
 
@@ -85,12 +93,7 @@ class Greetings(commands.Cog):
         outline : Outline width
         welcome : Whether to send welcome or goodbye image
         """
-        async with self.bot.session.get(
-            url=member.display_avatar.with_size(128).url
-        ) as resp:
-            usr_img = BytesIO(await resp.read())
-
-        bg = Image.open(await self.__request(img_url)).convert("RGBA")
+        bg = Image.open(bg_img).convert("RGBA")
         usr = Image.open(usr_img).convert("RGBA")
         usr = usr.resize((128, 128), Image.ANTIALIAS)
         background = Image.new("RGBA", size=usr.size, color=(255, 255, 255, 0))
@@ -150,9 +153,7 @@ class Greetings(commands.Cog):
         file = BytesIO()
         bg.save(file, "png")
         file.seek(0)
-        file = disnake.File(fp=file, filename="image.png")
-        await channel.send(file=file)
-        await channel.send(member.mention, delete_after=3)
+        return disnake.File(fp=file, filename="image.png")
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -179,15 +180,24 @@ class Greetings(commands.Cog):
                 return
             member_channel = self.bot.get_channel(wlcm_channel)
             if member_channel:
-                await self.send_img(
+                bg_img = await self.__request_bg(wlcm_img)
+                usr_img = await self.__request_usr(
+                    member.display_avatar.with_size(128).url
+                )
+                gen_img = functools.partial(
+                    self.send_img,
                     channel=member_channel,
                     member=member,
-                    img_url=wlcm_img,
+                    usr_img=usr_img,
+                    bg_img=bg_img,
                     message=wlcm_message,
                     font_style=wlcm_font_style,
                     theme=wlcm_theme,
                     outline=wlcm_outline,
                 )
+                img_file = await self.loop.run_in_executor(None, gen_img)
+                await member_channel.send(file=img_file)
+                await member_channel.send(member.mention, delete_after=3)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -214,16 +224,23 @@ class Greetings(commands.Cog):
                 return
             member_channel = self.bot.get_channel(bye_channel)
             if member_channel:
-                await self.send_img(
+                bg_img = await self.__request_bg(bye_img)
+                usr_img = await self.__request_usr(
+                    member.display_avatar.with_size(128).url
+                )
+                gen_img = functools.partial(
+                    self.send_img,
                     channel=member_channel,
                     member=member,
-                    img_url=bye_img,
+                    usr_img=usr_img,
+                    bg_img=bg_img,
                     message=bye_message,
                     font_style=bye_font_style,
                     theme=bye_theme,
                     outline=bye_outline,
-                    welcome=False,
                 )
+                img_file = await self.loop.run_in_executor(None, gen_img)
+                await member_channel.send(file=img_file)
 
     @commands.slash_command(name="greeter", dm_permission=False)
     async def greeter(self, interaction):
@@ -261,17 +278,28 @@ class Greetings(commands.Cog):
         message: The message to send
         """
         try:
-            await interaction.send("This is how it will look like:")
-            await self.send_img(
+            bg_img = await self.__request_bg(img_url)
+            usr_img = await self.__request_usr(
+                interaction.author.display_avatar.with_size(128).url
+            )
+            gen_img = functools.partial(
+                self.send_img,
                 channel=interaction.channel,  # type: ignore
                 member=interaction.author,
-                img_url=img_url,
+                usr_img=usr_img,
+                bg_img=bg_img,
                 message=message,
-                font_style=font_style,  # type: ignore
+                font_style=font_style,
                 theme=theme,
                 outline=outline,  # type: ignore
-                welcome=feature == "Welcome Channel",
             )
+            img_file = await self.loop.run_in_executor(None, gen_img)
+            await interaction.send(
+                "This is how it will look like:",
+                file=img_file,
+                components=[delete_button],
+            )
+
         except UnidentifiedImageError:
             raise commands.BadArgument("Invalid Image URL")
         if feature == "Welcome Channel":

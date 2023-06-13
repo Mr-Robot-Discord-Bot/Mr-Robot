@@ -164,7 +164,7 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="addrole")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_roles=True)
+        commands.is_owner(), commands.has_permissions(manage_roles=True)  # type: ignore
     )
     async def slash_addrole(
         self,
@@ -203,7 +203,7 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="removerole")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_roles=True)
+        commands.is_owner(), commands.has_permissions(manage_roles=True)  # type: ignore
     )
     async def slash_rmrole(self, interaction, user: disnake.Member, role: disnake.Role):
         """
@@ -279,8 +279,13 @@ class Moderation(commands.Cog):
         return sorted_dict
 
     @user.sub_command(name="ban")
-    @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))
-    async def slash_ban(self, interaction, member: disnake.Member, reason=None):
+    @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))  # type: ignore
+    async def slash_ban(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        member: disnake.Member,
+        reason=None,
+    ):
         """
         Bans the member
 
@@ -289,8 +294,6 @@ class Moderation(commands.Cog):
         member : Member to ban
         reason : Reason for ban
         """
-        await interaction.response.defer()
-        await member.ban(clean_history_duration=604800, reason=reason)
         try:
             await member.send(
                 embed=Embeds.emb(
@@ -304,13 +307,14 @@ class Moderation(commands.Cog):
         await interaction.send(
             components=[delete_button],
             embed=Embeds.emb(
-                Embeds.red, "Banned", f"Banned: {member} Reason: {reason}"
+                Embeds.red, "Banned", f"Banned: {member.mention} Reason: {reason}"
             ),
         )
+        await member.ban(clean_history_duration=604800, reason=reason)
 
     @user.sub_command(name="timeout")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(moderate_members=True)
+        commands.is_owner(), commands.has_permissions(moderate_members=True)  # type: ignore
     )
     async def slash_edit(
         self,
@@ -359,7 +363,7 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="kick")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(kick_members=True)
+        commands.is_owner(), commands.has_permissions(kick_members=True)  # type: ignore
     )
     async def slash_kick(self, interaction, member: disnake.Member, reason=None):
         """
@@ -370,8 +374,6 @@ class Moderation(commands.Cog):
         member : Member to kick
         reason : Reason for kick
         """
-        await interaction.response.defer()
-        await member.kick(reason=reason)
 
         try:
             await member.send(
@@ -386,13 +388,14 @@ class Moderation(commands.Cog):
         await interaction.send(
             components=[delete_button],
             embed=Embeds.emb(
-                Embeds.red, "Kicked", f"Kicked: {member} Reason: {reason}"
+                Embeds.red, "Kicked", f"Kicked: {member.mention} Reason: {reason}"
             ),
         )
+        await member.kick(reason=reason)
 
     @user.sub_command(name="dm")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(moderate_members=True)
+        commands.is_owner(), commands.has_permissions(moderate_members=True)  # type: ignore
     )
     async def slash_dm_custom(
         self, interaction, member: disnake.Member, title: str, message: str
@@ -421,7 +424,7 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="warn")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(moderate_members=True)
+        commands.is_owner(), commands.has_permissions(moderate_members=True)  # type: ignore
     )
     async def slash_warn(self, interaction, member: disnake.Member, message: str):
         """
@@ -449,7 +452,7 @@ class Moderation(commands.Cog):
 
     @user.sub_command(name="roleall")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
     )
     async def roleall(
         self,
@@ -502,7 +505,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="clear")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_messages=True)
+        commands.is_owner(), commands.has_permissions(manage_messages=True)  # type: ignore
     )
     async def slash_clear(self, interaction, amount=1):
         """
@@ -520,7 +523,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="lock")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def lock(
         self,
@@ -548,7 +551,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="unlock")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def unlock(
         self,
@@ -576,7 +579,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="hide")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def hide(
         self,
@@ -604,7 +607,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="unhide")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def unhide(
         self,
@@ -632,7 +635,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="nuke")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def nuke(
         self, interaction: disnake.CommandInteraction, channel: disnake.TextChannel
@@ -669,7 +672,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="delete")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def delete(
         self, interaction: disnake.CommandInteraction, channel: disnake.TextChannel
@@ -701,7 +704,7 @@ class Moderation(commands.Cog):
 
     @server.sub_command(name="clone")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)
+        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def clone(
         self, interaction: disnake.CommandInteraction, channel: disnake.TextChannel
