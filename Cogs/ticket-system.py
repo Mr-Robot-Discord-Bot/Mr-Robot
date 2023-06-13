@@ -10,12 +10,6 @@ from disnake.ext import commands
 from utils import Embeds
 
 logger = logging.getLogger(__name__)
-delete_channel_button: disnake.ui.Button = disnake.ui.Button(
-    emoji="🗑️",
-    style=disnake.ButtonStyle.red,
-    custom_id="delete_channel",
-    label="Close Ticket",
-)
 
 
 class Configs(Enum):
@@ -295,13 +289,14 @@ class TicketSystem(commands.Cog):
     async def on_button_click(self, interaction: disnake.MessageInteraction):
         if not interaction.guild or not interaction.component.custom_id:
             return
-        elif interaction.component.custom_id == "delete_channel":
+        elif interaction.component.custom_id.startswith("delete_channel"):
+            user_id = int(interaction.component.custom_id.split("-")[-1])
             await self.bot.db.execute(
                 """
                     delete from ticket_status where
                     guild_id = ? and user_id = ? and channel_id = ?
                     """,
-                (interaction.guild.id, interaction.author.id, interaction.channel.id),
+                (interaction.guild.id, user_id, interaction.channel.id),
             )
             await self.bot.db.commit()
             await interaction.channel.delete()  # type: ignore
@@ -393,7 +388,14 @@ class TicketSystem(commands.Cog):
                     .set_footer(
                         text=interaction.guild.name, icon_url=interaction.guild.icon
                     ),
-                    components=[delete_channel_button],
+                    components=[
+                        disnake.ui.Button(
+                            emoji="🗑️",
+                            style=disnake.ButtonStyle.red,
+                            custom_id=f"delete_channel-{interaction.author.id}",
+                            label="Close Ticket",
+                        )
+                    ],
                 )
                 await interaction.send(
                     embed=Embeds.emb(
