@@ -56,13 +56,18 @@ class MrRobot(commands.AutoShardedInteractionBot):
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""
-        await self.wait_until_ready()
-        await self.pool.create_node(
-            host="lavalink",
-            port=2333,
-            label="MAIN",
-            password="youshallnotpass",
-        )
+        while True:
+            try:
+                await self.wait_until_ready()
+                await self.pool.create_node(
+                    host="lavalink",
+                    port=2333,
+                    label="MAIN",
+                    password="youshallnotpass",
+                )
+                break
+            except Exception:
+                logger.warn("Trying to reload player")
 
     def load_extensions(self):
         """Loads extensions"""
