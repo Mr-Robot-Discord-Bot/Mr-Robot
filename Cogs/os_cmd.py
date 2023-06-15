@@ -3,12 +3,13 @@ import os
 import subprocess
 
 import disnake
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 
 from utils import Embeds, delete_button
 
-REPO_PATH = "mr-robot"
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
+REPO_PATH = REPO_URL.split("/")[-1].split(".")[0]
+DB_REPO = os.getenv("db_repo")
 logger = logging.getLogger(__name__)
 
 
@@ -17,26 +18,50 @@ class Oscmd(commands.Cog):
         self.bot = bot
         logger.info("Oscmd Cog Loaded")
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        subprocess.run("chmod 600 .ssh/id_rsa", shell=True)
+        subprocess.run(
+            "git config --global user.email 'mr-robot@gmail.com'", shell=True
+        )
+        subprocess.run("git config --global user.name 'Mr Robot'", shell=True)
+        self.push_db.start()
+
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
     async def owner(self, interaction):
         """Bot Owner Commands"""
         ...
 
-    @owner.sub_command(name="db", description="Runs SQL Query")
-    async def db(self, interaction, query):
+    @tasks.loop(hours=24)
+    async def push_db(self):
+        if not DB_REPO:
+            logger.warning("DB_REPO not set, Hence db won't update")
+            return
+        elif not os.path.exists(".ssh/id_rsa.pub"):
+            logger.warning("SSH key not found, Hence db won't update")
+            return
+        logger.info("Pushing DB")
         try:
-            await self.bot.db.execute(query)
-            await self.bot.db.commit()
+            file = DB_REPO.split("/")[-1].split(".")[0] if DB_REPO else None
+            subprocess.run(f"rm -rf {file}; git clone {DB_REPO}", shell=True)
+            subprocess.run(f"cp mr-robot.db {file}", shell=True)
+            subprocess.run(f"cd {file} && git add .", shell=True)
+            subprocess.run(f"cd {file} && git commit -m 'Auto Commit'", shell=True)
+            subprocess.run(f"cd {file} && git push", shell=True)
+        except Exception as error:
+            logger.exception(error, exc_info=True)
+
+    @owner.sub_command(name="backup", description="Backup the database")
+    async def backup(self, interaction: disnake.GuildCommandInteraction):
+        try:
+            await self.push_db()
             await interaction.send(
-                embed=Embeds.emb(Embeds.green, "Query Executed"),
+                embed=Embeds.emb(Embeds.green, "Backup Completed"),
                 components=[delete_button],
             )
-        except Exception as e:
-            await interaction.send(
-                embed=Embeds.emb(Embeds.red, "Error", f"```{e}```"),
-                components=[delete_button],
-            )
+        except Exception as error:
+            raise commands.CommandError(str(error))
 
     @owner.sub_command(name="cmd", description="Runs Console Commands")
     async def cmd(self, interaction, command_string):
@@ -70,7 +95,9 @@ class Oscmd(commands.Cog):
         os.system("python bot.py")
 
     @owner.sub_command(name="link")
-    async def link(self, interaction, id, expire=0, number_of_uses=1):
+    async def link(
+        self, interaction: disnake.CommandInteraction, id, expire=0, number_of_uses=1
+    ):
         """
         Generate invite link for a server
 
