@@ -9,10 +9,7 @@ from utils import Embeds, delete_button
 
 REPO_PATH = "mr-robot"
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
-SSH_KEY_PRIV = os.getenv("git_ssh_key_priv")
-SSH_KEY_PUB = os.getenv("git_ssh_key_pub")
 DB_REPO = os.getenv("db_repo")
-KNOWN_HOST = os.getenv("git_ssh_known_host")
 logger = logging.getLogger(__name__)
 
 
@@ -23,17 +20,7 @@ class Oscmd(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        # Setup GitHub SSH Key
-        subprocess.run("mkdir .ssh", shell=True)
-        with open(".ssh/id_rsa", "w") as piv:
-            piv.write(SSH_KEY_PRIV)  # type: ignore
-        with open(".ssh/id_rsa.pub", "w") as pub:
-            pub.write(SSH_KEY_PUB)  # type: ignore
-        with open(".ssh/known_hosts", "w") as kh:
-            kh.write(KNOWN_HOST)  # type: ignore
         subprocess.run("chmod 600 .ssh/id_rsa", shell=True)
-        subprocess.run("chmod 600 .ssh/id_rsa.pub", shell=True)
-        subprocess.run("chmod 600 .ssh/known_hosts", shell=True)
         subprocess.run(
             "git config --global user.email 'mr-robot@gmail.com'", shell=True
         )
@@ -49,11 +36,12 @@ class Oscmd(commands.Cog):
     @owner.sub_command(name="pull", description="Pulls the code from github")
     async def push_db(self, interaction):
         logger.info("Pushing DB")
+        file = DB_REPO.split("/")[-1].split(".")[0] if DB_REPO else None
         subprocess.run(f"git clone {DB_REPO} db_repo", shell=True)
-        subprocess.run("cp mr-robot.db db_repo", shell=True)
-        subprocess.run("git -C db_repo add .", shell=True)
-        subprocess.run("git -C db_repo commit -m 'Auto Commit'", shell=True)
-        subprocess.run("git -C db_repo push", shell=True)
+        subprocess.run(f"cp mr-robot.db {file}", shell=True)
+        subprocess.run(f"cd {file} && git add .", shell=True)
+        subprocess.run(f"cd {file} && git commit -m 'Auto Commit'", shell=True)
+        subprocess.run(f"cd {file} && git push", shell=True)
         await interaction.send("done", components=[delete_button])
 
     @owner.sub_command(name="db", description="Runs SQL Query")
