@@ -20,11 +20,10 @@ MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can u
 ## Installation:
 
 ```bash
-docker run -itd ghcr.io/mr-robot-discord-bot/mr-robot:latest \
+docker run -itd ghcr.io/mr-robot-discord-bot/mr-robot:latest -v ~/.ssh:/root/.ssh \
 <BOT_TOKEN> \
 <TRAFFIC_LOGGER_WEBHOOK_URL>\
 <OPENAI_API_KEY> \
-<MONGODB_URI>
 ```
 
 ## Contributing:

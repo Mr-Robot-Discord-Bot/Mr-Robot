@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import subprocess
 import time
 from typing import Any
 
@@ -25,6 +26,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(module)-15s - %(name)s - %(message)s",
     handlers=[console_handler, file_handler],
 )
+DB_REPO = os.getenv("db_repo")
 logger = logging.getLogger(__name__)
 
 
@@ -77,6 +79,12 @@ load_dotenv()
 
 async def main():
     global PROXY
+    try:
+        subprocess.run(f"git clone {DB_REPO}", shell=True, check=True)
+        file = DB_REPO.split("/")[-1].split(".")[0] if DB_REPO else None
+        subprocess.run(f"mv {file}/mr-robot.db .", shell=True, check=True)
+    except subprocess.CalledProcessError:
+        logger.warning("Unable to clone db repo")
     async with aiohttp.ClientSession() as session:
         client = MrRobot(
             proxy=PROXY,
