@@ -3,12 +3,16 @@ import os
 import subprocess
 
 import disnake
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 
 from utils import Embeds, delete_button
 
 REPO_PATH = "mr-robot"
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
+SSH_KEY_PRIV = os.getenv("git_ssh_key_priv")
+SSH_KEY_PUB = os.getenv("git_ssh_key_pub")
+DB_REPO = os.getenv("db_repo")
+KNOWN_HOST = os.getenv("git_ssh_known_host")
 logger = logging.getLogger(__name__)
 
 
@@ -17,11 +21,40 @@ class Oscmd(commands.Cog):
         self.bot = bot
         logger.info("Oscmd Cog Loaded")
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        # Setup GitHub SSH Key
+        subprocess.run("mkdir .ssh", shell=True)
+        with open(".ssh/id_rsa", "w") as piv:
+            piv.write(SSH_KEY_PRIV)  # type: ignore
+        with open(".ssh/id_rsa.pub", "w") as pub:
+            pub.write(SSH_KEY_PUB)  # type: ignore
+        with open(".ssh/known_hosts", "w") as kh:
+            kh.write(KNOWN_HOST)  # type: ignore
+        subprocess.run("chmod 600 .ssh/id_rsa", shell=True)
+        subprocess.run("chmod 600 .ssh/id_rsa.pub", shell=True)
+        subprocess.run("chmod 600 .ssh/known_hosts", shell=True)
+        subprocess.run(
+            "git config --global user.email 'mr-robot@gmail.com'", shell=True
+        )
+        subprocess.run("git config --global user.name 'Mr Robot'", shell=True)
+
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
     async def owner(self, interaction):
         """Bot Owner Commands"""
         ...
+
+    # @tasks.loop(hours=1)
+    @owner.sub_command(name="pull", description="Pulls the code from github")
+    async def push_db(self, interaction):
+        logger.info("Pushing DB")
+        subprocess.run(f"git clone {DB_REPO} db_repo", shell=True)
+        subprocess.run("cp mr-robot.db db_repo", shell=True)
+        subprocess.run("git -C db_repo add .", shell=True)
+        subprocess.run("git -C db_repo commit -m 'Auto Commit'", shell=True)
+        subprocess.run("git -C db_repo push", shell=True)
+        await interaction.send("done", components=[delete_button])
 
     @owner.sub_command(name="db", description="Runs SQL Query")
     async def db(self, interaction, query):
