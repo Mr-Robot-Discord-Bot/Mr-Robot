@@ -21,7 +21,7 @@ MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can u
 
 Firstly, edit docker-compose.yaml then execute the following command
 ```bash
-docker-compose pull; docker-compose up -d
+docker-compose pull && docker-compose up -d --force-recreate
 ```
 
 ## Contributing:
