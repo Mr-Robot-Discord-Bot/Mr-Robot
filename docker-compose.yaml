@@ -25,7 +25,11 @@ services:
     <<: *restart_policy
     image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
     container_name: mr-robot
-    command: <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <Database Repository>
+    command:
+      - <BOT_TOKEN>
+      - <TRAFFIC_LOGGER_WEBHOOK_URL>
+      - <OPENAI_API_KEY>
+      - <DATABASE REPOSITORY>
     volumes:
       - path_to/.ssh:/root/.ssh
     networks:
