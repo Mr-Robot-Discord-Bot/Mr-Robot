@@ -7,23 +7,21 @@ MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can u
 ## Features:
 
 - Custom Image Greeter
-- Advance Moderation
+- Advance Moderation commands
 - Cool NSFW commands
-- Meme command
 - Music Player
-- Google Translation
+- Google Translator
 - Create Custom Embed
 - Ai Text Generation
 - Ai Image Generation
-- Miscs
+- Advance Ticket System
+- Temporary Role
 
 ## Installation:
 
+Firstly, edit docker-compose.yaml then execute the following command
 ```bash
-docker run -itd ghcr.io/mr-robot-discord-bot/mr-robot:latest -v ~/.ssh:/root/.ssh \
-<BOT_TOKEN> \
-<TRAFFIC_LOGGER_WEBHOOK_URL>\
-<OPENAI_API_KEY> \
+docker-compose pull; docker-compose up -d
 ```
 
 ## Contributing:

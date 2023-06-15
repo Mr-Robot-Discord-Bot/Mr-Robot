@@ -25,7 +25,9 @@ services:
     <<: *restart_policy
     image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
     container_name: mr-robot
-    command: <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <MONGODB_URI>
+    command: <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <Database Repository>
+    volumes:
+      - path_to/.ssh:/root/.ssh
     networks:
         - lavalink
     depends_on:
