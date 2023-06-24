@@ -56,6 +56,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""
+        exp_pow = 1
         while True:
             try:
                 await self.wait_until_ready()
@@ -67,7 +68,9 @@ class MrRobot(commands.AutoShardedInteractionBot):
                 )
                 break
             except Exception:
-                logger.warn("Trying to reload player")
+                await asyncio.sleep(2**exp_pow)
+                exp_pow += 1
+                logger.warn(f"Trying to reload player after {2**exp_pow} seconds")
 
     def load_extensions(self):
         """Loads extensions"""

@@ -190,7 +190,7 @@ class TicketSystem(commands.Cog):
             await interaction.send(
                 embed=Embeds.emb(
                     Embeds.red,
-                    "Message is not from the bot!",
+                    "Message is not from the me!",
                     "Use `/embed` to create one",
                 )
             )
@@ -287,6 +287,32 @@ class TicketSystem(commands.Cog):
                 color=color,
             )
         )
+
+    @commands.Cog.listener()
+    async def on_member_remove(self, member: disnake.Member):
+        result = await (
+            await self.bot.db.execute(
+                """
+                                            select channel_id from ticket_status
+                                            where guild_id = ? and user_id = ?
+                                            """,
+                (member.guild.id, member.id),
+            )
+        ).fetchone()
+        if result:
+            (channel_id,) = result
+            logger.info(f"Deleting channel {channel_id}")
+            channel = member.guild.get_channel(channel_id)
+            if channel:
+                await channel.delete()
+                await self.bot.db.execute(
+                    """
+                                        delete from ticket_status where
+                                        guild_id = ? and user_id = ? and channel_id = ?
+                                        """,
+                    (member.guild.id, member.id, channel_id),
+                )
+                await self.bot.db.commit()
 
     @commands.Cog.listener()
     async def on_button_click(self, interaction: disnake.MessageInteraction):
