@@ -70,7 +70,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
             except Exception:
                 await asyncio.sleep(2**exp_pow)
                 exp_pow += 1
-                logger.warn(f"Trying to reload player after {2**exp_pow} seconds")
+                logger.warning(f"Trying to reload player after {2**exp_pow} seconds")
 
     def load_extensions(self):
         """Loads extensions"""

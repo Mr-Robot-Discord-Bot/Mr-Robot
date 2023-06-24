@@ -17,6 +17,7 @@ class Oscmd(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         logger.info("Oscmd Cog Loaded")
+        self.first_task = True
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -40,6 +41,10 @@ class Oscmd(commands.Cog):
             return
         elif not os.path.exists(".ssh/id_rsa.pub"):
             logger.warning("SSH key not found, Hence db won't update")
+            return
+        if self.first_task:
+            self.first_task = False
+            logger.info("Skipping Db Push")
             return
         logger.info("Pushing DB")
         try:
