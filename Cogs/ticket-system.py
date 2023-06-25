@@ -299,7 +299,7 @@ class TicketSystem(commands.Cog):
                 (member.guild.id, member.id),
             )
         ).fetchone()
-        logger.info(f"Result: {result}")
+        logger.info(f"Result: {result} for {member.name} -> {member.id}")
         if result:
             (channel_id,) = result
             logger.info(f"Deleting channel {channel_id}")
