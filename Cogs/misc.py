@@ -1,5 +1,6 @@
 import logging
-from typing import Union
+from datetime import datetime
+from typing import Set, Union
 
 import disnake
 from disnake.ext import commands
@@ -126,6 +127,21 @@ class Misc(commands.Cog):
             value=", ".join([role.mention for role in member.roles]),
             inline=False,
         )
+        user_temp_dat = await (
+            await self.bot.db.execute(
+                "select role_id, expiration from temprole where user_id = ? and guild_id = ?",
+                (member.id, interaction.guild.id),
+            )
+        ).fetchall()
+        roles: Set = set()
+        for dat in user_temp_dat:
+            roles.add(interaction.guild.get_role(dat[0]))
+        if roles:
+            embed.add_field(
+                name="Temporary Roles" if len(user_temp_dat) > 1 else "Temporary Role",
+                value="\n".join([f"{interaction.guild.get_role(dat[0]).mention}:crossed_swords:{disnake.utils.format_dt(datetime.fromtimestamp(dat[1]))}" for dat in user_temp_dat]),  # type: ignore
+                inline=False,
+            )
         await interaction.send(embed=embed, components=[delete_button])
 
 

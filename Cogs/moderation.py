@@ -68,7 +68,7 @@ class Moderation(commands.Cog):
             tenure = datetime.datetime.utcnow() + parse_time(duration)
         except ValueError:
             raise commands.BadArgument(
-                "Invalid Duration, try eg: `3 week`, `9 day`, `27 hour`"
+                "Invalid Duration, try eg: `3 week`, `9 day`, `27 hour`, `1 year`"
             )
         expiry = tenure.timestamp()
         await user.add_roles(role)
@@ -99,7 +99,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.green,
                 "Temporarily Role Assigned",
-                f"{user.mention} Has Got  `{role}` Role For `{duration}`!",
+                f"🎊 {user.mention} got {role.mention} for `{duration}` 🎊",
             ),
         )
         try:
@@ -124,20 +124,23 @@ class Moderation(commands.Cog):
         ).fetchall()
         for row in rows:
             (guild_id, user_id, role_id, expiration) = row
+            expiration = datetime.datetime.fromtimestamp(expiration)
             guild = self.bot.get_guild(guild_id)
             user = guild.get_member(user_id)
             role = disnake.utils.get(guild.roles, id=role_id)
             if not guild or not role:
                 continue
             elif not user:
+                logger.info(f"User not found {user_id} Deleting it!")
                 await self.bot.db.execute(
                     """
                     DELETE FROM temprole WHERE guild_id = ? AND user_id = ?
                     """,
                     (guild_id, user_id),
                 )
+                await self.bot.db.commit()
                 continue
-            if expiration <= datetime.datetime.utcnow().timestamp():
+            if expiration <= datetime.datetime.utcnow():
                 logger.info(f"Removing {role} from {user}")
                 await user.remove_roles(role)
                 await self.bot.db.execute(

@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 
 def parse_time(duration: str):
     PATTERNS = {
-        "seconds": r"(\d+)\s*(?:seconds?|secs?|s)\b",
-        "minutes": r"(\d+)\s*(?:minutes?|mins?|m)\b",
-        "hours": r"(\d+)\s*(?:hours?|hrs?|h)\b",
-        "days": r"(\d+)\s*(?:days?|day)\b",
-        "weeks": r"(\d+)\s*(?:weeks?|wk|w)\b",
-        "months": r"(\d+)\s*(?:months?)\b",
+        "seconds": r"(?i)(\d+)\s*(?:seconds?|secs?|s)\b",
+        "minutes": r"(?i)(\d+)\s*(?:minutes?|mins?|m)\b",
+        "hours": r"(?i)(\d+)\s*(?:hours?|hrs?|h)\b",
+        "days": r"(?i)(\d+)\s*(?:days?|d)\b",
+        "years": r"(?i)(\d+)\s*(?:years?|yrs?|y)\b",
+        "weeks": r"(?i)(\d+)\s*(?:weeks?|wks?|w)\b",
+        "months": r"(?i)(\d+)\s*(?:months?|mnths?|mons?)\b",
     }
     result = dict.fromkeys(PATTERNS, 0)
 
@@ -39,8 +40,8 @@ def parse_time(duration: str):
         return datetime.timedelta(
             seconds=result["seconds"],
             minutes=result["minutes"],
-            days=result["days"],
-            weeks=result["weeks"] + result["months"] * 4,
+            days=result["days"] + result["months"] * 30 + result["years"] * 365,
+            weeks=result["weeks"],
             hours=result["hours"],
         )
     keys = re.findall(r"\d+\s*\S+", duration)
