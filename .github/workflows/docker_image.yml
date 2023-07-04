@@ -1,6 +1,10 @@
 name: Build and push Docker image to GHCR
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
 
 jobs:
   build-and-push:
