@@ -2,7 +2,7 @@ import logging
 import random
 from datetime import datetime
 from textwrap import shorten
-from typing import Dict, Generator, List, Set
+from typing import Dict, Generator, List, Set, Union
 
 import aiohttp
 import disnake
