@@ -2,7 +2,7 @@ import logging
 import random
 from datetime import datetime
 from textwrap import shorten
-from typing import Dict, Generator, List, Set, Union
+from typing import Dict, Generator, List, Set
 
 import aiohttp
 import disnake
@@ -320,127 +320,127 @@ class Fun(commands.Cog):
                 ephemeral=True,
             )
 
-    # @slash_nsfw.sub_command()
-    # async def reddit(
-    #     self,
-    #     interaction: disnake.CommandInteraction,
-    #     search: str,
-    #     amount: commands.Range[1, 10] = 1,  # type: ignore
-    # ):
-    #     """
-    #     Loads content from reddit.com
+    @slash_nsfw.sub_command()
+    async def reddit(
+        self,
+        interaction: disnake.CommandInteraction,
+        search: str,
+        amount: commands.Range[1, 10] = 1,  # type: ignore
+    ):
+        """
+        Loads content from reddit.com
 
-    #     Parameters
-    #     ----------
-    #     search: What to search?
-    #     amount: How much?
-    #     """
-    #     await interaction.send(
-    #         embed=Embeds.emb(
-    #             Embeds.blue,
-    #             f"Searching {search}",
-    #             "Please wait while we search for your content",
-    #         )
-    #     )
-    #     URL = (
-    #         f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
-    #         f"include_over_18=True&type=link"
-    #     )
-    #     if search not in (await self.reddit_autocomp(interaction, name=search)):
-    #         URL = (
-    #             "https://www.reddit.com/r/porn_gifs/search.json"
-    #             "?raw_json=1&limit=100&include_over_18=True&type=link"
-    #             f"&q={search}"
-    #         )
-    #     data = await self.bot._request(URL)
-    #     links_list = data["data"]["children"]
-    #     if not links_list:
-    #         await interaction.send(
-    #             "No Results Found, Try something else :face_holding_back_tears:",
-    #             ephemeral=True,
-    #         )
-    #     random.shuffle(links_list)
-    #     urls = set()
-    #     for count, data in enumerate(links_list):
-    #         if count >= amount:  # type: ignore
-    #             break
+        Parameters
+        ----------
+        search: What to search?
+        amount: How much?
+        """
+        await interaction.send(
+            embed=Embeds.emb(
+                Embeds.blue,
+                f"Searching {search}",
+                "Please wait while we search for your content",
+            )
+        )
+        URL = (
+            f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
+            f"include_over_18=True&type=link"
+        )
+        if search not in (await self.reddit_autocomp(interaction, name=search)):
+            URL = (
+                "https://www.reddit.com/r/porn_gifs/search.json"
+                "?raw_json=1&limit=100&include_over_18=True&type=link"
+                f"&q={search}"
+            )
+        data = await self.bot._request(URL)
+        links_list = data["data"]["children"]
+        if not links_list:
+            await interaction.send(
+                "No Results Found, Try something else :face_holding_back_tears:",
+                ephemeral=True,
+            )
+        random.shuffle(links_list)
+        urls = set()
+        for count, data in enumerate(links_list):
+            if count >= amount:  # type: ignore
+                break
 
-    #         elif data["data"]["is_video"]:
-    #             url = data["data"]["media"]["reddit_video"]["fallback_url"].replace(
-    #                 "?source=fallback", ""
-    #             )
+            elif data["data"]["is_video"]:
+                url = data["data"]["media"]["reddit_video"]["fallback_url"].replace(
+                    "?source=fallback", ""
+                )
 
-    #         elif data["data"].get("is_gallery"):
-    #             url = str("\n".join({data for data in data["data"]["media_metadata"]}))
+            elif data["data"].get("is_gallery"):
+                url = str("\n".join({data for data in data["data"]["media_metadata"]}))
 
-    #         elif "redgifs.com" in data["data"]["url"]:
-    #             url = data["data"]["url_overridden_by_dest"]
+            elif "redgifs.com" in data["data"]["url"]:
+                url = data["data"]["url_overridden_by_dest"]
 
-    #         elif data["data"]["url"].endswith(
-    #             (
-    #                 ".gifv",
-    #                 ".mp4",
-    #                 ".webm",
-    #                 ".gif",
-    #                 ".png",
-    #                 ".jpg",
-    #                 ".jpeg",
-    #                 ".mov",
-    #                 ".mkv",
-    #                 "?source=fallback",
-    #             )
-    #         ):
-    #             url = data["data"]["url_overridden_by_dest"].replace(
-    #                 "?source=fallback", ""
-    #             )
-    #         else:
-    #             amount += 1  # type: ignore
-    #             continue
+            elif data["data"]["url"].endswith(
+                (
+                    ".gifv",
+                    ".mp4",
+                    ".webm",
+                    ".gif",
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".mov",
+                    ".mkv",
+                    "?source=fallback",
+                )
+            ):
+                url = data["data"]["url_overridden_by_dest"].replace(
+                    "?source=fallback", ""
+                )
+            else:
+                amount += 1  # type: ignore
+                continue
 
-    #         if not url.startswith("http"):
-    #             amount += 1  # type: ignore
-    #             continue
+            if not url.startswith("http"):
+                amount += 1  # type: ignore
+                continue
 
-    #         urls.add(url)
-    #     if not urls:
-    #         await interaction.edit_original_response(
-    #             embed=Embeds.emb(
-    #                 Embeds.red,
-    #                 f"No Result Found for `{search}`",
-    #                 "Try something else :face_holding_back_tears:",
-    #             )
-    #         )
-    #         return
-    #     for url in urls:
-    #         await interaction.channel.send(url)
-    #     await interaction.edit_original_response(
-    #         embed=Embeds.emb(
-    #             Embeds.green,
-    #             "Search Completed",
-    #             f"Showing {len(urls)} results for `{search}`",
-    #         )
-    #     )
+            urls.add(url)
+        if not urls:
+            await interaction.edit_original_response(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    f"No Result Found for `{search}`",
+                    "Try something else :face_holding_back_tears:",
+                )
+            )
+            return
+        for url in urls:
+            await interaction.channel.send(url)
+        await interaction.edit_original_response(
+            embed=Embeds.emb(
+                Embeds.green,
+                "Search Completed",
+                f"Showing {len(urls)} results for `{search}`",
+            )
+        )
 
-    # @reddit.autocomplete("search")
-    # async def reddit_autocomp(self, interaction, name: str) -> Union[Set[str], None]:
-    #     name = name.lower()
-    #     url = (
-    #         "https://www.reddit.com/api/search_reddit_names.json?"
-    #         f"query={name or 'porn'}&include_over_18=True"
-    #     )
-    #     data = await self.bot._request(url)
-    #     return set(name for name in data["names"])
+    @reddit.autocomplete("search")
+    async def reddit_autocomp(self, interaction, name: str) -> Union[Set[str], None]:
+        name = name.lower()
+        url = (
+            "https://www.reddit.com/api/search_reddit_names.json?"
+            f"query={name or 'porn'}&include_over_18=True"
+        )
+        data = await self.bot._request(url)
+        return set(name for name in data["names"])
 
-    # @commands.slash_command(name="meme", dm_permission=False)
-    # async def slash_meme(self, interaction, amount: int = 1):
-    #     """
-    #     Shows You Memes
+    @commands.slash_command(name="meme", dm_permission=False)
+    async def slash_meme(self, interaction, amount: int = 1):
+        """
+        Shows You Memes
 
-    #     Parameters
-    #     ----------
-    #     amount: Amount of memes you want to see
-    #     """
-    #     await self.reddit(interaction, search="meme", amount=amount)
+        Parameters
+        ----------
+        amount: Amount of memes you want to see
+        """
+        await self.reddit(interaction, search="meme", amount=amount)
 
 
 def setup(client: commands.Bot):
