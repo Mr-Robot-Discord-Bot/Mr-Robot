@@ -34,7 +34,7 @@ class Oscmd(commands.Cog):
         """Bot Owner Commands"""
         ...
 
-    @tasks.loop(hours=24)
+    @tasks.loop(hours=1)
     async def push_db(self):
         if not DB_REPO:
             logger.warning("DB_REPO not set, Hence db won't update")
