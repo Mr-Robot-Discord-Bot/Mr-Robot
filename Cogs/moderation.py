@@ -510,17 +510,28 @@ class Moderation(commands.Cog):
     @commands.check_any(
         commands.is_owner(), commands.has_permissions(manage_messages=True)  # type: ignore
     )
-    async def slash_clear(self, interaction, amount=1):
+    async def slash_clear(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        amount: int = 1,
+        user: Optional[disnake.User] = None,
+    ):
         """
         Deletes the messages
 
         Parameters
         ----------
-        amount : Amount of messages to delete
+        amount: Amount of messages to check for deletion
+        user: User to delete messages from
         """
-        await interaction.channel.purge(limit=int(amount))
+        await interaction.response.defer(ephemeral=True)
+        deleted_msg = await interaction.channel.purge(
+            limit=int(amount),  # type: ignore
+            check=(lambda u: u.author.id == user.id) if user else (lambda _: True),
+            bulk=True,
+        )
         await interaction.send(
-            embed=Embeds.emb(Embeds.yellow, f"{amount} message deleted"),
+            embed=Embeds.emb(Embeds.yellow, f"{len(deleted_msg)} message deleted"),
             ephemeral=True,
         )
 
@@ -532,7 +543,7 @@ class Moderation(commands.Cog):
         self,
         interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: Optional[disnake.Role] = None,
+        member_or_role: Optional[Union[disnake.Role, disnake.Member]] = None,
     ):
         """
         Locks out the channel from messaging
@@ -540,15 +551,16 @@ class Moderation(commands.Cog):
         Parameters
         ----------
         channel: Channel to lock
-        role: Lock channel for role
+        member_or_role: Lock channel for role or member
         """
         await channel.set_permissions(
-            role or interaction.guild.default_role, send_messages=False
+            member_or_role or interaction.guild.default_role, send_messages=False
         )
+        msg = f"{channel.mention} has been locked !"
+        if member_or_role:
+            msg = f"{channel.mention} has been locked for {member_or_role.mention} !"
         await interaction.send(
-            embed=Embeds.emb(
-                Embeds.red, "Locked", f"{channel.mention} has been locked!"
-            ),
+            embed=Embeds.emb(Embeds.red, "Locked", msg),
             components=[delete_button],
         )
 
@@ -560,7 +572,7 @@ class Moderation(commands.Cog):
         self,
         interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: Optional[disnake.Role] = None,
+        member_or_role: Optional[Union[disnake.Role, disnake.Member]] = None,
     ):
         """
         Unlocks out the channel from messaging
@@ -568,15 +580,16 @@ class Moderation(commands.Cog):
         Parameters
         ----------
         channel: Channel to unlock
-        role: Unlock channel for role
+        member_or_role: Unlock channel for role or member
         """
         await channel.set_permissions(
-            role or interaction.guild.default_role, send_messages=True
+            member_or_role or interaction.guild.default_role, send_messages=True
         )
+        msg = f"{channel.mention} has been unlocked !"
+        if member_or_role:
+            msg = f"{channel.mention} has been unlocked for {member_or_role.mention} !"
         await interaction.send(
-            embed=Embeds.emb(
-                Embeds.green, "Unlocked", f"{channel.mention} has been unlocked!"
-            ),
+            embed=Embeds.emb(Embeds.green, "Unlocked", msg),
             components=[delete_button],
         )
 
@@ -588,7 +601,7 @@ class Moderation(commands.Cog):
         self,
         interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: Optional[disnake.Role] = None,
+        member_or_role: Optional[Union[disnake.Role, disnake.Member]] = None,
     ):
         """
         Hides the channel
@@ -596,15 +609,16 @@ class Moderation(commands.Cog):
         Parameters
         ----------
         channel: Channel to hide
-        role: Hide channel for role
+        member_or_role: Hide channel for role or member
         """
         await channel.set_permissions(
-            role or interaction.guild.default_role, view_channel=False
+            member_or_role or interaction.guild.default_role, view_channel=False
         )
+        msg = f"{channel.mention} has been hidden !"
+        if member_or_role:
+            msg = f"{channel.mention} has been hidden for {member_or_role.mention} !"
         await interaction.send(
-            embed=Embeds.emb(
-                Embeds.red, "Hidden", f"{channel.mention} has been hidden!"
-            ),
+            embed=Embeds.emb(Embeds.red, "Hidden", msg),
             components=[delete_button],
         )
 
@@ -616,7 +630,7 @@ class Moderation(commands.Cog):
         self,
         interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        role: Optional[disnake.Role] = None,
+        member_or_role: Optional[Union[disnake.Role, disnake.Member]] = None,
     ):
         """
         Unhides the channel
@@ -624,15 +638,17 @@ class Moderation(commands.Cog):
         Parameters
         ----------
         channel: Channel to unhide
-        role: Unhide channel for role
+        member_or_role: Unhide channel for role or member
         """
         await channel.set_permissions(
-            role or interaction.guild.default_role, view_channel=True
+            member_or_role or interaction.guild.default_role, view_channel=True
         )
+        msg = f"{channel.mention} has been unhidden !"
+        if member_or_role:
+            msg = f"{channel.mention} has been unhidden for {member_or_role.mention} !"
+
         await interaction.send(
-            embed=Embeds.emb(
-                Embeds.green, "Unhidden", f"{channel.mention} has been unhidden!"
-            ),
+            embed=Embeds.emb(Embeds.green, "Unhidden", msg),
             components=[delete_button],
         )
 
