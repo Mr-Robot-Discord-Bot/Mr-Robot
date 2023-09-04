@@ -50,10 +50,13 @@ class Oscmd(commands.Cog):
             return
         elif self.first_task:
             self.first_task = False
-            logger.debug("Skipping Db Push")
+            logger.info("Pulling DB")
+            logger.info("Skipping Db Push")
+            await self.git.pull(path="mr-robot.db")
             return
-        logger.debug("Pushing DB")
+        logger.debug("Pulling DB")
         await self.git.pull(path="mr-robot.db")
+        logger.debug("Pushing DB")
         await self.git.push(file=Path("./mr-robot.db"), commit_msg="chore: auto update")
 
     @owner.sub_command(name="backup", description="Backup the database")
