@@ -4,7 +4,7 @@
 
 MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can use for free in your Discord server.
 
-## Features:
+## Key Features:
 
 - Custom Image Greeter
 - Advance Moderation commands
@@ -16,6 +16,7 @@ MR ROBOT is an advanced, multitasking Discord bot coded in Python that you can u
 - Ai Image Generation
 - Advance Ticket System
 - Temporary Role
+- Use github as db
 
 ## Installation:
 

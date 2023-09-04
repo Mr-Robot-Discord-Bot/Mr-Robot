@@ -1,15 +1,17 @@
+import asyncio
+import io
 import logging
 import os
-import subprocess
+from pathlib import Path
 
 import disnake
 from disnake.ext import commands, tasks
 
+from git_api import Git
 from utils import Embeds, delete_button
 
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
 REPO_PATH = REPO_URL.split("/")[-1].split(".")[0]
-DB_REPO = os.getenv("db_repo")
 logger = logging.getLogger(__name__)
 
 
@@ -18,15 +20,20 @@ class Oscmd(commands.Cog):
         self.bot = bot
         logger.info("Oscmd Cog Loaded")
         self.first_task = True
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        subprocess.run("chmod 600 .ssh/id_rsa", shell=True)
-        subprocess.run(
-            "git config --global user.email 'mr-robot@gmail.com'", shell=True
+        self.token = os.getenv("db_token")
+        self.repo = os.getenv("db_repo")
+        if not self.token or not self.repo:
+            logger.warning("DB_REPO or DB_TOKEN not set, Hence db won't update")
+            return
+        owner, repo = self.repo.split("/")
+        self.git = Git(
+            token=self.token,
+            owner=owner,
+            repo=repo,
+            username="Mr Robot",
+            email="mr_robot@mr_robot_discord_bot.com",
+            client=self.bot.session,
         )
-        subprocess.run("git config --global user.name 'Mr Robot'", shell=True)
-        self.push_db.start()
 
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
@@ -35,32 +42,24 @@ class Oscmd(commands.Cog):
         ...
 
     @tasks.loop(hours=1)
-    async def push_db(self):
-        if not DB_REPO:
-            logger.warning("DB_REPO not set, Hence db won't update")
+    async def pull_push_db(self):
+        if not self.token or not self.repo:
+            logger.warning(
+                "Db info related env vars are not set, Hence db won't update"
+            )
             return
-        elif not os.path.exists(".ssh/id_rsa.pub"):
-            logger.warning("SSH key not found, Hence db won't update")
-            return
-        if self.first_task:
+        elif self.first_task:
             self.first_task = False
-            logger.info("Skipping Db Push")
+            logger.debug("Skipping Db Push")
             return
-        logger.info("Pushing DB")
-        try:
-            file = DB_REPO.split("/")[-1].split(".")[0] if DB_REPO else None
-            subprocess.run(f"rm -rf {file}; git clone {DB_REPO}", shell=True)
-            subprocess.run(f"cp mr-robot.db {file}", shell=True)
-            subprocess.run(f"cd {file} && git add .", shell=True)
-            subprocess.run(f"cd {file} && git commit -m 'Auto Commit'", shell=True)
-            subprocess.run(f"cd {file} && git push", shell=True)
-        except Exception as error:
-            logger.exception(error, exc_info=True)
+        logger.debug("Pushing DB")
+        await self.git.pull(path="mr-robot.db")
+        await self.git.push(file=Path("./mr-robot.db"), commit_msg="chore: auto update")
 
     @owner.sub_command(name="backup", description="Backup the database")
     async def backup(self, interaction: disnake.GuildCommandInteraction):
         try:
-            await self.push_db()
+            await self.pull_push_db()
             await interaction.send(
                 embed=Embeds.emb(Embeds.green, "Backup Completed"),
                 components=[delete_button],
@@ -70,11 +69,13 @@ class Oscmd(commands.Cog):
 
     @owner.sub_command(name="cmd", description="Runs Console Commands")
     async def cmd(self, interaction, command_string):
-        output = subprocess.getoutput(command_string)
+        out = await asyncio.subprocess.create_subprocess_shell(
+            command_string, stdout=asyncio.subprocess.PIPE
+        )
         await interaction.send(
-            embed=Embeds.emb(
-                Embeds.green, "Shell Console", f"```\n{output[:1900]}\n```"
-            ),
+            file=disnake.File(
+                io.BytesIO(await out.stdout.read()), filename="cmd.txt"
+            ),  # type: ignore
             components=[delete_button],
         )
 
