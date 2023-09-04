@@ -34,6 +34,7 @@ class Oscmd(commands.Cog):
             email="mr_robot@mr_robot_discord_bot.com",
             client=self.bot.session,
         )
+        self.pull_push_db.start()
 
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
