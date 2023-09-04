@@ -1,14 +1,14 @@
-import logging
-import io
 import asyncio
+import io
+import logging
 import os
 from pathlib import Path
 
 import disnake
 from disnake.ext import commands, tasks
 
-from utils import Embeds, delete_button
 from git_api import Git
+from utils import Embeds, delete_button
 
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
 REPO_PATH = REPO_URL.split("/")[-1].split(".")[0]
@@ -27,13 +27,13 @@ class Oscmd(commands.Cog):
             return
         owner, repo = self.repo.split("/")
         self.git = Git(
-                token=self.token,
-                owner=owner,
-                repo=repo,
-                username="Mr Robot",
-                email="mr_robot@mr_robot_discord_bot.com",
-                client=self.bot.session
-                )
+            token=self.token,
+            owner=owner,
+            repo=repo,
+            username="Mr Robot",
+            email="mr_robot@mr_robot_discord_bot.com",
+            client=self.bot.session,
+        )
 
     @commands.is_owner()
     @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
@@ -44,7 +44,9 @@ class Oscmd(commands.Cog):
     @tasks.loop(hours=1)
     async def pull_push_db(self):
         if not self.token or not self.repo:
-            logger.warning("Db info related env vars are not set, Hence db won't update")
+            logger.warning(
+                "Db info related env vars are not set, Hence db won't update"
+            )
             return
         elif self.first_task:
             self.first_task = False
@@ -52,7 +54,7 @@ class Oscmd(commands.Cog):
             return
         logger.debug("Pushing DB")
         await self.git.pull(path="mr-robot.db")
-        await self.git.push(file=Path('./mr-robot.db'), commit_msg="chore: auto update")
+        await self.git.push(file=Path("./mr-robot.db"), commit_msg="chore: auto update")
 
     @owner.sub_command(name="backup", description="Backup the database")
     async def backup(self, interaction: disnake.GuildCommandInteraction):
@@ -69,14 +71,15 @@ class Oscmd(commands.Cog):
     async def cmd(self, interaction, command_string):
         out = await asyncio.subprocess.create_subprocess_shell(
             command_string, stdout=asyncio.subprocess.PIPE
-            )
+        )
         await interaction.send(
-                file=disnake.File(
-                    io.BytesIO(await out.stdout.read()), filename="cmd.txt"),  # type: ignore
-                components=[delete_button])
+            file=disnake.File(
+                io.BytesIO(await out.stdout.read()), filename="cmd.txt"
+            ),  # type: ignore
+            components=[delete_button],
+        )
 
-    @owner.sub_command(name="update",
-                       description="Updates the code from gihub")
+    @owner.sub_command(name="update", description="Updates the code from gihub")
     async def update(self, interaction):
         await self.bot.change_presence(
             status=disnake.Status.dnd, activity=disnake.Game(name="Update")

@@ -1,19 +1,28 @@
-from pathlib import Path
-import httpx
-import aiofiles
 import base64
+from pathlib import Path
+
+import aiofiles
+import httpx
 
 
 class Git:
-    def __init__(self, token: str, owner: str, repo: str,
-                 username: str, email: str,
-                 client: httpx.AsyncClient):
+    def __init__(
+        self,
+        token: str,
+        owner: str,
+        repo: str,
+        username: str,
+        email: str,
+        client: httpx.AsyncClient,
+    ):
         self.token = token
         self.owner = owner
         self.repo = repo
         self.username = username
         self.email = email
-        self.base_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/contents"
+        self.base_url = (
+            f"https://api.github.com/repos/{self.owner}/{self.repo}/contents"
+        )
         self.client = client
         self.client.headers.update({"Authorization": f"Bearer {self.token}"})
         self.client.headers.update({"Accept": "application/vnd.github+json"})
@@ -66,6 +75,6 @@ if __name__ == "__main__":
             await git.push(
                 file=Path("test.txt"),
                 commit_msg="test",
-                )
+            )
 
     asyncio.run(main())
