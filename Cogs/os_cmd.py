@@ -5,9 +5,10 @@ import os
 from pathlib import Path
 
 import disnake
+from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
 
-from git_api import Git
+from bot import MrRobot
 from utils import Embeds, delete_button
 
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
@@ -16,24 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 class Oscmd(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: MrRobot):
         self.bot = bot
         logger.info("Oscmd Cog Loaded")
         self.first_task = True
-        self.token = os.getenv("db_token")
-        self.repo = os.getenv("db_repo")
-        if not self.token or not self.repo:
-            logger.warning("DB_REPO or DB_TOKEN not set, Hence db won't update")
-            return
-        owner, repo = self.repo.split("/")
-        self.git = Git(
-            token=self.token,
-            owner=owner,
-            repo=repo,
-            username="Mr Robot",
-            email="mr_robot@mr_robot_discord_bot.com",
-            client=self.bot.session,
-        )
         self.pull_push_db.start()
 
     @commands.is_owner()
@@ -44,21 +31,21 @@ class Oscmd(commands.Cog):
 
     @tasks.loop(hours=1)
     async def pull_push_db(self):
-        if not self.token or not self.repo:
+        if not self.bot.token or not self.bot.repo:
             logger.warning(
                 "Db info related env vars are not set, Hence db won't update"
             )
             return
         elif self.first_task:
             self.first_task = False
-            logger.info("Pulling DB")
             logger.info("Skipping Db Push")
-            await self.git.pull(path="mr-robot.db")
             return
         logger.debug("Pulling DB")
-        await self.git.pull(path="mr-robot.db")
+        await self.bot.git.pull(path="mr-robot.db")
         logger.debug("Pushing DB")
-        await self.git.push(file=Path("./mr-robot.db"), commit_msg="chore: auto update")
+        await self.bot.git.push(
+            file=Path("./mr-robot.db"), commit_msg="chore: auto update"
+        )
 
     @owner.sub_command(name="backup", description="Backup the database")
     async def backup(self, interaction: disnake.GuildCommandInteraction):
@@ -78,8 +65,8 @@ class Oscmd(commands.Cog):
         )
         await interaction.send(
             file=disnake.File(
-                io.BytesIO(await out.stdout.read()), filename="cmd.txt"
-            ),  # type: ignore
+                io.BytesIO(await out.stdout.read()), filename="cmd.txt"  # type: ignore
+            ),
             components=[delete_button],
         )
 
@@ -118,10 +105,16 @@ class Oscmd(commands.Cog):
         number_of_uses : Number of times invite link can be used
         """
         server = self.bot.get_channel(int(id))
+        if (
+            not server
+            or isinstance(server, disnake.Thread)
+            or isinstance(server, PrivateChannel)
+        ):
+            return
         link = await server.create_invite(
             temporary=True, max_age=int(expire), max_uses=int(number_of_uses)
         )
-        await interaction.send(link, components=[delete_button])
+        await interaction.send(link.url, components=[delete_button])
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
     async def reboot(self, interaction):
@@ -134,5 +127,5 @@ class Oscmd(commands.Cog):
         exit()
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Oscmd(client))

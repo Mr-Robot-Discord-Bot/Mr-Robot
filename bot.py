@@ -12,6 +12,7 @@ from aiocache import cached
 from disnake.ext import commands
 from dotenv import load_dotenv
 
+from git_api import Git
 from utils import proxy_generator
 
 proxy_mode = False
@@ -44,6 +45,18 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.start_time = time.time()
         self.session = session
         self.db = db
+        self.token = os.getenv("db_token")
+        self.repo = os.getenv("db_repo")
+        if self.token and self.repo:
+            owner, repo = self.repo.split("/")
+            self.git = Git(
+                token=self.token,
+                owner=owner,
+                repo=repo,
+                username="Mr Robot",
+                email="mr_robot@mr_robot_discord_bot.com",
+                client=session,
+            )
         logger.info("Mr Robot is ready")
 
     @cached(ttl=60 * 60 * 12)
@@ -98,6 +111,7 @@ async def main():
             session=session,
             db=await aiosqlite.connect("mr-robot.db"),
         )
+        await client.git.pull("mr-robot.db")
         client.load_extensions()
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore
