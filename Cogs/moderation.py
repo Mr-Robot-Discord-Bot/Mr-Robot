@@ -726,7 +726,10 @@ class Moderation(commands.Cog):
         commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def clone(
-        self, interaction: disnake.CommandInteraction, channel: disnake.TextChannel
+        self,
+        interaction: disnake.CommandInteraction,
+        channel: disnake.TextChannel,
+        new_channel_name: Optional[str] = None,
     ):
         """
         Clones channel
@@ -734,6 +737,7 @@ class Moderation(commands.Cog):
         Parameters
         ----------
         channel: Channel to clone
+        new_channel_name: Clone channel name
         """
         try:
             await interaction.send(
@@ -742,7 +746,7 @@ class Moderation(commands.Cog):
                 ),
                 components=[delete_button],
             )
-            new_channel = await channel.clone()
+            new_channel = await channel.clone(name=new_channel_name)
             await new_channel.send(
                 embed=Embeds.emb(Embeds.green, "Cloned", "Cloning Done!"),
                 delete_after=10,

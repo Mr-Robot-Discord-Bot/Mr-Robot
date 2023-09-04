@@ -31,7 +31,7 @@ class Oscmd(commands.Cog):
 
     @tasks.loop(hours=1)
     async def pull_push_db(self):
-        if not self.bot.token or not self.bot.repo:
+        if not self.bot.git:
             logger.warning(
                 "Db info related env vars are not set, Hence db won't update"
             )

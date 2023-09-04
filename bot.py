@@ -47,6 +47,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.db = db
         self.token = os.getenv("db_token")
         self.repo = os.getenv("db_repo")
+        self.git = None
         if self.token and self.repo:
             owner, repo = self.repo.split("/")
             self.git = Git(
@@ -111,7 +112,8 @@ async def main():
             session=session,
             db=await aiosqlite.connect("mr-robot.db"),
         )
-        await client.git.pull("mr-robot.db")
+        if client.token and client.repo:
+            await client.git.pull("mr-robot.db")
         client.load_extensions()
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore
