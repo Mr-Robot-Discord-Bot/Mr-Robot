@@ -28,7 +28,7 @@ class Status(commands.Cog):
         exsisting_guilds = await (
             await self.bot.db.execute("select guild_id, name from guilds")
         ).fetchall()
-        logger.info(exsisting_guilds)
+        logger.debug(exsisting_guilds)
         for guild in self.bot.guilds:
             with open("Servers.inf", "a+") as stats:
                 stats.write(
