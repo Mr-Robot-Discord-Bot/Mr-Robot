@@ -29,9 +29,8 @@ services:
       - <BOT_TOKEN>
       - <TRAFFIC_LOGGER_WEBHOOK_URL>
       - <OPENAI_API_KEY>
+      - <DATABASE ACCESS TOKEN>
       - <DATABASE REPOSITORY>
-    volumes:
-      - path_to/.ssh:/root/.ssh
     networks:
         - lavalink
     depends_on:

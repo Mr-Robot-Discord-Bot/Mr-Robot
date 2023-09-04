@@ -19,7 +19,7 @@ class Git:
         self.client.headers.update({"Accept": "application/vnd.github+json"})
         self.client.headers.update({"X-GitHub-Api-Version": "2022-11-28"})
 
-    async def get(self, path: str):
+    async def pull(self, path: str):
         url = f"{self.base_url}/{path}"
         r = await self.client.get(url)
         r.raise_for_status()
@@ -61,7 +61,7 @@ if __name__ == "__main__":
                 email="test@test.com",
                 client=client,
             )
-            await git.get("test.txt")
+            await git.pull("test.txt")
 
             await git.push(
                 file=Path("test.txt"),
