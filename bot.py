@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import subprocess
 import time
 from typing import Any
 
@@ -17,16 +16,21 @@ from utils import proxy_generator
 
 proxy_mode = False
 PROXY = None
+
+file_handler = logging.FileHandler("mr-robot.log", mode="w")
 console_handler = logging.StreamHandler()
-file_handler = logging.FileHandler("mr-robot.log")
+
+file_handler.setLevel(logging.DEBUG)
 console_handler.setLevel(logging.INFO)
-file_handler.setLevel(logging.INFO)
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(module)-15s - %(name)s - %(message)s",
+    level=logging.NOTSET,
+    format="%(levelname)s - %(name)s - %(filename)s - %(module)s - %(funcName)s - %(message)s",
     handlers=[console_handler, file_handler],
 )
-DB_REPO = os.getenv("db_repo")
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("disnake").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -87,12 +91,6 @@ load_dotenv()
 
 async def main():
     global PROXY
-    try:
-        subprocess.run(f"git clone {DB_REPO}", shell=True, check=True)
-        file = DB_REPO.split("/")[-1].split(".")[0] if DB_REPO else None
-        subprocess.run(f"mv {file}/mr-robot.db .", shell=True, check=True)
-    except subprocess.CalledProcessError:
-        logger.warning("Unable to clone db repo")
     async with aiohttp.ClientSession() as session:
         client = MrRobot(
             proxy=PROXY,
