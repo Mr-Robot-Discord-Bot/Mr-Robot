@@ -1,7 +1,8 @@
 import logging
+import io
+import asyncio
 import os
 from pathlib import Path
-import subprocess
 
 import disnake
 from disnake.ext import commands, tasks
@@ -66,15 +67,16 @@ class Oscmd(commands.Cog):
 
     @owner.sub_command(name="cmd", description="Runs Console Commands")
     async def cmd(self, interaction, command_string):
-        output = subprocess.getoutput(command_string)
+        out = await asyncio.subprocess.create_subprocess_shell(
+            command_string, stdout=asyncio.subprocess.PIPE
+            )
         await interaction.send(
-            embed=Embeds.emb(
-                Embeds.green, "Shell Console", f"```\n{output[:1900]}\n```"
-            ),
-            components=[delete_button],
-        )
+                file=disnake.File(
+                    io.BytesIO(await out.stdout.read()), filename="cmd.txt"),  # type: ignore
+                components=[delete_button])
 
-    @owner.sub_command(name="update", description="Updates the code from gihub")
+    @owner.sub_command(name="update",
+                       description="Updates the code from gihub")
     async def update(self, interaction):
         await self.bot.change_presence(
             status=disnake.Status.dnd, activity=disnake.Game(name="Update")
