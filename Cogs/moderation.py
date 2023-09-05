@@ -740,10 +740,11 @@ class Moderation(commands.Cog):
         new_channel_name: Clone channel name
         """
         try:
+            _text = f"Clone for {channel.mention} initiated!"
+            if new_channel_name:
+                _text = f"Clone for {channel.mention} -> {new_channel_name} initiated!"
             await interaction.send(
-                embed=Embeds.emb(
-                    Embeds.yellow, "Clone", f"Clone for {channel.mention} initiated!"
-                ),
+                embed=Embeds.emb(Embeds.yellow, "Clone", _text),
                 components=[delete_button],
             )
             new_channel = await channel.clone(name=new_channel_name)
