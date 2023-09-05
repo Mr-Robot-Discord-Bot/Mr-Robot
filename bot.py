@@ -112,7 +112,8 @@ async def main():
             session=session,
             db=await aiosqlite.connect("mr-robot.db"),
         )
-        if client.token and client.repo:
+        if client.git:
+            logger.info("Pulling DB")
             await client.git.pull("mr-robot.db")
         client.load_extensions()
         try:

@@ -40,8 +40,6 @@ class Oscmd(commands.Cog):
             self.first_task = False
             logger.info("Skipping Db Push")
             return
-        logger.debug("Pulling DB")
-        await self.bot.git.pull(path="mr-robot.db")
         logger.debug("Pushing DB")
         await self.bot.git.push(
             file=Path("./mr-robot.db"), commit_msg="chore: auto update"
