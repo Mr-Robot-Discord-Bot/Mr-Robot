@@ -28,7 +28,7 @@ class Git:
         self.client.headers.update({"Accept": "application/vnd.github+json"})
         self.client.headers.update({"X-GitHub-Api-Version": "2022-11-28"})
 
-    async def pull(self, path: str):
+    async def pull(self, path: str) -> str:
         url = f"{self.base_url}/{path}"
         r = await self.client.get(url)
         r.raise_for_status()
@@ -38,23 +38,25 @@ class Git:
         name = json.get("name")
         async with aiofiles.open(name, "wb") as f:
             await f.write(decoded_file)
+        return json.get("sha")
 
     async def push(self, file: Path, commit_msg: str):
         url = f"{self.base_url}/{file.name}"
         async with aiofiles.open(file, "rb") as f:
             content = await f.read()
         encoded_content = base64.b64encode(content).decode("utf-8")
+        try:
+            sha = await self.pull(file.name)
+        except httpx.HTTPError:
+            sha = None
         data = {
             "message": commit_msg,
             "committer": {"name": self.username, "email": self.email},
             "content": encoded_content,
+            "sha": sha,
         }
         r = await self.client.put(url, json=data)
         r.raise_for_status()
-        if r.status_code == 201 or r.status_code == 200:
-            return True
-        else:
-            return False
 
 
 if __name__ == "__main__":
@@ -63,9 +65,9 @@ if __name__ == "__main__":
     async def main():
         async with httpx.AsyncClient() as client:
             git = Git(
-                token="...",
-                owner="Mr-Robot-Discord-Bot",
-                repo="Repo",
+                token="TOKEN",
+                owner="OWNER",
+                repo="REPO",
                 username="etest",
                 email="test@test.com",
                 client=client,
@@ -73,7 +75,7 @@ if __name__ == "__main__":
             # await git.pull("test.txt")
 
             await git.push(
-                file=Path("t-t.db"),
+                file=Path("test.txt"),
                 commit_msg="test",
             )
 

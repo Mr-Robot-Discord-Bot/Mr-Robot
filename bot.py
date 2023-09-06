@@ -107,7 +107,7 @@ load_dotenv()
 
 async def main():
     global PROXY
-    db_name = "bot.db"
+    db_name = "mr-robot.db"
     async with aiohttp.ClientSession() as session:
         client = MrRobot(
             proxy=PROXY,
