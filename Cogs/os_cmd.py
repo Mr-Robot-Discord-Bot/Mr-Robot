@@ -42,7 +42,7 @@ class Oscmd(commands.Cog):
             return
         logger.debug("Pushing DB")
         await self.bot.git.push(
-            file=Path("./mr-robot.db"), commit_msg="chore: auto update"
+            file=Path(self.bot.db_name), commit_msg="chore: auto update"
         )
 
     @owner.sub_command(name="backup", description="Backup the database")

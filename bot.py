@@ -21,7 +21,7 @@ PROXY = None
 file_handler = logging.FileHandler("mr-robot.log", mode="w")
 console_handler = logging.StreamHandler()
 
-file_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.INFO)
 console_handler.setLevel(logging.INFO)
 logging.basicConfig(
     level=logging.NOTSET,
@@ -32,13 +32,14 @@ logging.basicConfig(
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("disnake").setLevel(logging.INFO)
+logging.getLogger("aiosqlite").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, session, db, **kwargs):
+    def __init__(self, session, db, db_name, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
@@ -48,6 +49,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.token = os.getenv("db_token")
         self.repo = os.getenv("db_repo")
         self.git = None
+        self.db_name = db_name
         if self.token and self.repo:
             owner, repo = self.repo.split("/")
             self.git = Git(
@@ -105,16 +107,18 @@ load_dotenv()
 
 async def main():
     global PROXY
+    db_name = "bot.db"
     async with aiohttp.ClientSession() as session:
         client = MrRobot(
             proxy=PROXY,
             intents=disnake.Intents.all(),
             session=session,
-            db=await aiosqlite.connect("mr-robot.db"),
+            db=await aiosqlite.connect(db_name),
+            db_name=db_name,
         )
         if client.git:
             logger.info("Pulling DB")
-            await client.git.pull("mr-robot.db")
+            await client.git.pull(db_name)
         client.load_extensions()
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore

@@ -63,17 +63,17 @@ if __name__ == "__main__":
     async def main():
         async with httpx.AsyncClient() as client:
             git = Git(
-                token="YOUR ACCESS TOKEN",
-                owner="test owner",
-                repo="test",
+                token="...",
+                owner="Mr-Robot-Discord-Bot",
+                repo="Repo",
                 username="etest",
                 email="test@test.com",
                 client=client,
             )
-            await git.pull("test.txt")
+            # await git.pull("test.txt")
 
             await git.push(
-                file=Path("test.txt"),
+                file=Path("t-t.db"),
                 commit_msg="test",
             )
 
