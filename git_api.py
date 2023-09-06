@@ -28,7 +28,14 @@ class Git:
         self.client.headers.update({"Accept": "application/vnd.github+json"})
         self.client.headers.update({"X-GitHub-Api-Version": "2022-11-28"})
 
-    async def pull(self, path: str) -> str:
+    async def pull_data(self, path: str) -> str:
+        url = f"{self.base_url}/{path}"
+        r = await self.client.get(url)
+        r.raise_for_status()
+        json = await r.json()
+        return json.get("sha")
+
+    async def pull(self, path: str) -> None:
         url = f"{self.base_url}/{path}"
         r = await self.client.get(url)
         r.raise_for_status()
@@ -38,7 +45,6 @@ class Git:
         name = json.get("name")
         async with aiofiles.open(name, "wb") as f:
             await f.write(decoded_file)
-        return json.get("sha")
 
     async def push(self, file: Path, commit_msg: str):
         url = f"{self.base_url}/{file.name}"
@@ -46,7 +52,7 @@ class Git:
             content = await f.read()
         encoded_content = base64.b64encode(content).decode("utf-8")
         try:
-            sha = await self.pull(file.name)
+            sha = await self.pull_data(file.name)
         except httpx.HTTPError:
             sha = None
         data = {
