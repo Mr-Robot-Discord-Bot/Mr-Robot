@@ -110,9 +110,7 @@ async def main():
     db_name = "mr-robot.db"
     async with aiohttp.ClientSession(
         connector=aiohttp.TCPConnector(ssl=False),
-        read_timeout=None,
         timeout=aiohttp.ClientTimeout(total=None),
-        conn_timeout=None,
     ) as session:
         client = MrRobot(
             proxy=PROXY,
