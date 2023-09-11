@@ -10,6 +10,7 @@ from aiocache import cached
 from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
+from bot import MrRobot
 from utils import Embeds, delete_button
 
 WELCOME_IMG_URL = (
@@ -29,7 +30,7 @@ class FontDir(Enum):
 
 
 class Greetings(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: MrRobot):
         self.bot = bot
         self.loop = asyncio.get_running_loop()
         logger.info("Greetings Cog Loaded")
@@ -58,14 +59,21 @@ class Greetings(commands.Cog):
         await self.bot.db.commit()
 
     @cached(60 * 60 * 24)
-    async def __request_bg(self, url: str):
-        async with self.bot.session.get(url=url) as resp:
+    async def __request_bg(self, url: str) -> BytesIO:
+        buffer = BytesIO()
+        async with self.bot.session.stream("GET", url=url) as resp:
             logger.info(f"Requesting background: {url}")
-            return BytesIO(await resp.read())
+            async for data in resp.aiter_bytes():
+                buffer.write(data)
+        return buffer
 
     async def __request_usr(self, url: str):
-        async with self.bot.session.get(url=url) as resp:
-            return BytesIO(await resp.read())
+        buffer = BytesIO()
+        async with self.bot.session.stream("GET", url=url) as resp:
+            logger.info(f"Requesting background: {url}")
+            async for data in resp.aiter_bytes():
+                buffer.write(data)
+        return buffer
 
     def send_img(
         self,
@@ -461,5 +469,5 @@ class Greetings(commands.Cog):
         await self.bot.db.commit()
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Greetings(client))
