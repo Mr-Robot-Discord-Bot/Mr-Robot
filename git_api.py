@@ -39,7 +39,7 @@ class Git:
         url = f"{self.base_url}/{path}"
         r = await self.client.get(url)
         r.raise_for_status()
-        json = await r.json()
+        json = r.json()
         file = json.get("content")
         decoded_file = base64.b64decode(file)
         name = json.get("name")
