@@ -32,7 +32,7 @@ class Git:
         url = f"{self.base_url}/{path}"
         r = await self.client.get(url)
         r.raise_for_status()
-        json = await r.json()
+        json = r.json()
         return json.get("sha")
 
     async def pull(self, path: str) -> None:
