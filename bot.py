@@ -4,9 +4,9 @@ import os
 import time
 from typing import Any
 
-import aiohttp
 import aiosqlite
 import disnake
+import httpx
 import mafic
 from aiocache import cached
 from disnake.ext import commands
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, session, db, db_name, **kwargs):
+    def __init__(self, session: httpx.AsyncClient, db, db_name, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)  # type: ignore
         self.loop.create_task(self.add_nodes())
@@ -64,15 +64,15 @@ class MrRobot(commands.AutoShardedInteractionBot):
 
     @cached(ttl=60 * 60 * 12)
     async def _request(self, url: str) -> Any:
-        async with self.session.get(
-            url, headers={"User-Agent": "Magic Browser"}
-        ) as resp:
-            logger.info(f"HTTP Get: {resp.status} {url}")
-            if resp.status == 200:
-                return await resp.json()
-            else:
-                logger.error(f"Unexpected response code {resp.status} for {url}")
-                raise Exception(f"Unexpected response code {resp.status} for {url}")
+        resp = await self.session.get(url, headers={"User-Agent": "Magic Browser"})
+        logger.info(f"HTTP Get: {resp.status_code} {url}")
+        if resp.status_code == 200:
+            return await resp.json()
+        else:
+            logger.error(
+                f"HTTP Get Error: Status: {resp.status_code} Url: {url} Text: {resp.text} Req Header: {resp.request.headers} Res Header: {resp.headers}"
+            )
+            raise Exception(f"Unexpected response code {resp.status_code} for {url}")
 
     async def add_nodes(self):
         """Adds Nodes to the pool"""
@@ -108,9 +108,8 @@ load_dotenv()
 async def main():
     global PROXY
     db_name = "mr-robot.db"
-    async with aiohttp.ClientSession(
-        connector=aiohttp.TCPConnector(ssl=False),
-        timeout=aiohttp.ClientTimeout(total=None),
+    async with httpx.AsyncClient(
+        follow_redirects=True, proxies=PROXY, timeout=httpx.Timeout(None)
     ) as session:
         client = MrRobot(
             proxy=PROXY,
