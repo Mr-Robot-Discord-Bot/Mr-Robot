@@ -108,9 +108,7 @@ load_dotenv()
 async def main():
     global PROXY
     db_name = "mr-robot.db"
-    async with httpx.AsyncClient(
-        follow_redirects=True, proxies=PROXY, timeout=httpx.Timeout(None)
-    ) as session:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
             proxy=PROXY,
             intents=disnake.Intents.all(),
