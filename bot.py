@@ -63,11 +63,11 @@ class MrRobot(commands.AutoShardedInteractionBot):
         logger.info("Mr Robot is ready")
 
     @cached(ttl=60 * 60 * 12)
-    async def _request(self, url: str) -> Any:
+    async def _request(self, url: str) -> httpx.Response:
         resp = await self.session.get(url, headers={"User-Agent": "Magic Browser"})
         logger.info(f"HTTP Get: {resp.status_code} {url}")
         if resp.status_code == 200:
-            return await resp.json()
+            return resp.json()
         else:
             logger.error(
                 f"HTTP Get Error: Status: {resp.status_code} Url: {url} Text: {resp.text} Req Header: {resp.request.headers} Res Header: {resp.headers}"
