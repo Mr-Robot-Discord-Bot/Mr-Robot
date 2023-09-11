@@ -4,12 +4,13 @@ from datetime import datetime
 from textwrap import shorten
 from typing import Dict, Generator, List, Set, Union
 
-import aiohttp
 import disnake
 from aiocache import cached
 from disnake.ext import commands
+from googletrans.client import httpx
 from selectolax.parser import HTMLParser
 
+from bot import MrRobot
 from utils import Embeds, url_button_builder
 
 logger = logging.getLogger(__name__)
@@ -20,16 +21,14 @@ class AdultScrapper:
     Scraps Adult Content from Xnxx and Xvideos
     """
 
-    def __init__(self, base_url: str, session: aiohttp.ClientSession):
+    def __init__(self, base_url: str, session: httpx.AsyncClient):
         self.session = session
         self.base_url = base_url
 
     @cached(ttl=60 * 60 * 12)
     async def _get_html(self, url: str) -> HTMLParser:
-        async with self.session.get(
-            url, headers={"User-Agent": "Magic Browser"}, ssl=False
-        ) as resp:
-            return HTMLParser(await resp.text())
+        resp = await self.session.get(url, headers={"User-Agent": "Magic Browser"})
+        return HTMLParser(resp.text)
 
     @cached(ttl=60 * 60 * 12)
     async def extract_videos(self, url: str) -> Dict:
@@ -92,7 +91,7 @@ class AdultScrapper:
 
 
 class Fun(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("Fun Cog Loaded")
 
@@ -443,5 +442,5 @@ class Fun(commands.Cog):
         await self.reddit(interaction, search="meme", amount=amount)
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Fun(client))
