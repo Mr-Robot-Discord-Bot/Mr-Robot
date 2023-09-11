@@ -112,7 +112,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 3] = 1,  # type: ignore
+        amount: commands.Range[1, 10] = 1,  # type: ignore
     ):
         """
         Loads content from xnxx.com
@@ -185,7 +185,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 3] = 1,  # type: ignore
+        amount: commands.Range[1, 10] = 1,  # type: ignore
     ):
         """
         Loads content from xvideos.com
