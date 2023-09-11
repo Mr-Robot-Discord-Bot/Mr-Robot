@@ -24,20 +24,22 @@ class Git:
             f"https://api.github.com/repos/{self.owner}/{self.repo}/contents"
         )
         self.client = client
-        self.client.headers.update({"Authorization": f"Bearer {self.token}"})
-        self.client.headers.update({"Accept": "application/vnd.github+json"})
-        self.client.headers.update({"X-GitHub-Api-Version": "2022-11-28"})
+        self.header = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
 
     async def pull_data(self, path: str) -> str:
         url = f"{self.base_url}/{path}"
-        r = await self.client.get(url)
+        r = await self.client.get(url, headers=self.header)
         r.raise_for_status()
         json = r.json()
         return json.get("sha")
 
     async def pull(self, path: str) -> None:
         url = f"{self.base_url}/{path}"
-        r = await self.client.get(url)
+        r = await self.client.get(url, headers=self.header)
         r.raise_for_status()
         json = r.json()
         file = json.get("content")
@@ -61,7 +63,7 @@ class Git:
             "content": encoded_content,
             "sha": sha,
         }
-        r = await self.client.put(url, json=data)
+        r = await self.client.put(url, json=data, headers=self.header)
         r.raise_for_status()
 
 
