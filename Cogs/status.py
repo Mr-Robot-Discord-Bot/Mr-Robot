@@ -90,7 +90,6 @@ class Status(commands.Cog):
                     (interaction.guild.id,),
                 )
             ).fetchone()
-            logger.info(result)
             if result and result != (None,):
                 return ":white_check_mark:"
             else:

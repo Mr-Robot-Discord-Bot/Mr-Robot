@@ -67,8 +67,8 @@ class MrRobot(commands.AutoShardedInteractionBot):
         async with self.session.get(
             url, headers={"User-Agent": "Magic Browser"}
         ) as resp:
+            logger.info(f"HTTP Get: {resp.status} {url}")
             if resp.status == 200:
-                logger.info(f"Sending Http Request to {url}")
                 return await resp.json()
             else:
                 logger.error(f"Unexpected response code {resp.status} for {url}")
@@ -108,7 +108,12 @@ load_dotenv()
 async def main():
     global PROXY
     db_name = "mr-robot.db"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(
+        connector=aiohttp.TCPConnector(ssl=False),
+        read_timeout=None,
+        timeout=aiohttp.ClientTimeout(total=None),
+        conn_timeout=None,
+    ) as session:
         client = MrRobot(
             proxy=PROXY,
             intents=disnake.Intents.all(),
