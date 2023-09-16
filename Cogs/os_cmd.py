@@ -120,7 +120,7 @@ class Oscmd(commands.Cog):
         matching_dict = {}
         for guild in self.bot.guilds:
             if inp in guild.name:
-                matching_dict[guild.name] = str(guild.id)
+                matching_dict[guild.name[:25]] = str(guild.id)
 
         sorted_dict = dict(sorted(matching_dict.items(), key=lambda x: x[0].index(inp)))
         return sorted_dict
