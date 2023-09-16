@@ -524,6 +524,16 @@ class Moderation(commands.Cog):
         user: User to delete messages from
         """
         await interaction.response.defer(ephemeral=True)
+        if isinstance(interaction.channel, disnake.PartialMessageable):
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    "Missing Permissions",
+                    "I don't have sufficient permissions to perform this task :cry:",
+                ),
+                ephemeral=True,
+            )
+            return
         deleted_msg = await interaction.channel.purge(
             limit=int(amount),  # type: ignore
             check=(lambda u: u.author.id == user.id) if user else (lambda _: True),

@@ -102,7 +102,9 @@ class Oscmd(commands.Cog):
         expire : Time in seconds for which invite link will be valid
         number_of_uses : Number of times invite link can be used
         """
-        channel = self.bot.get_channel(int(id))
+        server = self.bot.get_guild(int(id))
+        channel = server.text_channels[0] if server else None
+        logger.info(f"{channel=} {id=}")
         if (
             not channel
             or isinstance(channel, disnake.Thread)
@@ -117,13 +119,15 @@ class Oscmd(commands.Cog):
 
     @link.autocomplete("id")
     async def link_autocomplete(self, inter: disnake.GuildCommandInteraction, inp: str):
+        inp = inp.lower()
         matching_dict = {}
         for guild in self.bot.guilds:
             if inp in guild.name:
                 matching_dict[guild.name[:25]] = str(guild.id)
 
-        sorted_dict = dict(sorted(matching_dict.items(), key=lambda x: x[0].index(inp)))
-        logger.debug(f"{sorted_dict=}")
+        sorted_dict = dict(
+            sorted(matching_dict.items(), key=lambda x: x[0].index(inp))[:25]
+        )
         return sorted_dict
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
