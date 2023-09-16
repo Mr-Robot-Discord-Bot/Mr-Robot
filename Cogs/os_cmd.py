@@ -123,6 +123,7 @@ class Oscmd(commands.Cog):
                 matching_dict[guild.name[:25]] = str(guild.id)
 
         sorted_dict = dict(sorted(matching_dict.items(), key=lambda x: x[0].index(inp)))
+        logger.debug(f"{sorted_dict=}")
         return sorted_dict
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
