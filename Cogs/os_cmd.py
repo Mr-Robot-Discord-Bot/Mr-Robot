@@ -7,7 +7,6 @@ from pathlib import Path
 import disnake
 from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
-from disnake.ext.commands.params import LargeInt
 
 from bot import MrRobot
 from utils import Embeds, delete_button
@@ -30,7 +29,7 @@ class Oscmd(commands.Cog):
         """Bot Owner Commands"""
         ...
 
-    @tasks.loop(hours=1)
+    @tasks.loop(hours=12)
     async def pull_push_db(self):
         if not self.bot.git:
             logger.warning(
