@@ -7,6 +7,7 @@ from pathlib import Path
 import disnake
 from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
+from disnake.ext.commands.params import LargeInt
 
 from bot import MrRobot
 from utils import Embeds, delete_button
@@ -89,7 +90,7 @@ class Oscmd(commands.Cog):
         )
         os.system("python bot.py")
 
-    @owner.sub_command(name="link")
+    @owner.sub_command(name="invite_link")
     async def link(
         self, interaction: disnake.CommandInteraction, id, expire=0, number_of_uses=1
     ):
@@ -102,17 +103,28 @@ class Oscmd(commands.Cog):
         expire : Time in seconds for which invite link will be valid
         number_of_uses : Number of times invite link can be used
         """
-        server = self.bot.get_channel(int(id))
+        channel = self.bot.get_channel(int(id))
         if (
-            not server
-            or isinstance(server, disnake.Thread)
-            or isinstance(server, PrivateChannel)
+            not channel
+            or isinstance(channel, disnake.Thread)
+            or isinstance(channel, PrivateChannel)
         ):
+            await interaction.send("No Server Found with this id", ephemeral=True)
             return
-        link = await server.create_invite(
+        link = await channel.create_invite(
             temporary=True, max_age=int(expire), max_uses=int(number_of_uses)
         )
         await interaction.send(link.url, components=[delete_button])
+
+    @link.autocomplete("id")
+    async def link_autocomplete(self, inter: disnake.GuildCommandInteraction, inp: str):
+        matching_dict = {}
+        for guild in self.bot.guilds:
+            if inp in guild.name:
+                matching_dict[guild.name] = guild.id
+
+        sorted_dict = dict(sorted(matching_dict.items(), key=lambda x: x[0].index(inp)))
+        return sorted_dict
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
     async def reboot(self, interaction):

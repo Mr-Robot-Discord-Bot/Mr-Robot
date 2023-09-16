@@ -269,7 +269,6 @@ class Moderation(commands.Cog):
         members = {
             ban.user.name: str(ban.user.id) async for ban in interaction.guild.bans()
         }
-        sorted_dict = {}
         matching_items = {}
 
         for key, value in members.items():
