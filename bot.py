@@ -123,7 +123,9 @@ async def main():
         try:
             await client.start(os.getenv("Mr_Robot"))  # type: ignore
         except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
-            logger.warning("Unable to connect to Discord falling back to proxy mode")
+            logger.warning(
+                "Unable to connect to Discord falling back to proxy mode", exc_info=True
+            )
             proxy_mode = True
             PROXY = proxy_generator() if proxy_mode else None
         finally:

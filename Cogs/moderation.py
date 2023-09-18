@@ -703,15 +703,22 @@ class Moderation(commands.Cog):
         commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore
     )
     async def delete(
-        self, interaction: disnake.CommandInteraction, channel: disnake.TextChannel
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        channel_or_category: Union[disnake.TextChannel, disnake.CategoryChannel],
     ):
         """
         Deletes channel
 
         Parameters
         ----------
-        channel: Channel to delete
+        channel_or_category: Channel or category to delete
         """
+        if isinstance(channel_or_category, disnake.CategoryChannel):
+            await self.delete_category(interaction, channel_or_category)
+            return
+        channel = channel_or_category
+
         try:
             await channel.delete()
             await interaction.send(
@@ -729,6 +736,21 @@ class Moderation(commands.Cog):
                 ),
                 ephemeral=True,
             )
+
+    async def delete_category(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        category: disnake.CategoryChannel,
+    ):
+        await interaction.send(
+            embed=Embeds.emb(
+                Embeds.yellow, "Delete Category", f"Deleting {category.mention}!"
+            ),
+            components=[delete_button],
+        )
+        for channel in category.channels:
+            await channel.delete()
+        await category.delete()
 
     @server.sub_command(name="clone")
     @commands.check_any(
@@ -749,17 +771,13 @@ class Moderation(commands.Cog):
         new_channel_name: Clone channel name
         """
         try:
-            _text = f"Clone for {channel.mention} initiated!"
+            new_channel = await channel.clone(name=new_channel_name)
+            _text = f"Cloned {channel.mention}!"
             if new_channel_name:
-                _text = f"Clone for {channel.mention} -> {new_channel_name} initiated!"
+                _text = f"Cloned {channel.mention} -> {new_channel.mention}!"
             await interaction.send(
                 embed=Embeds.emb(Embeds.yellow, "Clone", _text),
                 components=[delete_button],
-            )
-            new_channel = await channel.clone(name=new_channel_name)
-            await new_channel.send(
-                embed=Embeds.emb(Embeds.green, "Cloned", "Cloning Done!"),
-                delete_after=10,
             )
         except disnake.errors.Forbidden:
             await interaction.send(
