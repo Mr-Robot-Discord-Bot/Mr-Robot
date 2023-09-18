@@ -24,13 +24,17 @@ services:
   mr-robot:
     <<: *restart_policy
     image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: mr-robot
-    command:
-      - <BOT_TOKEN>
-      - <TRAFFIC_LOGGER_WEBHOOK_URL>
-      - <OPENAI_API_KEY>
-      - <DATABASE ACCESS TOKEN>
-      - <DATABASE REPOSITORY>
+    tty: true
+    environment:
+      - BOT_TOKEN=TOKEN_HERE
+      - ON_JOIN_WEBHOOK=WEBHOOK_URL
+      - OPENAI_API_KEY=API_KEY
+      - GIT_TOKEN=GIT_API_TOKEN
+      - GIT_DB_REPO=OWNER/REPO
     networks:
         - lavalink
     depends_on:

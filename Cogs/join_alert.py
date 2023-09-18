@@ -42,7 +42,7 @@ class Joinalert(commands.Cog):
         await self.bot.db.commit()
         await send_webhook(
             embed=embed,
-            webhook_url=os.getenv("whtraffic"),
+            webhook_url=os.getenv("ON_JOIN_WEBHOOK"),
             username="Guild Join Logger",
             avatar_url="https://cdn.discordapp.com/avatars"
             "/1087375480304451727/f780c7c8c052c66c89f9270"
@@ -83,7 +83,7 @@ class Joinalert(commands.Cog):
         await self.bot.db.commit()
         await send_webhook(
             embed=embed,
-            webhook_url=os.getenv("whtraffic"),
+            webhook_url=os.getenv("ON_JOIN_WEBHOOK"),
             username="Guild Leave Logger",
             avatar_url="https://cdn.discordapp.com/avatars/10"
             "87375480304451727/f780c7c8c052c66c89f9270aebd63b"

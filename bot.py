@@ -46,8 +46,8 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.start_time = time.time()
         self.session = session
         self.db = db
-        self.token = os.getenv("db_token")
-        self.repo = os.getenv("db_repo")
+        self.token = os.getenv("GIT_TOKEN")
+        self.repo = os.getenv("GIT_DB_REPO")
         self.git = None
         self.db_name = db_name
         if self.token and self.repo:
@@ -121,7 +121,7 @@ async def main():
             await client.git.pull(db_name)
         client.load_extensions()
         try:
-            await client.start(os.getenv("Mr_Robot"))  # type: ignore
+            await client.start(os.getenv("BOT_TOKEN"))  # type: ignore
         except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
             logger.warning(
                 "Unable to connect to Discord falling back to proxy mode", exc_info=True

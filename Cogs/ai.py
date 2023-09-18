@@ -6,7 +6,7 @@ from disnake.ext import commands
 
 from utils import Embeds, delete_button
 
-openai.api_key = os.getenv("openai_api_key")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 logger = logging.getLogger(__name__)
 
 
