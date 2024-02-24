@@ -5,7 +5,7 @@ After=docker.service
 
 [Service]
 Restart=always
-ExecStart=/usr/bin/docker run --rm --pull=always --name mr-robot ghcr.io/mr-robot-discord-bot/mr-robot:latest <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <OPENAI_API_KEY> <MONGODB_URI>
+ExecStart=/usr/bin/docker run --rm --pull=always --name mr-robot ghcr.io/mr-robot-discord-bot/mr-robot:latest <BOT_TOKEN> <TRAFFIC_LOGGER_WEBHOOK_URL> <GEMINI_API_KEY> <MONGODB_URI>
 
 [Install]
 WantedBy=multi-user.target

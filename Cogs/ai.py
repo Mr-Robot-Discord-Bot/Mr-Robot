@@ -1,23 +1,54 @@
 import logging
 import os
 
-import openai
+import google.generativeai as genai
 from disnake.ext import commands
+from google.generativeai.types import BlockedPromptException
 
-from utils import Embeds, delete_button
+from utils import delete_button
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
 logger = logging.getLogger(__name__)
+
+genai.configure(api_key=os.getenv("AI_API_KEY"))
+
+generation_config = {
+    "temperature": 1,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+}
+
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+]
 
 
 class Ai(commands.Cog):
     def __init__(self, client):
         self.bot = client
         logger.info("AI Cog Loaded")
+        self.model = genai.GenerativeModel(
+            model_name="gemini-1.0-pro",
+            generation_config=generation_config,  # type: ignore
+            safety_settings=safety_settings,
+        )
+        self.conv = self.model.start_chat(
+            history=[
+                {"role": "user", "parts": ["How are you?"]},
+                {"role": "model", "parts": ["I'm running on great specs, Sir!"]},
+                {"role": "user", "parts": ["What is your name?"]},
+                {"role": "model", "parts": ["My name is MR Robot."]},
+                {"role": "user", "parts": ["Who created you?"]},
+                {"role": "model", "parts": ["I am created by Known Black Hat, Sir!"]},
+            ]
+        )
 
     @commands.slash_command(name="ai", dm_permission=False)
-    async def ai(self, interaction):
-        """Interact with openai"""
+    async def ai(self, _):
+        """Interact with ai"""
         ...
 
     @ai.sub_command(name="chat")
@@ -29,92 +60,16 @@ class Ai(commands.Cog):
         ----------
         query : Query to ask Mr Robot
         """
-        prompt = f"""
-        User: How are you?
-        Mr_Robot: I'm running on great specs, Sir!
-        User: What is your name?
-        Mr_Robot: My name is MR Robot.
-        User: Who created you?
-        Mr_Robot: I am created by Known Black Hat, Sir!
-        User: {query}
-        Mr_Robot: """
-
-        try:
-            completion = await openai.Completion.acreate(
-                engine="text-davinci-002",
-                prompt=prompt,
-                temperature=0.5,
-                max_tokens=500,
-                n=1,
-                stop=None,
-            )
-            await interaction.send(
-                components=[delete_button],
-                embed=Embeds.emb(
-                    Embeds.green, "AI System", completion.choices[0].text.strip()  # type: ignore
-                ),
-            )
-        except Exception:
-            await interaction.send(
-                components=[delete_button],
-                embed=Embeds.emb(
-                    Embeds.red,
-                    "Api Limit Reached",
-                    """
-                    Attention Discord users,
-
-                    We need your help! The free tier usage for our Mr. Robot Discord bot's AI feature has been exhausted, and we require the purchase of a premium API to continue offering this feature. We kindly ask for your support through donations in cryptocurrency, with a minimum donation of $1 and a maximum of $10.
-
-                    Your contributions, no matter how small, will help us achieve our goals and continue providing you with an innovative and exciting way to interact with each other through the Mr. Robot Discord bot. Donations can be made to the following cryptocurrency address:
-
-                    `42XSJzfAXTjT5Vt5uatbH41SZRepyU2AJdWLVeGNkeZ3bbjUnyyL9X2Qq16BjzHLhkKYvWWcs3f3eKmuUbnJpjPeFm23v4v`
-
-                    Thank you for your support and generosity.
-
-                    Sincerely,
-
-                    Known Black Hat
-                                                    """,
-                ),
-            )
-
-    @ai.sub_command(name="img")
-    async def slash_ai_generate_img(self, interaction, prompt: str):
-        """
-        Generates Images using AI
-
-        Parameters
-        ----------
-        prompt : Prompt to generate image
-        """
         await interaction.response.defer()
         try:
-            response = await openai.Image.acreate(prompt=prompt, n=1, size="512x512")
+            await self.conv.send_message_async(query)
+            if self.conv.last:
+                await interaction.send(self.conv.last.text, components=[delete_button])
+            else:
+                await interaction.send("Ai module didn't responded")
+        except BlockedPromptException:
             await interaction.send(
-                response["data"][0]["url"], components=[delete_button]  # type: ignore
-            )
-        except Exception:
-            await interaction.send(
-                components=[delete_button],
-                embed=Embeds.emb(
-                    Embeds.red,
-                    "Api Limit Reached",
-                    """
-                                                    Attention Discord users,
-
-                                                    We need your help! The free tier usage for our Mr. Robot Discord bot's AI feature has been exhausted, and we require the purchase of a premium API to continue offering this feature. We kindly ask for your support through donations in cryptocurrency, with a minimum donation of $1 and a maximum of $10.
-
-                                                    Your contributions, no matter how small, will help us achieve our goals and continue providing you with an innovative and exciting way to interact with each other through the Mr. Robot Discord bot. Donations can be made to the following cryptocurrency address:
-
-                                                    `42XSJzfAXTjT5Vt5uatbH41SZRepyU2AJdWLVeGNkeZ3bbjUnyyL9X2Qq16BjzHLhkKYvWWcs3f3eKmuUbnJpjPeFm23v4v`
-
-                                                    Thank you for your support and generosity.
-
-                                                    Sincerely,
-
-                                                    Known Black Hat
-                                                    """,
-                ),
+                "This request can't be fulfiled as its against my tos!"
             )
 
 

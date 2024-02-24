@@ -32,7 +32,7 @@ services:
     environment:
       - BOT_TOKEN=TOKEN_HERE
       - ON_JOIN_WEBHOOK=WEBHOOK_URL
-      - OPENAI_API_KEY=API_KEY
+      - AI_API_KEY=API_KEY
       - GIT_TOKEN=GIT_API_TOKEN
       - GIT_DB_REPO=OWNER/REPO
     networks:
