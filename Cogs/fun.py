@@ -127,8 +127,8 @@ class Fun(commands.Cog):
                     "Please wait while we search for your content",
                 )
             )
-            data = await self.bot.session.get(f"{nsfw_api}/xnxx/{amount}/{search}")
-            data = data.json().get("data")
+            data = await self.bot._request(f"{nsfw_api}/xnxx/{amount}/{search}")
+            data = data.get("data")
             for vid in data:
                 await interaction.channel.send(
                     embed=(
@@ -170,7 +170,6 @@ class Fun(commands.Cog):
         self, interaction: disnake.GuildCommandInteraction, name: str
     ):
         data = await self.bot._request(f"{nsfw_api}/suggestion/xnxx/{name or 'porn'}")
-        print(data.json().get("data"))
         return {keywords for keywords in data.json().get("data", [])}
 
     @commands.is_nsfw()
@@ -197,8 +196,8 @@ class Fun(commands.Cog):
                     "Please wait while we search for your content",
                 )
             )
-            data = await self.bot.session.get(f"{nsfw_api}/xvideos/{amount}/{search}")
-            data = data.json().get("data")
+            data = await self.bot._request(f"{nsfw_api}/xvideos/{amount}/{search}")
+            data = data.get("data")
             for vid in data:
                 await interaction.channel.send(
                     embed=(
@@ -242,9 +241,7 @@ class Fun(commands.Cog):
         data = await self.bot._request(
             f"{nsfw_api}/suggestion/xvideos/{name or 'porn'}"
         )
-        logger.info({keywords for keywords in data.json().get("data", [])})
-        logger.info(data.json())
-        return {keywords for keywords in data.json().get("data", [])}
+        return {keywords for keywords in data.get("data", [])}
 
     @slash_nsfw.sub_command(name="redtube")
     async def redtube(
@@ -274,7 +271,6 @@ class Fun(commands.Cog):
                 f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
             )
             data = await self.bot._request(URL)
-            data = data.json()
             random.shuffle(data["videos"])
             for count, content in enumerate(data["videos"]):
                 if count >= amount:  # type: ignore
@@ -348,7 +344,6 @@ class Fun(commands.Cog):
                 f"&q={search}"
             )
         data = await self.bot._request(URL)
-        data = data.json()
         links_list = data["data"]["children"]
         if not links_list:
             await interaction.send(
@@ -425,7 +420,7 @@ class Fun(commands.Cog):
             f"query={name or 'porn'}&include_over_18=True"
         )
         data = await self.bot._request(url)
-        return set(name for name in data.json()["names"])
+        return set(name for name in data["names"])
 
     @commands.slash_command(name="meme", dm_permission=False)
     async def slash_meme(self, interaction, amount: int = 1):
