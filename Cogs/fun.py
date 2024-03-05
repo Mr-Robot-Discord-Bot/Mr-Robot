@@ -1,93 +1,91 @@
 import logging
+import os
 import random
-from datetime import datetime
 from textwrap import shorten
-from typing import Dict, Generator, List, Set, Union
+from typing import Set, Union
 
 import disnake
-from aiocache import cached
 from disnake.ext import commands
-from googletrans.client import httpx
-from selectolax.parser import HTMLParser
 
 from bot import MrRobot
 from utils import Embeds, url_button_builder
 
 logger = logging.getLogger(__name__)
+nsfw_api = os.getenv("NSFW_API")
 
 
-class AdultScrapper:
-    """
-    Scraps Adult Content from Xnxx and Xvideos
-    """
+# class AdultScrapper:
+#     """
+#     Scraps Adult Content from Xnxx and Xvideos
+#     """
 
-    def __init__(self, base_url: str, session: httpx.AsyncClient):
-        self.session = session
-        self.base_url = base_url
+#     def __init__(self, base_url: str, session: httpx.AsyncClient):
+#         self.session = session
+#         self.base_url = base_url
 
-    @cached(ttl=60 * 60 * 12)
-    async def _get_html(self, url: str) -> HTMLParser:
-        resp = await self.session.get(url, headers={"User-Agent": "Magic Browser"})
-        return HTMLParser(resp.text)
+#     @cached(ttl=60 * 60 * 12)
+#     async def _get_html(self, url: str) -> HTMLParser:
+#         resp = await self.session.get(url, headers={"User-Agent": "Magic Browser"})
+#         return HTMLParser(resp.text)
 
-    @cached(ttl=60 * 60 * 12)
-    async def extract_videos(self, url: str) -> Dict:
-        """
-        Extracts Video Data from Xnxx and Xvideos
+#     @cached(ttl=60 * 60 * 12)
+#     async def extract_videos(self, url: str) -> Dict:
+#         """
+#         Extracts Video Data from Xnxx and Xvideos
 
-        Parameters
-        ----------
-        url: Url of the video
-        """
-        dom = await self._get_html(url=url)
-        data = dom.css_first('script[type="application/ld+json"]').text()
-        data = dict(eval(data))
-        parsed_date = datetime.strptime(
-            data.get("uploadDate", "0000-00-00T00:00:00+00:00"), "%Y-%m-%dT%H:%M:%S%z"
-        )
-        payload = {
-            "thumbnail": data.get("thumbnailUrl", [])[0],
-            "upload_date": parsed_date.strftime("%Y-%m-%d %H:%M:%S"),
-            "name": data.get("name"),
-            "description": data.get("description", "").strip(),
-            "content_url": data.get("contentUrl"),
-        }
-        return payload
+#         Parameters
+#         ----------
+#         url: Url of the video
+#         """
+#         dom = await self._get_html(url=url)
+#         data = dom.css_first('script[type="application/ld+json"]').text()
+#         data = dict(eval(data))
+#         parsed_date = datetime.strptime(
+#             data.get("uploadDate", "0000-00-00T00:00:00+00:00"), "%Y-%m-%dT%H:%M:%S%z"
+#         )
+#         payload = {
+#             "thumbnail": data.get("thumbnailUrl", [])[0],
+#             "upload_date": parsed_date.strftime("%Y-%m-%d %H:%M:%S"),
+#             "name": data.get("name"),
+#             "description": data.get("description", "").strip(),
+#             "content_url": data.get("contentUrl"),
+#         }
+#         return payload
 
-    async def get_link(self, search: str, amount: int, xvideos: bool) -> Set[str]:
-        """
-        Gets the link of the video
+#     async def get_link(self, search: str, amount: int, xvideos: bool) -> Set[str]:
+#         """
+#         Gets the link of the video
 
-        Parameters
-        ----------
-        search: What to search?
-        xvideos: Search on xvideos or xnxx?
-        """
-        search_payload = (
-            f"https://www.xvideos.com/?k={search}&top"
-            if xvideos
-            else f"https://www.xnxx.tv/search/{search}?top"
-        )
-        dom = await self._get_html(url=search_payload)
-        dom = dom.css_first("div.mozaique.cust-nb-cols").css("div.thumb")
-        random.shuffle(dom)
-        data: Generator = (
-            f'{self.base_url}{link.css_first("a").attrs.get("href")}' for link in dom
-        )
-        return {next(data) for _ in range(amount)}
+#         Parameters
+#         ----------
+#         search: What to search?
+#         xvideos: Search on xvideos or xnxx?
+#         """
+#         search_payload = (
+#             f"https://www.xvideos.com/?k={search}&top"
+#             if xvideos
+#             else f"https://www.xnxx.tv/search/{search}?top"
+#         )
+#         dom = await self._get_html(url=search_payload)
+#         dom = dom.css_first("div.mozaique.cust-nb-cols").css("div.thumb")
+#         random.shuffle(dom)
+#         data: Generator = (
+#             f'{self.base_url}{link.css_first("a").attrs.get("href")}' for link in dom
+#         )
+#         return {next(data) for _ in range(amount)}
 
-    async def send_video(self, search: str, amount: int, xvideos: bool = False) -> List:
-        """
-        Sends the video
+#     async def send_video(self, search: str, amount: int, xvideos: bool = False) -> List:
+#         """
+#         Sends the video
 
-        Parameters
-        ----------
-        search: What to search?
-        amount: How much?
-        xvideos: Search on xvideos or xnxx?
-        """
-        links = await self.get_link(search=search, amount=amount, xvideos=xvideos)
-        return [await self.extract_videos(url=link) for link in links]
+#         Parameters
+#         ----------
+#         search: What to search?
+#         amount: How much?
+#         xvideos: Search on xvideos or xnxx?
+#         """
+#         links = await self.get_link(search=search, amount=amount, xvideos=xvideos)
+#         return [await self.extract_videos(url=link) for link in links]
 
 
 class Fun(commands.Cog):
@@ -129,25 +127,23 @@ class Fun(commands.Cog):
                     "Please wait while we search for your content",
                 )
             )
-            xnxx = AdultScrapper(
-                base_url="https://www.xnxx.tv", session=self.bot.session
-            )
-            data = await xnxx.send_video(search=search, amount=amount, xvideos=False)  # type: ignore
+            data = await self.bot.session.get(f"{nsfw_api}/xnxx/{amount}/{search}")
+            data = data.json().get("data")
             for vid in data:
                 await interaction.channel.send(
                     embed=(
                         Embeds.emb(
                             Embeds.blue,
                             value=f"""
-                            **Name:** {shorten(vid["name"], 35, placeholder="...").strip()}
-                            **Description:** {shorten(vid["description"], 70, placeholder="...").strip()}
-                            **Upload Date:** {vid["upload_date"]}
+                            **Name:** {shorten(vid.get("name"), 35, placeholder="...").strip()}
+                            **Description:** {shorten(vid.get("description"), 70, placeholder="...").strip()}
+                            **Upload Date:** {vid.get("upload_date")}
                             """,
                         )
-                    ).set_image(url=vid["thumbnail"]),
+                    ).set_image(url=vid.get("thumbnail")),
                     components=[
                         url_button_builder(
-                            url=vid["content_url"], label="Watch Now", emoji="📺"
+                            url=vid.get("content_url"), label="Watch Now", emoji="📺"
                         ),
                     ],
                 )
@@ -173,10 +169,8 @@ class Fun(commands.Cog):
     async def xnxx_autocomplete(
         self, interaction: disnake.GuildCommandInteraction, name: str
     ):
-        data = await self.bot._request(
-            f"https://www.xnxx.tv/search-suggest/{name or 'porn'}"
-        )
-        return {keywords.get("N") for keywords in data.get("keywords", [])}
+        data = await self.bot._request(f"{nsfw_api}/suggestion/xnxx/{name or 'porn'}")
+        return {keywords for keywords in data.json().get("data", [])}
 
     @commands.is_nsfw()
     @slash_nsfw.sub_command(name="xvideos")
@@ -202,25 +196,23 @@ class Fun(commands.Cog):
                     "Please wait while we search for your content",
                 )
             )
-            xnxx = AdultScrapper(
-                base_url="https://www.xvideos.com", session=self.bot.session
-            )
-            data = await xnxx.send_video(search=search, amount=amount, xvideos=True)  # type: ignore
+            data = await self.bot.session.get(f"{nsfw_api}/xxvideos/{amount}/{search}")
+            data = data.json().get("data")
             for vid in data:
                 await interaction.channel.send(
                     embed=(
                         Embeds.emb(
                             Embeds.blue,
                             value=f"""
-                            **Name:** {shorten(vid["name"], 35, placeholder="...").strip()}
-                            **Description:** {shorten(vid["description"], 70, placeholder="...").strip()}
-                            **Upload Date:** {vid["upload_date"]}
+                            **Name:** {shorten(vid.get("name"), 35, placeholder="...").strip()}
+                            **Description:** {shorten(vid.get("description"), 70, placeholder="...").strip()}
+                            **Upload Date:** {vid.get("upload_date")}
                             """,
                         )
-                    ).set_image(url=vid["thumbnail"]),
+                    ).set_image(url=vid.get("thumbnail")),
                     components=[
                         url_button_builder(
-                            url=vid["content_url"], label="Watch Now", emoji="📺"
+                            url=vid.get("content_url"), label="Watch Now", emoji="📺"
                         ),
                     ],
                 )
@@ -247,9 +239,9 @@ class Fun(commands.Cog):
         self, interaction: disnake.GuildCommandInteraction, name: str
     ):
         data = await self.bot._request(
-            f"https://www.xvideos.com/search-suggest/{name or 'porn'}"
+            f"{nsfw_api}/suggestion/xvideos/{name or 'porn'}"
         )
-        return {keywords.get("N") for keywords in data.get("keywords", [])}
+        return {keywords for keywords in data.json().get("data", [])}
 
     @slash_nsfw.sub_command(name="redtube")
     async def redtube(
@@ -279,6 +271,7 @@ class Fun(commands.Cog):
                 f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
             )
             data = await self.bot._request(URL)
+            data = data.json()
             random.shuffle(data["videos"])
             for count, content in enumerate(data["videos"]):
                 if count >= amount:  # type: ignore
@@ -352,6 +345,7 @@ class Fun(commands.Cog):
                 f"&q={search}"
             )
         data = await self.bot._request(URL)
+        data = data.json()
         links_list = data["data"]["children"]
         if not links_list:
             await interaction.send(
@@ -428,7 +422,7 @@ class Fun(commands.Cog):
             f"query={name or 'porn'}&include_over_18=True"
         )
         data = await self.bot._request(url)
-        return set(name for name in data["names"])
+        return set(name for name in data.json()["names"])
 
     @commands.slash_command(name="meme", dm_permission=False)
     async def slash_meme(self, interaction, amount: int = 1):
