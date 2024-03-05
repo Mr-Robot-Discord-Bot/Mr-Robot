@@ -156,13 +156,12 @@ class Fun(commands.Cog):
             )
         except Exception:
             logger.error("Error in Xnxx", exc_info=True)
-            await interaction.send(
+            await interaction.edit_original_response(
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Error",
                     "Please try again later :slight_frown:",
                 ),
-                ephemeral=True,
             )
 
     @xnxx.autocomplete("search")
@@ -225,13 +224,12 @@ class Fun(commands.Cog):
             )
         except Exception:
             logger.error("Error in Xvideos", exc_info=True)
-            await interaction.send(
+            await interaction.edit_original_response(
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Error",
                     "Please try again later :slight_frown:",
                 ),
-                ephemeral=True,
             )
 
     @xvideos.autocomplete("search")
@@ -302,13 +300,12 @@ class Fun(commands.Cog):
                     )
                 )
         except Exception:
-            await interaction.send(
+            await interaction.edit_original_response(
                 embed=Embeds.emb(
                     Embeds.red,
                     "Api Error",
                     "Please try again later :slight_frown:",
                 ),
-                ephemeral=True,
             )
 
     @slash_nsfw.sub_command()
@@ -416,13 +413,12 @@ class Fun(commands.Cog):
             )
         except Exception:
             logger.error("Error in Reddit", exc_info=True)
-            await interaction.send(
+            await interaction.edit_original_response(
                 embed=Embeds.emb(
                     Embeds.red,
                     "Unable to find anything",
                     "Try searching someting else!",
                 ),
-                ephemeral=True,
             )
 
     @reddit.autocomplete("search")
