@@ -191,7 +191,7 @@ class Fun(commands.Cog):
         try:
             await interaction.send(
                 embed=Embeds.emb(
-                    Embeds.blue,
+                    Embeds.red,
                     f"Searching {search}",
                     "Please wait while we search for your content",
                 )
