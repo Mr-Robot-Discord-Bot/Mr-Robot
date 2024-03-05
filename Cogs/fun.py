@@ -170,6 +170,7 @@ class Fun(commands.Cog):
         self, interaction: disnake.GuildCommandInteraction, name: str
     ):
         data = await self.bot._request(f"{nsfw_api}/suggestion/xnxx/{name or 'porn'}")
+        print(data.json().get("data"))
         return {keywords for keywords in data.json().get("data", [])}
 
     @commands.is_nsfw()
@@ -196,7 +197,7 @@ class Fun(commands.Cog):
                     "Please wait while we search for your content",
                 )
             )
-            data = await self.bot.session.get(f"{nsfw_api}/xxvideos/{amount}/{search}")
+            data = await self.bot.session.get(f"{nsfw_api}/xvideos/{amount}/{search}")
             data = data.json().get("data")
             for vid in data:
                 await interaction.channel.send(
@@ -241,6 +242,8 @@ class Fun(commands.Cog):
         data = await self.bot._request(
             f"{nsfw_api}/suggestion/xvideos/{name or 'porn'}"
         )
+        logger.info({keywords for keywords in data.json().get("data", [])})
+        logger.info(data.json())
         return {keywords for keywords in data.json().get("data", [])}
 
     @slash_nsfw.sub_command(name="redtube")
