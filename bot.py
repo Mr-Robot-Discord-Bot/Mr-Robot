@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import time
+from typing import Dict, List
 
 import aiosqlite
 import disnake
@@ -62,7 +63,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
         logger.info("Mr Robot is ready")
 
     @cached(ttl=60 * 60 * 12)
-    async def _request(self, url: str) -> httpx.Response:
+    async def _request(self, url: str) -> Dict | List:
         resp = await self.session.get(url, headers={"User-Agent": "Magic Browser"})
         logger.info(f"HTTP Get: {resp.status_code} {url}")
         if resp.status_code == 200:

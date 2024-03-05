@@ -326,91 +326,104 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        await interaction.send(
-            embed=Embeds.emb(
-                Embeds.blue,
-                f"Searching {search}",
-                "Please wait while we search for your content",
-            )
-        )
-        URL = (
-            f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
-            f"include_over_18=True&type=link"
-        )
-        if search not in (await self.reddit_autocomp(interaction, name=search)):
-            URL = (
-                "https://www.reddit.com/r/porn_gifs/search.json"
-                "?raw_json=1&limit=100&include_over_18=True&type=link"
-                f"&q={search}"
-            )
-        data = await self.bot._request(URL)
-        links_list = data["data"]["children"]
-        if not links_list:
+        try:
             await interaction.send(
-                "No Results Found, Try something else :face_holding_back_tears:",
-                ephemeral=True,
+                embed=Embeds.emb(
+                    Embeds.blue,
+                    f"Searching {search}",
+                    "Please wait while we search for your content",
+                )
             )
-        random.shuffle(links_list)
-        urls = set()
-        for count, data in enumerate(links_list):
-            if count >= amount:  # type: ignore
-                break
-
-            elif data["data"]["is_video"]:
-                url = data["data"]["media"]["reddit_video"]["fallback_url"].replace(
-                    "?source=fallback", ""
+            URL = (
+                f"https://www.reddit.com/r/{search}.json?raw_json=1&limit=100&"
+                f"include_over_18=True&type=link"
+            )
+            if search not in (await self.reddit_autocomp(interaction, name=search)):
+                URL = (
+                    "https://www.reddit.com/r/porn_gifs/search.json"
+                    "?raw_json=1&limit=100&include_over_18=True&type=link"
+                    f"&q={search}"
                 )
-
-            elif data["data"].get("is_gallery"):
-                url = str("\n".join({data for data in data["data"]["media_metadata"]}))
-
-            elif "redgifs.com" in data["data"]["url"]:
-                url = data["data"]["url_overridden_by_dest"]
-
-            elif data["data"]["url"].endswith(
-                (
-                    ".gifv",
-                    ".mp4",
-                    ".webm",
-                    ".gif",
-                    ".png",
-                    ".jpg",
-                    ".jpeg",
-                    ".mov",
-                    ".mkv",
-                    "?source=fallback",
+            data = await self.bot._request(URL)
+            links_list = data["data"]["children"]
+            if not links_list:
+                await interaction.send(
+                    "No Results Found, Try something else :face_holding_back_tears:",
+                    ephemeral=True,
                 )
-            ):
-                url = data["data"]["url_overridden_by_dest"].replace(
-                    "?source=fallback", ""
+            random.shuffle(links_list)
+            urls = set()
+            for count, data in enumerate(links_list):
+                if count >= amount:  # type: ignore
+                    break
+
+                elif data["data"]["is_video"]:
+                    url = data["data"]["media"]["reddit_video"]["fallback_url"].replace(
+                        "?source=fallback", ""
+                    )
+
+                elif data["data"].get("is_gallery"):
+                    url = str(
+                        "\n".join({data for data in data["data"]["media_metadata"]})
+                    )
+
+                elif "redgifs.com" in data["data"]["url"]:
+                    url = data["data"]["url_overridden_by_dest"]
+
+                elif data["data"]["url"].endswith(
+                    (
+                        ".gifv",
+                        ".mp4",
+                        ".webm",
+                        ".gif",
+                        ".png",
+                        ".jpg",
+                        ".jpeg",
+                        ".mov",
+                        ".mkv",
+                        "?source=fallback",
+                    )
+                ):
+                    url = data["data"]["url_overridden_by_dest"].replace(
+                        "?source=fallback", ""
+                    )
+                else:
+                    amount += 1  # type: ignore
+                    continue
+
+                if not url.startswith("http"):
+                    amount += 1  # type: ignore
+                    continue
+
+                urls.add(url)
+            if not urls:
+                await interaction.edit_original_response(
+                    embed=Embeds.emb(
+                        Embeds.red,
+                        f"No Result Found for `{search}`",
+                        "Try something else :face_holding_back_tears:",
+                    )
                 )
-            else:
-                amount += 1  # type: ignore
-                continue
-
-            if not url.startswith("http"):
-                amount += 1  # type: ignore
-                continue
-
-            urls.add(url)
-        if not urls:
+                return
+            for url in urls:
+                await interaction.channel.send(url)
             await interaction.edit_original_response(
                 embed=Embeds.emb(
-                    Embeds.red,
-                    f"No Result Found for `{search}`",
-                    "Try something else :face_holding_back_tears:",
+                    Embeds.green,
+                    "Search Completed",
+                    f"Showing {len(urls)} results for `{search}`",
                 )
             )
-            return
-        for url in urls:
-            await interaction.channel.send(url)
-        await interaction.edit_original_response(
-            embed=Embeds.emb(
-                Embeds.green,
-                "Search Completed",
-                f"Showing {len(urls)} results for `{search}`",
+        except Exception:
+            logger.error("Error in Reddit", exc_info=True)
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.red,
+                    "Unable to find anything",
+                    "Try searching someting else!",
+                ),
+                ephemeral=True,
             )
-        )
 
     @reddit.autocomplete("search")
     async def reddit_autocomp(self, interaction, name: str) -> Union[Set[str], None]:
