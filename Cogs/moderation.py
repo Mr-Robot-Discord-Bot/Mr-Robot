@@ -840,7 +840,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.green,
                 "Nsfw Toggle",
-                f"{channel_or_category.mention} is now {'not' if value else ''} age-restriced!",
+                f"{channel_or_category.mention} is now {'' if value else 'not'} age-restriced!",
             )
         )
 
