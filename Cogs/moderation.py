@@ -789,6 +789,61 @@ class Moderation(commands.Cog):
                 ephemeral=True,
             )
 
+    @server.sub_command(name="transfer_ownership")
+    @commands.check_any(
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+    )
+    async def transfer_ownership(
+        self, interaction: disnake.GuildCommandInteraction, member: disnake.Member
+    ):
+        """
+        Transfers Ownership
+
+        Parameters
+        ----------
+        member: Transfer ownership to ?
+        """
+        await interaction.guild.edit(owner=member)
+        await interaction.send(
+            embed=Embeds.emb(
+                Embeds.green,
+                "Ownership Transferred",
+                f"{member.mention} is the new owner of this server",
+            )
+        )
+
+    @server.sub_command(name="nsfw_toggle")
+    @commands.check_any(
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+    )
+    async def nsfw_toggle(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        channel_or_category: Union[disnake.TextChannel, disnake.CategoryChannel],
+        value: bool,
+    ):
+        """
+        Nsfw Toggle
+
+        Parameters
+        ----------
+        channel_or_category: Channel or Category
+        value: Bool value to set nsfw
+        """
+        await interaction.response.defer()
+        if isinstance(channel_or_category, disnake.CategoryChannel):
+            for channel in channel_or_category.channels:
+                await channel.edit(nsfw=value)  # type: ignore
+        else:
+            await channel_or_category.edit(nsfw=value)
+        await interaction.send(
+            embed=Embeds.emb(
+                Embeds.green,
+                "Nsfw Toggle",
+                f"{channel_or_category.mention} is now {'not' if value else ''} age-restriced!",
+            )
+        )
+
 
 def setup(client: commands.Bot):
     client.add_cog(Moderation(client))
