@@ -1,0 +1,50 @@
+name: CI
+on:
+  push:
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
+
+  pyright:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.11" ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          cache: 'pip'
+          python-version: "3.11"
+      - run: poetry install
+      - run: pip install -r requirements.txt
+
+      - uses: jakebailey/pyright-action@v2
+        with:
+          pylance-version: latest-release
+
+  check: # This job does nothing and is only used for the branch protection
+    if: always()
+    needs:
+      - pre-commit
+      - pyright
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
