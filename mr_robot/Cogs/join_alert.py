@@ -3,14 +3,15 @@ import os
 
 import disnake
 from disnake.ext import commands
-
 from utils import Embeds, send_webhook
+
+from mr_robot.bot import MrRobot
 
 logger = logging.getLogger(__name__)
 
 
 class Joinalert(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: MrRobot):
         self.bot = bot
         logger.info("Joinalert Cog Loaded")
 
@@ -91,5 +92,5 @@ class Joinalert(commands.Cog):
         )
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Joinalert(client))

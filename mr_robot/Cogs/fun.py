@@ -2,13 +2,13 @@ import logging
 import os
 import random
 from textwrap import shorten
-from typing import Set, Union
+from typing import Set
 
 import disnake
 from disnake.ext import commands
-
-from bot import MrRobot
 from utils import Embeds, url_button_builder
+
+from mr_robot.bot import MrRobot
 
 logger = logging.getLogger(__name__)
 nsfw_api = os.getenv("NSFW_API")
@@ -308,7 +308,7 @@ class Fun(commands.Cog):
                 ),
             )
 
-    @slash_nsfw.sub_command()
+    @slash_nsfw.sub_command(name="reddit")
     async def reddit(
         self,
         interaction: disnake.CommandInteraction,
@@ -401,16 +401,16 @@ class Fun(commands.Cog):
                         "Try something else :face_holding_back_tears:",
                     )
                 )
-                return
-            for url in urls:
-                await interaction.channel.send(url)
-            await interaction.edit_original_response(
-                embed=Embeds.emb(
-                    Embeds.green,
-                    "Search Completed",
-                    f"Showing {len(urls)} results for `{search}`",
+            else:
+                for url in urls:
+                    await interaction.channel.send(url)
+                await interaction.edit_original_response(
+                    embed=Embeds.emb(
+                        Embeds.green,
+                        "Search Completed",
+                        f"Showing {len(urls)} results for `{search}`",
+                    )
                 )
-            )
         except Exception:
             logger.error("Error in Reddit", exc_info=True)
             await interaction.edit_original_response(
@@ -421,8 +421,10 @@ class Fun(commands.Cog):
                 ),
             )
 
-    @reddit.autocomplete("search")
-    async def reddit_autocomp(self, interaction, name: str) -> Union[Set[str], None]:
+    @reddit.autocomplete(
+        "search"
+    )  # FIXME: Seems like there's issue in reddit function's typing
+    async def reddit_autocomp(self, interaction, name: str) -> Set[str] | None:
         name = name.lower()
         url = (
             "https://www.reddit.com/api/search_reddit_names.json?"

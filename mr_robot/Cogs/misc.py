@@ -4,8 +4,9 @@ from typing import Set, Union
 
 import disnake
 from disnake.ext import commands
-
 from utils import Embeds, delete_button
+
+from mr_robot.bot import MrRobot
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class EmbedModal(disnake.ui.Modal):
         )
         await interaction.channel.send(embed=embed)
 
-    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
+    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):  # type: ignore
         await inter.response.send_message(
             embed=Embeds.emb(Embeds.red, "Oops! Something went wrong :cry:"),
             ephemeral=True,
@@ -63,7 +64,7 @@ class EmbedModal(disnake.ui.Modal):
 
 
 class Misc(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("Misc Cog Loaded")
 
@@ -145,5 +146,5 @@ class Misc(commands.Cog):
         await interaction.send(embed=embed, components=[delete_button])
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Misc(client))

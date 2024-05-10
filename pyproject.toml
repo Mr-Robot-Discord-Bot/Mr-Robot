@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "mr-robot"
+version = "0.1.0"
+description = ""
+authors = ["Known_Black_Hat <knownblackhat@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+disnake = "~2.8.1"
+aiosqlite = "^0.20.0"
+mafic = "^2.10.0"
+python-dotenv = "^1.0.1"
+aiofiles = "^23.2.1"
+bs4 = "^0.0.2"
+requests = "^2.31.0"
+google-generativeai = "^0.5.2"
+pillow = "^10.3.0"
+httpx = "~0.13.3"
+googletrans = "3.1.0a0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -5,9 +5,9 @@ from typing import Literal
 import disnake
 import psutil
 from disnake.ext import commands
-
-from bot import PROXY
 from utils import Embeds, delete_button
+
+from mr_robot.__main__ import PROXY
 
 logger = logging.getLogger(__name__)
 

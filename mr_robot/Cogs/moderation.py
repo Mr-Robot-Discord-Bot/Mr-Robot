@@ -4,15 +4,16 @@ from typing import Optional, Union
 
 import disnake
 from disnake.ext import commands, tasks
-
 from utils import Embeds, delete_button, parse_time
+
+from mr_robot.bot import MrRobot
 
 MISSING = "MISSING"
 logger = logging.getLogger(__name__)
 
 
 class Moderation(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("Moderation Cog Loaded")
 
@@ -126,6 +127,8 @@ class Moderation(commands.Cog):
             (guild_id, user_id, role_id, expiration) = row
             expiration = datetime.datetime.fromtimestamp(expiration)
             guild = self.bot.get_guild(guild_id)
+            if not guild:
+                continue
             user = guild.get_member(user_id)
             role = disnake.utils.get(guild.roles, id=role_id)
             if not guild or not role:
@@ -845,5 +848,5 @@ class Moderation(commands.Cog):
         )
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Moderation(client))

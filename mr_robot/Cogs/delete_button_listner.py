@@ -3,11 +3,13 @@ import logging
 import disnake
 from disnake.ext import commands
 
+from mr_robot.bot import MrRobot
+
 logger = logging.getLogger(__name__)
 
 
 class DeleteButtonListner(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("DeleteButtonListner Cog Loaded")
 
@@ -25,5 +27,5 @@ class DeleteButtonListner(commands.Cog):
                     )
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(DeleteButtonListner(client))

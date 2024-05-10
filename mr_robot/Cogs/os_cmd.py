@@ -7,9 +7,9 @@ from pathlib import Path
 import disnake
 from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
-
-from bot import MrRobot
 from utils import Embeds, delete_button
+
+from mr_robot.bot import MrRobot
 
 REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
 REPO_PATH = REPO_URL.split("/")[-1].split(".")[0]

@@ -4,8 +4,9 @@ import os
 import google.generativeai as genai
 from disnake.ext import commands
 from google.generativeai.types import BlockedPromptException
-
 from utils import delete_button
+
+from mr_robot.bot import MrRobot
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ safety_settings = [
 
 
 class Ai(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("AI Cog Loaded")
         self.model = genai.GenerativeModel(
@@ -73,5 +74,5 @@ class Ai(commands.Cog):
             )
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Ai(client))

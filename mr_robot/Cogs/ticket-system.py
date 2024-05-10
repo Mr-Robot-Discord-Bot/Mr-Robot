@@ -6,8 +6,9 @@ import aiosqlite
 import disnake
 from aiosqlite import Connection
 from disnake.ext import commands
-
 from utils import Embeds, delete_button
+
+from mr_robot.bot import MrRobot
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,7 @@ class Ticket(disnake.ui.Modal):
 
 
 class TicketSystem(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("TicketSystem Cog Loaded")
 
@@ -434,5 +435,5 @@ class TicketSystem(commands.Cog):
                 await self.bot.db.commit()
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(TicketSystem(client))

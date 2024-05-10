@@ -2,8 +2,9 @@ import logging
 
 import disnake
 from disnake.ext import commands
-
 from utils import Embeds
+
+from mr_robot.bot import MrRobot
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ def fetch_entry(param) -> str:
 
 
 class Command_error_handling(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
         logger.info("Command Error Handling Cog Loaded")
 
@@ -119,5 +120,5 @@ class Command_error_handling(commands.Cog):
             await interaction.send(embed=embed, ephemeral=True)
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Command_error_handling(client))

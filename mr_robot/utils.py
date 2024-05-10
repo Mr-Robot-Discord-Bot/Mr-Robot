@@ -15,7 +15,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def parse_time(duration: str):
+def parse_time(duration: str) -> datetime.timedelta:
     PATTERNS = {
         "seconds": r"(?i)(\d+)\s*(?:seconds?|secs?|s)\b",
         "minutes": r"(?i)(\d+)\s*(?:minutes?|mins?|m)\b",
