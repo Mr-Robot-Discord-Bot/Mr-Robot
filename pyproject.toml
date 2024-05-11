@@ -18,6 +18,8 @@ google-generativeai = "^0.5.2"
 pillow = "^10.3.0"
 httpx = "~0.13.3"
 googletrans = "3.1.0a0"
+psutil = "^5.9.8"
+aiocache = "^0.12.2"
 
 [build-system]
 requires = ["poetry-core"]

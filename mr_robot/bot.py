@@ -18,7 +18,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
 
     def __init__(self, session: httpx.AsyncClient, db, db_name, **kwargs):
         super().__init__(**kwargs)
-        self.pool = mafic.NodePool(self)  # type: ignore
+        self.pool = mafic.NodePool(self)
         self.loop.create_task(self.add_nodes())
         self.start_time = time.time()
         self.session = session

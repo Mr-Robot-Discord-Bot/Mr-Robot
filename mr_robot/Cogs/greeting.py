@@ -127,7 +127,7 @@ class Greetings(commands.Cog):
             outline=theme,
             width=outline,
         )
-        font = ImageFont.truetype(font_style, 40)  # type: ignore
+        font = ImageFont.truetype(font_style, 40)
         txt = "Welcome" if welcome else "Goodbye"
         w, h = draw.textlength(txt, font=font, direction="ltr")
         draw.text(
@@ -147,7 +147,7 @@ class Greetings(commands.Cog):
             align="center",
         )
         if message:
-            font = ImageFont.truetype(font_style, 22)  # type: ignore
+            font = ImageFont.truetype(font_style, 22)
             w, h = draw.textlength(message, font=font, direction="ltr")
             draw.text(
                 ((width - w) / 2 + 10, (height - h) // 2 + 140),
@@ -254,7 +254,7 @@ class Greetings(commands.Cog):
 
     @greeter.sub_command(name="plug")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
     )
     async def slash_set(
         self,
@@ -266,7 +266,7 @@ class Greetings(commands.Cog):
         theme: str = commands.Param(
             choices=["red", "blue", "green", "black", "white", "yellow"]
         ),
-        outline: commands.Range[0, 5] = 4,  # type: ignore
+        outline: commands.Range[0, 5] = 4,  # type: ignore[reportInvalidTypeArguments]
         message: Optional[str] = None,
     ):
         """
@@ -289,14 +289,13 @@ class Greetings(commands.Cog):
             )
             gen_img = functools.partial(
                 self.send_img,
-                channel=interaction.channel,  # type: ignore
                 member=interaction.author,
                 usr_img=usr_img,
                 bg_img=bg_img,
                 message=message,
                 font_style=font_style,
                 theme=theme,
-                outline=outline,  # type: ignore
+                outline=outline,  # type: ignore[reportArgumentType]
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await interaction.send(
@@ -416,7 +415,7 @@ class Greetings(commands.Cog):
         description="Unset's the features of channel in the server",
     )
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
     )
     async def slash_unset(
         self,

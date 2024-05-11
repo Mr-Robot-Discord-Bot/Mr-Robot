@@ -109,7 +109,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 10] = 1,  # type: ignore
+        amount: commands.Range[1, 10] = 1,  # type: ignore[reportInvalidTypeArguments]
     ):
         """
         Loads content from xnxx.com
@@ -177,7 +177,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 10] = 1,  # type: ignore
+        amount: commands.Range[1, 10] = 1,  # type: ignore[reportInvalidTypeArguments]
     ):
         """
         Loads content from xvideos.com
@@ -246,7 +246,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 10] = 1,  # type: ignore
+        amount: commands.Range[1, 10] = 1,  # type: ignore[reportInvalidTypeArguments]
     ):
         """
         Loads content from redtube.com
@@ -271,7 +271,7 @@ class Fun(commands.Cog):
             data = await self.bot._request(URL)
             random.shuffle(data["videos"])
             for count, content in enumerate(data["videos"]):
-                if count >= amount:  # type: ignore
+                if count >= amount:  # type: ignore[reportOperatorIssue]
                     break
                 else:
                     count = count + 1
@@ -313,7 +313,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str,
-        amount: commands.Range[1, 10] = 1,  # type: ignore
+        amount: commands.Range[1, 10] = 1,  # type: ignore[reportInvalidTypeArguments]
     ):
         """
         Loads content from reddit.com
@@ -351,7 +351,7 @@ class Fun(commands.Cog):
             random.shuffle(links_list)
             urls = set()
             for count, data in enumerate(links_list):
-                if count >= amount:  # type: ignore
+                if count >= amount:  # type: ignore[reportOperatorIssue]
                     break
 
                 elif data["data"]["is_video"]:
@@ -385,11 +385,11 @@ class Fun(commands.Cog):
                         "?source=fallback", ""
                     )
                 else:
-                    amount += 1  # type: ignore
+                    amount += 1  # type: ignore[reportOperatorIssue]
                     continue
 
                 if not url.startswith("http"):
-                    amount += 1  # type: ignore
+                    amount += 1  # type: ignore[reportOperatorIssue]
                     continue
 
                 urls.add(url)
@@ -421,10 +421,12 @@ class Fun(commands.Cog):
                 ),
             )
 
-    @reddit.autocomplete(
+    @reddit.autocomplete(  # type: ignore[reportFunctionMemberAccess]
         "search"
     )  # FIXME: Seems like there's issue in reddit function's typing
-    async def reddit_autocomp(self, interaction, name: str) -> Set[str] | None:
+    async def reddit_autocomp(
+        self, interaction: disnake.CommandInteraction, name: str
+    ) -> Set[str] | None:
         name = name.lower()
         url = (
             "https://www.reddit.com/api/search_reddit_names.json?"

@@ -61,10 +61,10 @@ class Oscmd(commands.Cog):
         out = await asyncio.subprocess.create_subprocess_shell(
             command_string, stdout=asyncio.subprocess.PIPE
         )
+        if not out.stdout:
+            raise FileNotFoundError
         await interaction.send(
-            file=disnake.File(
-                io.BytesIO(await out.stdout.read()), filename="cmd.txt"  # type: ignore
-            ),
+            file=disnake.File(io.BytesIO(await out.stdout.read()), filename="cmd.txt"),
             components=[delete_button],
         )
 

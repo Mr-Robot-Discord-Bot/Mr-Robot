@@ -33,7 +33,7 @@ class Ai(commands.Cog):
         logger.info("AI Cog Loaded")
         self.model = genai.GenerativeModel(
             model_name="gemini-1.0-pro",
-            generation_config=generation_config,  # type: ignore
+            generation_config=generation_config,  # type: ignore[reportArgumentType]
             safety_settings=safety_settings,
         )
         self.conv = self.model.start_chat(

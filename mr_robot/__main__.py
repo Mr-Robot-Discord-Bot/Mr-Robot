@@ -50,7 +50,8 @@ async def main():
             await client.git.pull(db_name)
         client.load_bot_extensions()
         try:
-            await client.start(os.getenv("BOT_TOKEN"))  # type: ignore
+            if token := os.getenv("BOT_TOKEN"):
+                await client.start(token)
         except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
             logger.warning(
                 "Unable to connect to Discord falling back to proxy mode", exc_info=True

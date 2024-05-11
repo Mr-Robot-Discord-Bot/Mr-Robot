@@ -113,7 +113,7 @@ class Ticket(disnake.ui.Modal):
             delete_after=2,
         )
 
-    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):
+    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):  # type: ignore[reportIncompatibleMethodOverride]
         logger.exception(error)
         await inter.response.send_message(
             embed=Embeds.emb(Embeds.red, "Oops! Something went wrong :cry:"),
@@ -147,7 +147,7 @@ class TicketSystem(commands.Cog):
 
     @commands.slash_command(name="ticket", dm_permission=False)
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
     )
     async def ticket(self, interaction: disnake.GuildCommandInteraction):
         """Ticket System"""
@@ -328,7 +328,7 @@ class TicketSystem(commands.Cog):
                 (interaction.guild.id, user_id, interaction.channel.id),
             )
             await self.bot.db.commit()
-            await interaction.channel.delete()  # type: ignore
+            await interaction.channel.delete()  # type: ignore[reportAttributeAccessIssue]
 
         elif interaction.component.custom_id.startswith("ticket"):
             ticket_config_id = interaction.component.custom_id.split("-")[-1]
@@ -341,7 +341,7 @@ class TicketSystem(commands.Cog):
                     """,
                     (interaction.guild.id, ticket_config_id),
                 )
-            ).fetchone()  # type: ignore
+            ).fetchone()
             if result:
                 (
                     user_or_role_id,
@@ -374,8 +374,8 @@ class TicketSystem(commands.Cog):
                     user_or_role = interaction.guild.get_member(user_or_role_id)
                 channel = await interaction.guild.create_text_channel(
                     interaction.author.name,
-                    category=category,  # type: ignore
-                    overwrites={  # type: ignore
+                    category=category,  # type: ignore[reportArgumentType]
+                    overwrites={  # type: ignore[reportArgumentType]
                         interaction.guild.default_role: disnake.PermissionOverwrite(
                             read_messages=False
                         ),

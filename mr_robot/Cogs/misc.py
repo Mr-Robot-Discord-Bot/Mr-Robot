@@ -56,7 +56,7 @@ class EmbedModal(disnake.ui.Modal):
         )
         await interaction.channel.send(embed=embed)
 
-    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):  # type: ignore
+    async def on_error(self, error: Exception, inter: disnake.ModalInteraction):  # type: ignore[reportIncompatibleMethodOverride]
         await inter.response.send_message(
             embed=Embeds.emb(Embeds.red, "Oops! Something went wrong :cry:"),
             ephemeral=True,
@@ -114,10 +114,14 @@ class Misc(commands.Cog):
         )
         embed.add_field(
             name="Joined",
-            value=member.joined_at.strftime("%a %#d %B %Y, %I:%M %p UTC"),  # type: ignore
+            value=(
+                joined_at.strftime("%a %#d %B %Y, %I:%M %p UTC")
+                if (joined_at := member.joined_at)
+                else "Unknown"
+            ),
             inline=False,
         )
-        members = sorted(interaction.guild.members, key=lambda m: m.joined_at)  # type: ignore
+        members = sorted(interaction.guild.members, key=lambda m: m.joined_at)  # type: ignore[reportCallIssue]
         embed.add_field(
             name="Join Position", value=str(members.index(member) + 1), inline=False
         )
@@ -140,7 +144,12 @@ class Misc(commands.Cog):
         if roles:
             embed.add_field(
                 name="Temporary Roles" if len(user_temp_dat) > 1 else "Temporary Role",
-                value="\n".join([f"{interaction.guild.get_role(dat[0]).mention}:crossed_swords:{disnake.utils.format_dt(datetime.fromtimestamp(dat[1]))}" for dat in user_temp_dat]),  # type: ignore
+                value="\n".join(
+                    [
+                        f"{role.mention if ( role := interaction.guild.get_role(dat[0])) else ''}:crossed_swords:{disnake.utils.format_dt(datetime.fromtimestamp(dat[1]))}"
+                        for dat in user_temp_dat
+                    ]
+                ),
                 inline=False,
             )
         await interaction.send(embed=embed, components=[delete_button])
