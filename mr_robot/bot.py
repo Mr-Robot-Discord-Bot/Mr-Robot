@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import time
 from typing import Dict, List
 
@@ -8,7 +7,10 @@ import httpx
 import mafic
 from aiocache import cached
 from disnake.ext import commands
-from git_api import Git
+
+from mr_robot.constants import Client
+from mr_robot.git_api import Git
+from mr_robot.utils.extensions import EXTENSIONS, walk_extensions
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +25,8 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.start_time = time.time()
         self.session = session
         self.db = db
-        self.token = os.getenv("GIT_TOKEN")
-        self.repo = os.getenv("GIT_DB_REPO")
+        self.token = Client.github_token
+        self.repo = Client.github_db_repo
         self.git = None
         self.db_name = db_name
         if self.token and self.repo:
@@ -33,8 +35,8 @@ class MrRobot(commands.AutoShardedInteractionBot):
                 token=self.token,
                 owner=owner,
                 repo=repo,
-                username="Mr Robot",
-                email="mr_robot@mr_robot_discord_bot.com",
+                username=Client.name,
+                email=f"{Client.name}@mr_robot_discord_bot.com",
                 client=session,
             )
         logger.info("Mr Robot is ready")
@@ -69,11 +71,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
                 exp_pow += 1
                 logger.warning(f"Trying to reload player after {2**exp_pow} seconds")
 
-    def load_bot_extensions(self):
-        """Loads extensions"""
-        for file in os.listdir("Cogs"):
-            if file.endswith(".py"):
-                try:
-                    self.load_extension(f"Cogs.{str(file[:-3])}")
-                except Exception as error:
-                    raise error
+    def load_bot_extensions(self) -> None:
+        """Loads extensions released by walk_extensions()"""
+        EXTENSIONS.update(walk_extensions())
+        logger.info("Extension loading successful!")

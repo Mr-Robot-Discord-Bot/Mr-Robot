@@ -2,9 +2,9 @@ import logging
 
 import mafic
 from disnake.ext import commands
-from utils import Embeds, delete_button
 
 from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 

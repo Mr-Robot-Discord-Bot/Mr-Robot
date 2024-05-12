@@ -2,9 +2,9 @@ import logging
 
 import disnake
 from disnake.ext import commands
-from utils import Embeds
 
 from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds
 
 logger = logging.getLogger(__name__)
 

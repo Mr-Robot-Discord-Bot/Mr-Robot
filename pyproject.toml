@@ -9,7 +9,7 @@ readme = "README.md"
 python = "^3.12"
 disnake = "~2.8.1"
 aiosqlite = "^0.20.0"
-mafic = "^2.10.0"
+mafic = "~2.3.0"
 python-dotenv = "^1.0.1"
 aiofiles = "^23.2.1"
 bs4 = "^0.0.2"
@@ -20,6 +20,7 @@ httpx = "~0.13.3"
 googletrans = "3.1.0a0"
 psutil = "^5.9.8"
 aiocache = "^0.12.2"
+setuptools = "^69.5.1"
 
 [build-system]
 requires = ["poetry-core"]

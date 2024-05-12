@@ -6,9 +6,9 @@ from typing import Set
 
 import disnake
 from disnake.ext import commands
-from utils import Embeds, url_button_builder
 
 from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, url_button_builder
 
 logger = logging.getLogger(__name__)
 nsfw_api = os.getenv("NSFW_API")

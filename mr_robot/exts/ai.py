@@ -4,9 +4,9 @@ import os
 import google.generativeai as genai
 from disnake.ext import commands
 from google.generativeai.types import BlockedPromptException
-from utils import delete_button
 
 from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import delete_button
 
 logger = logging.getLogger(__name__)
 

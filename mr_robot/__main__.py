@@ -6,9 +6,9 @@ import aiosqlite
 import disnake
 import httpx
 from dotenv import load_dotenv
-from utils import proxy_generator
 
 from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import proxy_generator
 
 proxy_mode = False
 PROXY = None

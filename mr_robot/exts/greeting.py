@@ -9,9 +9,9 @@ import disnake
 from aiocache import cached
 from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
-from utils import Embeds, delete_button
 
 from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, delete_button
 
 WELCOME_IMG_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"
