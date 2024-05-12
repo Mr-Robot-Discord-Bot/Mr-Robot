@@ -9,8 +9,8 @@ from aiocache import cached
 from disnake.ext import commands
 
 from mr_robot.constants import Client
-from mr_robot.git_api import Git
 from mr_robot.utils.extensions import EXTENSIONS, walk_extensions
+from mr_robot.utils.git_api import Git
 
 logger = logging.getLogger(__name__)
 

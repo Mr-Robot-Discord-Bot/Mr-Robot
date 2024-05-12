@@ -1,6 +1,7 @@
 import asyncio
 import logging
-import os
+import signal
+import sys
 
 import aiosqlite
 import disnake
@@ -8,7 +9,9 @@ import httpx
 from dotenv import load_dotenv
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import proxy_generator
+from mr_robot.constants import Client
+
+# from mr_robot.utils.helpers import proxy_generator
 
 proxy_mode = False
 PROXY = None
@@ -48,19 +51,33 @@ async def main():
         if client.git:
             logger.info("Pulling DB")
             await client.git.pull(db_name)
-        client.load_bot_extensions()
         try:
-            if token := os.getenv("BOT_TOKEN"):
-                await client.start(token)
-        except (disnake.errors.LoginFailure, disnake.errors.HTTPException):
-            logger.warning(
-                "Unable to connect to Discord falling back to proxy mode", exc_info=True
-            )
-            proxy_mode = True
-            PROXY = proxy_generator() if proxy_mode else None
-        finally:
+            client.load_bot_extensions()
+        except Exception:
             await client.close()
+            raise
+
+        loop = asyncio.get_running_loop()
+
+        future: asyncio.Future = asyncio.ensure_future(
+            client.start(Client.token or ""), loop=loop
+        )
+        loop.add_signal_handler(signal.SIGINT, lambda: future.cancel())
+        loop.add_signal_handler(signal.SIGTERM, lambda: future.cancel())
+
+        try:
+            await future
+        except asyncio.CancelledError:
+            logger.info("Received signal to terminate bot and event loop")
+            # logger.warning(
+            #     "Unable to connect to Discord falling back to proxy mode", exc_info=True
+            # )
+            # proxy_mode = True
+            # PROXY = proxy_generator() if proxy_mode else None
+        finally:
+            if not client.is_closed():
+                await client.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(asyncio.run(main()))
