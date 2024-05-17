@@ -186,47 +186,39 @@ class Fun(commands.Cog):
         try:
             await interaction.send(
                 embed=Embeds.emb(
-                    Embeds.blue,
+                    Embeds.red,
                     f"Searching {search}",
                     "Please wait while we search for your content",
                 )
             )
-            URL = (
-                "https://api.redtube.com/?data=redtube.Videos.searchVideos"
-                f"&output=json&search={search}&thumbsize=all&page=1&sort=new"
-            )
-            data = await self.bot._request(URL)
-            random.shuffle(data["videos"])
-            for count, content in enumerate(data["videos"]):
-                if count >= amount:  # type: ignore[reportOperatorIssue]
-                    break
-                else:
-                    count = count + 1
-                embed = Embeds.emb(
-                    Embeds.red,
-                    "Showing Results for:" f" {search}",
-                    f"""
-                     **Title**: {content["video"]["title"]}
-                     **Duration**: {content["video"]["duration"]}
-                                    """,
-                )
-                embed.set_thumbnail(url=content["video"]["default_thumb"])
+            data = await self.bot._request(f"{nsfw_api}/redtube/{amount}/{search}")
+            data = data.get("data")
+            for vid in data:
                 await interaction.channel.send(
+                    embed=(
+                        Embeds.emb(
+                            Embeds.blue,
+                            value=f"""
+                            **Name:** {shorten(vid.get("title"), 35, placeholder="...").strip()}
+                            **Duration:** {vid.get("duration")}
+                            """,
+                        )
+                    ).set_image(url=vid.get("default_thumbnail")),
                     components=[
                         url_button_builder(
-                            url=content["video"]["url"], label="Watch Now", emoji="📺"
+                            url=vid.get("url"), label="Watch Now", emoji="📺"
                         ),
                     ],
-                    embed=embed,
                 )
-                await interaction.edit_original_response(
-                    embed=Embeds.emb(
-                        Embeds.green,
-                        "Search Completed",
-                        f"Showing {amount} results for `{search}`",
-                    )
+            await interaction.edit_original_response(
+                embed=Embeds.emb(
+                    Embeds.green,
+                    "Search Completed",
+                    f"Showing {len(data)} results for `{search}`",
                 )
+            )
         except Exception:
+            logger.error("Error in Xvideos", exc_info=True)
             await interaction.edit_original_response(
                 embed=Embeds.emb(
                     Embeds.red,
