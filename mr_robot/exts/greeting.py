@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 class FontDir(Enum):
     """Font Directory"""
 
-    Branda = "fonts/Branda.ttf"
-    ChrustyRock = "fonts/ChrustyRock.ttf"
-    Debrosee = "fonts/Debrosee.ttf"
-    ShortBaby = "fonts/ShortBaby.ttf"
+    Branda = "../fonts/Branda.ttf"
+    ChrustyRock = "../fonts/ChrustyRock.ttf"
+    Debrosee = "../fonts/Debrosee.ttf"
+    ShortBaby = "../fonts/ShortBaby.ttf"
 
 
 class Greetings(commands.Cog):
