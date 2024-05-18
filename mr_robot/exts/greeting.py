@@ -10,8 +10,8 @@ from aiocache import cached
 from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
-from bot import MrRobot
-from utils import Embeds, delete_button
+from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, delete_button
 
 WELCOME_IMG_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"
@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 class FontDir(Enum):
     """Font Directory"""
 
-    Branda = "fonts/Branda.ttf"
-    ChrustyRock = "fonts/ChrustyRock.ttf"
-    Debrosee = "fonts/Debrosee.ttf"
-    ShortBaby = "fonts/ShortBaby.ttf"
+    Branda = "../fonts/Branda.ttf"
+    ChrustyRock = "../fonts/ChrustyRock.ttf"
+    Debrosee = "../fonts/Debrosee.ttf"
+    ShortBaby = "../fonts/ShortBaby.ttf"
 
 
 class Greetings(commands.Cog):
@@ -77,7 +77,6 @@ class Greetings(commands.Cog):
 
     def send_img(
         self,
-        channel: disnake.TextChannel,
         member: disnake.Member,
         message: Optional[str],
         font_style: FontDir,
@@ -103,7 +102,7 @@ class Greetings(commands.Cog):
         """
         bg = Image.open(bg_img).convert("RGBA")
         usr = Image.open(usr_img).convert("RGBA")
-        usr = usr.resize((128, 128), Image.ANTIALIAS)
+        usr = usr.resize((128, 128), Image.Resampling.LANCZOS)
         background = Image.new("RGBA", size=usr.size, color=(255, 255, 255, 0))
         holder = Image.new("RGBA", size=usr.size, color=(255, 255, 255, 0))
         mask = Image.new("RGBA", size=usr.size, color=(255, 255, 255, 0))
@@ -128,9 +127,9 @@ class Greetings(commands.Cog):
             outline=theme,
             width=outline,
         )
-        font = ImageFont.truetype(font_style, 40)  # type: ignore
+        font = ImageFont.truetype(font_style, 40)
         txt = "Welcome" if welcome else "Goodbye"
-        w, h = draw.textsize(txt, font=font, direction="ltr")
+        w, h = draw.textlength(txt, font=font, direction="ltr")
         draw.text(
             ((width - w) / 2 + 10, (height - h) // 2 + 100 - 50),
             txt,
@@ -139,7 +138,7 @@ class Greetings(commands.Cog):
             align="center",
         )
         txt = member.name
-        w, h = draw.textsize(txt, font=font, direction="ltr")
+        w, h = draw.textlength(txt, font=font, direction="ltr")
         draw.text(
             ((width - w) / 2 + 10, (height - h) // 2 + 100 - 10),
             txt,
@@ -148,8 +147,8 @@ class Greetings(commands.Cog):
             align="center",
         )
         if message:
-            font = ImageFont.truetype(font_style, 22)  # type: ignore
-            w, h = draw.textsize(message, font=font, direction="ltr")
+            font = ImageFont.truetype(font_style, 22)
+            w, h = draw.textlength(message, font=font, direction="ltr")
             draw.text(
                 ((width - w) / 2 + 10, (height - h) // 2 + 140),
                 message,
@@ -194,7 +193,6 @@ class Greetings(commands.Cog):
                 )
                 gen_img = functools.partial(
                     self.send_img,
-                    channel=member_channel,
                     member=member,
                     usr_img=usr_img,
                     bg_img=bg_img,
@@ -204,8 +202,8 @@ class Greetings(commands.Cog):
                     outline=wlcm_outline,
                 )
                 img_file = await self.loop.run_in_executor(None, gen_img)
-                await member_channel.send(file=img_file)
-                await member_channel.send(member.mention, delete_after=3)
+                await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
+                await member_channel.send(member.mention, delete_after=3)  # type: ignore[reportAttributeAccessIssue]
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -238,7 +236,6 @@ class Greetings(commands.Cog):
                 )
                 gen_img = functools.partial(
                     self.send_img,
-                    channel=member_channel,
                     member=member,
                     usr_img=usr_img,
                     bg_img=bg_img,
@@ -248,7 +245,7 @@ class Greetings(commands.Cog):
                     outline=bye_outline,
                 )
                 img_file = await self.loop.run_in_executor(None, gen_img)
-                await member_channel.send(file=img_file)
+                await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
 
     @commands.slash_command(name="greeter", dm_permission=False)
     async def greeter(self, interaction):
@@ -257,7 +254,7 @@ class Greetings(commands.Cog):
 
     @greeter.sub_command(name="plug")
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
     )
     async def slash_set(
         self,
@@ -269,7 +266,7 @@ class Greetings(commands.Cog):
         theme: str = commands.Param(
             choices=["red", "blue", "green", "black", "white", "yellow"]
         ),
-        outline: commands.Range[0, 5] = 4,  # type: ignore
+        outline: commands.Range[0, 5] = 4,  # type: ignore[reportInvalidTypeArguments]
         message: Optional[str] = None,
     ):
         """
@@ -292,14 +289,13 @@ class Greetings(commands.Cog):
             )
             gen_img = functools.partial(
                 self.send_img,
-                channel=interaction.channel,  # type: ignore
                 member=interaction.author,
                 usr_img=usr_img,
                 bg_img=bg_img,
                 message=message,
                 font_style=font_style,
                 theme=theme,
-                outline=outline,  # type: ignore
+                outline=outline,  # type: ignore[reportArgumentType]
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await interaction.send(
@@ -419,7 +415,7 @@ class Greetings(commands.Cog):
         description="Unset's the features of channel in the server",
     )
     @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore
+        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
     )
     async def slash_unset(
         self,

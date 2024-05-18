@@ -4,13 +4,14 @@ import os
 import disnake
 from disnake.ext import commands
 
-from utils import Embeds, send_webhook
+from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, send_webhook
 
 logger = logging.getLogger(__name__)
 
 
 class Joinalert(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: MrRobot):
         self.bot = bot
         logger.info("Joinalert Cog Loaded")
 
@@ -42,7 +43,7 @@ class Joinalert(commands.Cog):
         await self.bot.db.commit()
         await send_webhook(
             embed=embed,
-            webhook_url=os.getenv("ON_JOIN_WEBHOOK"),
+            webhook_url=os.getenv("ON_JOIN_WEBHOOK"),  # type: ignore[reportArgumentType]
             username="Guild Join Logger",
             avatar_url="https://cdn.discordapp.com/avatars"
             "/1087375480304451727/f780c7c8c052c66c89f9270"
@@ -83,7 +84,7 @@ class Joinalert(commands.Cog):
         await self.bot.db.commit()
         await send_webhook(
             embed=embed,
-            webhook_url=os.getenv("ON_JOIN_WEBHOOK"),
+            webhook_url=os.getenv("ON_JOIN_WEBHOOK"),  # type: ignore[reportArgumentType]
             username="Guild Leave Logger",
             avatar_url="https://cdn.discordapp.com/avatars/10"
             "87375480304451727/f780c7c8c052c66c89f9270aebd63b"
@@ -91,5 +92,5 @@ class Joinalert(commands.Cog):
         )
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Joinalert(client))

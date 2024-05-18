@@ -3,7 +3,7 @@ import logging
 import random
 import re
 from functools import partial
-from typing import Any
+from typing import Any, Optional
 
 import aiohttp
 import disnake
@@ -11,11 +11,13 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
+from mr_robot.constants import Client
+
 load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def parse_time(duration: str):
+def parse_time(duration: str) -> datetime.timedelta:
     PATTERNS = {
         "seconds": r"(?i)(\d+)\s*(?:seconds?|secs?|s)\b",
         "minutes": r"(?i)(\d+)\s*(?:minutes?|mins?|m)\b",
@@ -75,9 +77,9 @@ class Embeds(disnake.Embed):
     def emb(color: Any = green, name="", value="") -> disnake.Embed:
         """Returns a embed"""
         Em = disnake.Embed(color=color, title=name, description=value)
-        Em.timestamp = datetime.datetime.utcnow()
+        Em.timestamp = datetime.datetime.now()
         Em.set_footer(
-            text="MR ROBOT",
+            text=Client.name,
             icon_url="https://cdn.discordapp.com/avatars/1087375480304451727/"
             "f780c7c8c052c66c89f9270aebd63bc2.png?size=1024",
         )
@@ -105,17 +107,24 @@ def proxy_generator() -> str:
 
 
 async def send_webhook(
-    webhook_url,
-    embed=None,
-    content=None,
-    username=None,
-    avatar_url="https://cdn.discordapp.com/avatars"
+    webhook_url: str,
+    embed: Optional[disnake.Embed] = None,
+    content: Optional[str] = None,
+    username: str = "Discord Webhook",
+    avatar_url: str = "https://cdn.discordapp.com/avatars"
     "/1087375480304451727/f780c7c8c052c66c89f9270aebd63bc2"
     ".png?size=1024",
-):
+) -> None:
     """Sends Webhook to the guild"""
     async with aiohttp.ClientSession() as session:
         webhook = disnake.Webhook.from_url(webhook_url, session=session)
-        await webhook.send(
-            content, embed=embed, username=username, avatar_url=avatar_url  # type: ignore
-        )
+        if embed:
+            await webhook.send(embed=embed, username=username, avatar_url=avatar_url)
+        elif content:
+            await webhook.send(content, username=username, avatar_url=avatar_url)
+        elif content and embed:
+            await webhook.send(
+                content, embed=embed, username=username, avatar_url=avatar_url
+            )
+        else:
+            raise ValueError("Webhook content & embed is empty")

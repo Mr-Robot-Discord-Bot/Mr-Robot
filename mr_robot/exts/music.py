@@ -3,13 +3,14 @@ import logging
 import mafic
 from disnake.ext import commands
 
-from utils import Embeds, delete_button
+from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 
 
 class Music(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: MrRobot):
         self.bot = bot
         logger.info("Music Cog Loaded")
 
@@ -85,5 +86,5 @@ class Music(commands.Cog):
             await interaction.guild.voice_client.disconnect()
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Music(client))

@@ -6,8 +6,9 @@ import disnake
 import psutil
 from disnake.ext import commands
 
-from bot import PROXY
-from utils import Embeds, delete_button
+from mr_robot.__main__ import PROXY
+from mr_robot.bot import MrRobot
+from mr_robot.utils.helpers import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 
@@ -148,5 +149,5 @@ class Status(commands.Cog):
         await interaction.send(embed=embed, components=[delete_button])
 
 
-def setup(client: commands.Bot):
+def setup(client: MrRobot):
     client.add_cog(Status(client))
