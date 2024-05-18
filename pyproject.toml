@@ -22,6 +22,11 @@ psutil = "^5.9.8"
 aiocache = "^0.12.2"
 setuptools = "^69.5.1"
 
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+isort = "^5.13.2"
+pytest = "^8.2.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
