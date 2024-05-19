@@ -16,10 +16,10 @@ from mr_robot.constants import Client
 proxy_mode = False
 PROXY = None
 
-file_handler = logging.FileHandler("mr-robot.log", mode="w")
+file_handler = logging.FileHandler(Client.log_file_name, mode="w")
 console_handler = logging.StreamHandler()
 
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
 console_handler.setLevel(logging.INFO)
 logging.basicConfig(
     level=logging.NOTSET,
@@ -29,7 +29,7 @@ logging.basicConfig(
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
-logging.getLogger("disnake").setLevel(logging.INFO)
+logging.getLogger("disnake").setLevel(logging.DEBUG)
 logging.getLogger("aiosqlite").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -39,18 +39,17 @@ load_dotenv()
 
 async def main():
     global PROXY
-    db_name = "mr-robot.db"
     async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
             proxy=PROXY,
             intents=disnake.Intents.all(),
             session=session,
-            db=await aiosqlite.connect(db_name),
-            db_name=db_name,
+            db=await aiosqlite.connect(Client.db_name),
+            db_name=Client.db_name,
         )
         if client.git:
             logger.info("Pulling DB")
-            await client.git.pull(db_name)
+            await client.git.pull(Client.db_name)
         try:
             client.load_bot_extensions()
         except Exception:
