@@ -124,7 +124,6 @@ class Ticket(disnake.ui.Modal):
 class TicketSystem(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-        logger.info("TicketSystem Cog Loaded")
 
     @commands.Cog.listener()
     async def on_ready(self):

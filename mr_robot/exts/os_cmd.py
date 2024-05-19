@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 class Oscmd(commands.Cog):
     def __init__(self, bot: MrRobot):
         self.bot = bot
-        logger.info("Oscmd Cog Loaded")
         self.first_task = True
         self.pull_push_db.start()
 

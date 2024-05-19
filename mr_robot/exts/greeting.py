@@ -33,7 +33,6 @@ class Greetings(commands.Cog):
     def __init__(self, bot: MrRobot):
         self.bot = bot
         self.loop = asyncio.get_running_loop()
-        logger.info("Greetings Cog Loaded")
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
@@ -266,7 +265,7 @@ class Greetings(commands.Cog):
         theme: str = commands.Param(
             choices=["red", "blue", "green", "black", "white", "yellow"]
         ),
-        outline: commands.Range[0, 5] = 4,  # type: ignore[reportInvalidTypeArguments]
+        outline: commands.Range[int, 0, 5] = 4,
         message: Optional[str] = None,
     ):
         """

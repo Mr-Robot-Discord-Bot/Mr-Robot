@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "mr-robot"
-version = "1.5.1"
+version = "1.1.0"
 description = ""
 authors = ["Known_Black_Hat <knownblackhat@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-disnake = "~2.8.1"
+disnake = "^2.8.1"
 aiosqlite = "^0.20.0"
 mafic = "~2.3.0"
 python-dotenv = "^1.0.1"
@@ -21,6 +21,7 @@ googletrans = "3.1.0a0"
 psutil = "^5.9.8"
 aiocache = "^0.12.2"
 setuptools = "^69.5.1"
+pynacl = "^1.5.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"

@@ -17,7 +17,6 @@ nsfw_api = Client.nsfw_api
 class Fun(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-        logger.info("Fun Cog Loaded")
 
     @commands.slash_command(name="nsfw", nsfw=True, dm_permission=False)
     @commands.cooldown(1, 10, commands.cooldowns.BucketType.user)
@@ -36,7 +35,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 3] = 1,  # type: ignore[reportInvalidTypeArguments]
+        amount: commands.Range[int, 1, 3] = 1,
     ):
         """
         Loads content from xnxx.com
@@ -104,7 +103,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 3] = 1,  # type: ignore[reportInvalidTypeArguments]
+        amount: commands.Range[int, 1, 3] = 1,
     ):
         """
         Loads content from xvideos.com
@@ -173,7 +172,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "porn",
-        amount: commands.Range[1, 3] = 1,  # type: ignore[reportInvalidTypeArguments]
+        amount: commands.Range[int, 1, 3] = 1,
     ):
         """
         Loads content from redtube.com
@@ -232,7 +231,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str,
-        amount: commands.Range[1, 3] = 1,  # type: ignore[reportInvalidTypeArguments]
+        amount: commands.Range[int, 1, 3] = 1,
     ):
         """
         Loads content from reddit.com
