@@ -422,23 +422,23 @@ files = [
 
 [[package]]
 name = "disnake"
-version = "2.8.2"
+version = "2.9.2"
 description = "A Python wrapper for the Discord API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "disnake-2.8.2-py3-none-any.whl", hash = "sha256:80ae51b64fa44b4aa6f593febc6295355da414f474484d64dc6faef6dcc74f64"},
-    {file = "disnake-2.8.2.tar.gz", hash = "sha256:cc48bd244b604e1b0e4e2fa134a1cf6b8bb7c1d7b3bce65b0f56190a95036912"},
+    {file = "disnake-2.9.2-py3-none-any.whl", hash = "sha256:6b987270dd6a9eabed1540080095e84f51eb6847b1c2ad0562a1ff9db0284c06"},
+    {file = "disnake-2.9.2.tar.gz", hash = "sha256:e6df395d0eb1bb402c3416c1ed28c35460a18322b05aa187ec76cdbe2304e828"},
 ]
 
 [package.dependencies]
-aiohttp = {version = ">=3.8.2,<4.0", markers = "python_version >= \"3.11\""}
+aiohttp = ">=3.7.0,<4.0"
 
 [package.extras]
 discord = ["discord-disnake"]
-docs = ["docutils (>=0.17)", "sphinx (==5.3.0)", "sphinx-autobuild (>=2021.3,<2022.0)", "sphinx-hoverxref (==1.3.0)", "sphinx-notfound-page (==0.8.3)", "sphinxcontrib-towncrier (==0.3.0a0)", "sphinxcontrib-trio (>=1.1.2,<1.2.0)", "towncrier (==22.8.0)"]
+docs = ["sphinx (==7.0.1)", "sphinx-autobuild (>=2021.3,<2022.0)", "sphinx-hoverxref (==1.3.0)", "sphinx-notfound-page (==0.8.3)", "sphinxcontrib-towncrier (==0.3.2a0)", "sphinxcontrib-trio (>=1.1.2,<1.2.0)", "towncrier (==23.6.0)"]
 speed = ["Brotli", "aiodns (>=1.1)", "cchardet", "orjson (>=3.6,<4.0)"]
-voice = ["PyNaCl (>=1.3.0,<1.5)"]
+voice = ["PyNaCl (>=1.3.0,<1.6)"]
 
 [[package]]
 name = "frozenlist"
@@ -1663,4 +1663,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "ade63a4c8ffb550e79631660cd6c33360d9afd7433214e7b3f07807917f29fba"
+content-hash = "2684959c04589b54574455691436d7bc68f1ac691a25ecae0683d4a31909247a"

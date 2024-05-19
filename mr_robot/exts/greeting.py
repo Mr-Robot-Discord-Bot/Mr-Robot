@@ -266,7 +266,7 @@ class Greetings(commands.Cog):
         theme: str = commands.Param(
             choices=["red", "blue", "green", "black", "white", "yellow"]
         ),
-        outline: commands.Range[0, 5] = 4,  # type: ignore[reportInvalidTypeArguments]
+        outline: commands.Range[int, 0, 5] = 4,
         message: Optional[str] = None,
     ):
         """

@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-disnake = "~2.8.1"
+disnake = "^2.8.1"
 aiosqlite = "^0.20.0"
 mafic = "~2.3.0"
 python-dotenv = "^1.0.1"
