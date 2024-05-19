@@ -8,7 +8,12 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install -r requirements.txt
+RUN pip install -U pip wheel setuptools
+RUN pip install poetry poetry-plugin-export
 
+RUN poetry export --without-hashes > requirements.txt
+RUN pip uninstall poetry -y
+RUN pip install -Ur requirements.txt
+RUN pip install . --no-deps
 
-ENTRYPOINT ["python3", "bot.py"]
+ENTRYPOINT ["python3", "-m", "mr_robot"]
