@@ -30,7 +30,6 @@ safety_settings = [
 class Ai(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-        logger.info("AI Cog Loaded")
         self.model = genai.GenerativeModel(
             model_name="gemini-1.0-pro",
             generation_config=generation_config,  # type: ignore[reportArgumentType]

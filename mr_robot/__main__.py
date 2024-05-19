@@ -29,7 +29,7 @@ logging.basicConfig(
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
-logging.getLogger("disnake").setLevel(logging.DEBUG)
+logging.getLogger("disnake").setLevel(logging.INFO)
 logging.getLogger("aiosqlite").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 

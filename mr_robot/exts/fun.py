@@ -17,7 +17,6 @@ nsfw_api = Client.nsfw_api
 class Fun(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-        logger.info("Fun Cog Loaded")
 
     @commands.slash_command(name="nsfw", nsfw=True, dm_permission=False)
     @commands.cooldown(1, 10, commands.cooldowns.BucketType.user)

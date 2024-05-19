@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 class Moderation(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-        logger.info("Moderation Cog Loaded")
 
     @commands.Cog.listener()
     async def on_ready(self):

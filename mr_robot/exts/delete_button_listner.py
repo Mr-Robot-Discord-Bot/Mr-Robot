@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 class DeleteButtonListner(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-        logger.info("DeleteButtonListner Cog Loaded")
 
     @commands.Cog.listener()
     async def on_button_click(self, interaction: disnake.MessageInteraction):

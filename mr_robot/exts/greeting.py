@@ -33,7 +33,6 @@ class Greetings(commands.Cog):
     def __init__(self, bot: MrRobot):
         self.bot = bot
         self.loop = asyncio.get_running_loop()
-        logger.info("Greetings Cog Loaded")
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
