@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mr-robot"
-version = "0.1.0"
+version = "1.5.1"
 description = ""
 authors = ["Known_Black_Hat <knownblackhat@gmail.com>"]
 readme = "README.md"

@@ -1,5 +1,4 @@
 import logging
-import os
 import random
 from textwrap import shorten
 from typing import Set
@@ -8,10 +7,11 @@ import disnake
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
+from mr_robot.constants import Client
 from mr_robot.utils.helpers import Embeds, url_button_builder
 
 logger = logging.getLogger(__name__)
-nsfw_api = os.getenv("NSFW_API")
+nsfw_api = Client.nsfw_api
 
 
 class Fun(commands.Cog):
