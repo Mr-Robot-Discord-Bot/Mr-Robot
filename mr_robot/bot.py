@@ -74,7 +74,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
     def load_bot_extensions(self) -> None:
         """Loads extensions released by walk_extensions()"""
         EXTENSIONS.update(walk_extensions())
-        logger.info("Extension loading successful!")
         for ext in walk_extensions():
             logger.info(f"{ext} extension loaded!!")
             self.load_extension(ext)
+        logger.info("Extension loading successful!")
