@@ -1,7 +1,7 @@
 import logging
 
 import disnake
-import googletrans as gt  # TODO: replace googletrans with its alternative & update httpx to latest version
+import googletrans as gt
 from disnake.ext import commands
 from googletrans import Translator
 
