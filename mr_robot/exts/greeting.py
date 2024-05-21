@@ -294,7 +294,7 @@ class Greetings(commands.Cog):
                 message=message,
                 font_style=font_style,
                 theme=theme,
-                outline=outline,  # type: ignore[reportArgumentType]
+                outline=outline,
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await interaction.send(

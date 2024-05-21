@@ -27,6 +27,8 @@ class Fun(commands.Cog):
         """
         Shows You Nsfw Content
         """
+        if not nsfw_api:
+            raise ValueError("Nsfw api is not being initialised")
         await interaction.response.defer()
 
     @commands.is_nsfw()
@@ -95,7 +97,7 @@ class Fun(commands.Cog):
         self, interaction: disnake.GuildCommandInteraction, name: str
     ):
         data = await self.bot._request(f"{nsfw_api}/suggestion/xnxx/{name or 'porn'}")
-        return {keywords for keywords in data.json().get("data", [])}
+        return {keywords for keywords in data.get("data", [])}
 
     @commands.is_nsfw()
     @slash_nsfw.sub_command(name="xvideos")
@@ -202,7 +204,7 @@ class Fun(commands.Cog):
                             **Duration:** {vid.get("duration")}
                             """,
                         )
-                    ).set_image(url=vid.get("default_thumbnail")),
+                    ).set_image(url=vid.get("default_thumb")),
                     components=[
                         url_button_builder(
                             url=vid.get("url"), label="Watch Now", emoji="📺"
@@ -269,7 +271,7 @@ class Fun(commands.Cog):
             random.shuffle(links_list)
             urls = set()
             for count, data in enumerate(links_list):
-                if count >= amount:  # type: ignore[reportOperatorIssue]
+                if count >= amount:
                     break
 
                 elif data["data"]["is_video"]:
@@ -303,11 +305,11 @@ class Fun(commands.Cog):
                         "?source=fallback", ""
                     )
                 else:
-                    amount += 1  # type: ignore[reportOperatorIssue]
+                    amount += 1
                     continue
 
                 if not url.startswith("http"):
-                    amount += 1  # type: ignore[reportOperatorIssue]
+                    amount += 1
                     continue
 
                 urls.add(url)

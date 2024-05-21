@@ -8,13 +8,14 @@ from disnake.ext import commands
 
 from mr_robot.__main__ import PROXY
 from mr_robot.bot import MrRobot
+from mr_robot.utils.extensions import EXTENSIONS
 from mr_robot.utils.helpers import Embeds, delete_button
 
 logger = logging.getLogger(__name__)
 
 
 class Status(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
 
     @commands.Cog.listener()
@@ -97,27 +98,27 @@ class Status(commands.Cog):
 
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
-            "Shards: ",
+            "Shards ",
             f"`{self.bot.shard_count}`",
         )
         embed.add_field(
-            "Latency: ",
+            "Latency ",
             f"`{int(self.bot.latency * 1000)}ms`",
         )
         embed.add_field(
-            "Uptime: ",
+            "Uptime ",
             disnake.utils.format_dt(self.bot.start_time, style="R"),
         )
         embed.add_field(
-            "Cpu Usage: ",
+            "Cpu Usage ",
             f"`{psutil.cpu_percent()}%`",
         )
         embed.add_field(
-            "Memory Usage: ",
+            "Memory Usage ",
             f"`{psutil.virtual_memory().percent}%`",
         )
         embed.add_field(
-            "Available Usage: ",
+            "Available Usage ",
             f"""`{
                 str(
                     round(
@@ -130,21 +131,27 @@ class Status(commands.Cog):
                 }`""",
         )
         embed.add_field(
-            "Members: ",
+            "Members ",
             f"`{interaction.guild.member_count}`",
         )
         embed.add_field(
-            "Channels: ",
+            "Channels ",
             f"`{len(interaction.guild.channels)}`",
         )
         embed.add_field(
-            "Welcomer: ",
+            "Welcomer ",
             await get_greeter_status("wlcm_channel"),
         )
         embed.add_field(
-            "Goodbyer: ",
+            "Goodbyer ",
             await get_greeter_status("bye_channel"),
         )
+        if self.bot.owner_id == interaction.author.id:
+            embed.add_field(
+                "Extension loaded",
+                f"```{'\n'.join(map(lambda x: x.rsplit(".", maxsplit=1)[-1], EXTENSIONS))}```",
+                inline=False,
+            )
         await interaction.send(embed=embed, components=[delete_button])
 
 

@@ -49,6 +49,8 @@ class Ai(commands.Cog):
     @commands.slash_command(name="ai", dm_permission=False)
     async def ai(self, _):
         """Interact with ai"""
+        if not Client.gemini_api_key:
+            raise ValueError("Ai api key is not being initialised")
         ...
 
     @ai.sub_command(name="chat")
