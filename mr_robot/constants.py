@@ -14,6 +14,7 @@ class Client:
     nsfw_api = getenv("NSFW_API")
     gemini_api_key = getenv("AI_API_KEY")
     on_join_webook = getenv("ON_JOIN_WEBHOOK")
+    debug_mode = False
 
 
 class ButtonCustomId:
