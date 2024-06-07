@@ -23,8 +23,7 @@ class CommandInvokationManager(commands.Cog):
         start = time.perf_counter()
         await self.bot.wait_for(
             disnake.Event.slash_command_completion,
-            check=lambda inter: interaction.application_command.name
-            == inter.application_command.name,
+            check=lambda inter: inter is interaction,
         )
         elapsed_time = time.perf_counter() - start
         logger.debug(f"{interaction.application_command.name} took {elapsed_time:.4f}s")
