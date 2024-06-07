@@ -6,7 +6,8 @@ import disnake
 from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button, parse_time
+from mr_robot.utils.helpers import Embeds, parse_time
+from mr_robot.utils.messages import DeleteButton
 
 MISSING = "MISSING"
 logger = logging.getLogger(__name__)
@@ -95,7 +96,7 @@ class Moderation(commands.Cog):
             )
         await self.bot.db.commit()
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.green,
                 "Temporarily Role Assigned",
@@ -188,7 +189,7 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore[reportAssignmentType]
         await user.add_roles(role)
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.green,
                 "Role Assigned",
@@ -222,7 +223,7 @@ class Moderation(commands.Cog):
         role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore[reportAssignmentType]
         await user.remove_roles(role)
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.red,
                 "Role Removed",
@@ -256,7 +257,7 @@ class Moderation(commands.Cog):
         try:
             await interaction.guild.unban(disnake.Object(int(member)))
             await interaction.send(
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
                 embed=Embeds.emb(Embeds.green, "Unbanned", f"Unbanned: <@{member}>"),
             )
         except Exception:
@@ -309,7 +310,7 @@ class Moderation(commands.Cog):
         except disnake.Forbidden:
             pass
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.red, "Banned", f"Banned: {member.mention} Reason: {reason}"
             ),
@@ -357,7 +358,7 @@ class Moderation(commands.Cog):
         except (disnake.Forbidden, disnake.errors.HTTPException):
             ...
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.red,
                 "Temporarily Muted",
@@ -390,7 +391,7 @@ class Moderation(commands.Cog):
         except Exception:
             ...
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.red, "Kicked", f"Kicked: {member.mention} Reason: {reason}"
             ),
@@ -440,7 +441,7 @@ class Moderation(commands.Cog):
         message : Message To Send. Use ; for newline
         """
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.red,
                 f"WARNING {member}",
@@ -481,7 +482,7 @@ class Moderation(commands.Cog):
                 Kindly be patient until you get next notification as this is time taking process
                 """,
             ),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
         try:
             for member in interaction.guild.members:
@@ -490,7 +491,7 @@ class Moderation(commands.Cog):
                 elif action == "remove":
                     await member.remove_roles(role)
             await interaction.send(
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
                 embed=Embeds.emb(
                     Embeds.green,
                     "Roleall",
@@ -572,7 +573,7 @@ class Moderation(commands.Cog):
             msg = f"{channel.mention} has been locked for {member_or_role.mention} !"
         await interaction.send(
             embed=Embeds.emb(Embeds.red, "Locked", msg),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
 
     @server.sub_command(name="unlock")
@@ -601,7 +602,7 @@ class Moderation(commands.Cog):
             msg = f"{channel.mention} has been unlocked for {member_or_role.mention} !"
         await interaction.send(
             embed=Embeds.emb(Embeds.green, "Unlocked", msg),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
 
     @server.sub_command(name="hide")
@@ -630,7 +631,7 @@ class Moderation(commands.Cog):
             msg = f"{channel.mention} has been hidden for {member_or_role.mention} !"
         await interaction.send(
             embed=Embeds.emb(Embeds.red, "Hidden", msg),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
 
     @server.sub_command(name="unhide")
@@ -660,7 +661,7 @@ class Moderation(commands.Cog):
 
         await interaction.send(
             embed=Embeds.emb(Embeds.green, "Unhidden", msg),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
 
     @server.sub_command(name="nuke")
@@ -682,7 +683,7 @@ class Moderation(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.yellow, "Nuke", f"Nuke for {channel.mention} initiated!"
                 ),
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
             new_channel = await channel.clone()
             await channel.delete()
@@ -727,7 +728,7 @@ class Moderation(commands.Cog):
                 embed=Embeds.emb(
                     Embeds.green, "Deleted", f"{channel.name} has been deleted!"
                 ),
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
         except disnake.errors.Forbidden:
             await interaction.send(
@@ -748,7 +749,7 @@ class Moderation(commands.Cog):
             embed=Embeds.emb(
                 Embeds.yellow, "Delete Category", f"Deleting {category.mention}!"
             ),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
         for channel in category.channels:
             await channel.delete()
@@ -779,7 +780,7 @@ class Moderation(commands.Cog):
                 _text = f"Cloned {channel.mention} -> {new_channel.mention}!"
             await interaction.send(
                 embed=Embeds.emb(Embeds.yellow, "Clone", _text),
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
         except disnake.errors.Forbidden:
             await interaction.send(

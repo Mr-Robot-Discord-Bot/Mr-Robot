@@ -6,10 +6,11 @@ from disnake.ext import commands
 from googletrans import Translator
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 
-async def autocomp_langs(inter: disnake.CommandInteraction, user_input: str):
+async def autocomp_langs(_: disnake.CommandInteraction, user_input: str):
     if user_input == "":
         return [lang for lang in list(gt.LANGUAGES.values())[:20]]
     else:
@@ -41,7 +42,7 @@ class Translate(commands.Cog):
         translator = Translator()
         translation = translator.translate(message, dest=language)
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
                 Embeds.yellow,
                 f"Translation {gt.LANGUAGES[translation.src]} to {language}",

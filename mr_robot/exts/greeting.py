@@ -11,7 +11,8 @@ from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 WELCOME_IMG_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"
@@ -300,7 +301,7 @@ class Greetings(commands.Cog):
             await interaction.send(
                 "This is how it will look like:",
                 file=img_file,
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
 
         except UnidentifiedImageError:

@@ -10,7 +10,8 @@ from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 REPO_PATH = Client.github_bot_repo.split("/")[-2]
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class Oscmd(commands.Cog):
             await self.pull_push_db()
             await interaction.send(
                 embed=Embeds.emb(Embeds.green, "Backup Completed"),
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
         except Exception as error:
             raise commands.CommandError(str(error))
@@ -64,7 +65,7 @@ class Oscmd(commands.Cog):
             raise FileNotFoundError
         await interaction.send(
             file=disnake.File(io.BytesIO(await out.stdout.read()), filename="cmd.txt"),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
 
     @owner.sub_command(name="update", description="Updates the code from gihub")
@@ -73,7 +74,7 @@ class Oscmd(commands.Cog):
             status=disnake.Status.dnd, activity=disnake.Game(name="Update")
         )
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(Embeds.green, "Updating..."),
         )
         os.system(f"git clone {Client.github_bot_repo}")
@@ -83,7 +84,7 @@ class Oscmd(commands.Cog):
         os.system(f"mv {REPO_PATH}/* .")
         os.system(f"rm -rf {REPO_PATH}")
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(Embeds.green, "Update Completed"),
         )
         os.system("python bot.py")
@@ -114,7 +115,7 @@ class Oscmd(commands.Cog):
         link = await channel.create_invite(
             temporary=True, max_age=int(expire), max_uses=int(number_of_uses)
         )
-        await interaction.send(link.url, components=[delete_button])
+        await interaction.send(link.url, components=[DeleteButton(interaction.author)])
 
     @link.autocomplete("id")
     async def link_autocomplete(self, inter: disnake.GuildCommandInteraction, inp: str):
@@ -132,7 +133,8 @@ class Oscmd(commands.Cog):
     @owner.sub_command(name="shutdown", description="Shutdown myself")
     async def reboot(self, interaction):
         await interaction.send(
-            embed=Embeds.emb(Embeds.red, "Shutting down"), components=[delete_button]
+            embed=Embeds.emb(Embeds.red, "Shutting down"),
+            components=[DeleteButton(interaction.author)],
         )
         await self.bot.change_presence(
             status=disnake.Status.dnd, activity=disnake.Game(name="Shutting down")

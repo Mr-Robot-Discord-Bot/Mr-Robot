@@ -9,7 +9,8 @@ from disnake.ext import commands
 from mr_robot.__main__ import PROXY
 from mr_robot.bot import MrRobot
 from mr_robot.utils.extensions import EXTENSIONS
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +153,9 @@ class Status(commands.Cog):
                 f"```{'\n'.join(map(lambda x: x.rsplit(".", maxsplit=1)[-1], EXTENSIONS))}```",
                 inline=False,
             )
-        await interaction.send(embed=embed, components=[delete_button])
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
 
 def setup(client: MrRobot):

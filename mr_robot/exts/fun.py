@@ -8,7 +8,7 @@ from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
-from mr_robot.utils.helpers import Embeds, url_button_builder
+from mr_robot.utils.helpers import Embeds
 
 logger = logging.getLogger(__name__)
 nsfw_api = Client.nsfw_api
@@ -70,8 +70,11 @@ class Fun(commands.Cog):
                         )
                     ).set_image(url=vid.get("thumbnail")),
                     components=[
-                        url_button_builder(
-                            url=vid.get("content_url"), label="Watch Now", emoji="📺"
+                        disnake.ui.Button(
+                            url=vid.get("content_url"),
+                            label="Watch Now",
+                            emoji="📺",
+                            style=disnake.ButtonStyle.link,
                         ),
                     ],
                 )
@@ -138,8 +141,11 @@ class Fun(commands.Cog):
                         )
                     ).set_image(url=vid.get("thumbnail")),
                     components=[
-                        url_button_builder(
-                            url=vid.get("content_url"), label="Watch Now", emoji="📺"
+                        disnake.ui.Button(
+                            url=vid.get("content_url"),
+                            label="Watch Now",
+                            emoji="📺",
+                            style=disnake.ButtonStyle.link,
                         ),
                     ],
                 )
@@ -206,8 +212,11 @@ class Fun(commands.Cog):
                         )
                     ).set_image(url=vid.get("default_thumb")),
                     components=[
-                        url_button_builder(
-                            url=vid.get("url"), label="Watch Now", emoji="📺"
+                        disnake.ui.Button(
+                            url=vid.get("url"),
+                            label="Watch Now",
+                            emoji="📺",
+                            style=disnake.ButtonStyle.link,
                         ),
                     ],
                 )
