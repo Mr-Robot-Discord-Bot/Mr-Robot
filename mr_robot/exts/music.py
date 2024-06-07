@@ -25,7 +25,7 @@ class Music(commands.Cog):
     async def ensure_voice(self, interaction: disnake.GuildCommandInteraction) -> bool:
         """Ensures voice client"""
         player = cast(mafic.Player, interaction.guild.voice_client)
-        if player is interaction.guild.voice_client:
+        if interaction.guild.voice_client is None:
             logger.debug(f"Initializing voice client in {interaction.guild.name}.")
             if interaction.author.voice and interaction.author.voice.channel:
                 await interaction.author.voice.channel.connect(cls=mafic.Player)
@@ -48,7 +48,9 @@ class Music(commands.Cog):
 
     @music.sub_command(name="play")
     async def slash_play(
-        self, interaction: disnake.GuildCommandInteraction, search: str
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        search: str,
     ) -> None:
         """
         Plays music
