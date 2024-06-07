@@ -9,10 +9,10 @@ from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
+from mr_robot.constants import Client
 from mr_robot.utils.helpers import Embeds, delete_button
 
-REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
-REPO_PATH = REPO_URL.split("/")[-1].split(".")[0]
+REPO_PATH = Client.github_bot_repo.split("/")[-2]
 logger = logging.getLogger(__name__)
 
 
@@ -23,8 +23,8 @@ class Oscmd(commands.Cog):
         self.pull_push_db.start()
 
     @commands.is_owner()
-    @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
-    async def owner(self, interaction):
+    @commands.slash_command(name="owner", guild_ids=Client.debug_guilds)
+    async def owner(self, _):
         """Bot Owner Commands"""
         ...
 
@@ -76,7 +76,7 @@ class Oscmd(commands.Cog):
             components=[delete_button],
             embed=Embeds.emb(Embeds.green, "Updating..."),
         )
-        os.system(f"git clone {REPO_URL}")
+        os.system(f"git clone {Client.github_bot_repo}")
         for i in os.listdir():
             if i != REPO_PATH or i != ".env" or i != "Logs" or not i.endswith(".db"):
                 os.system(f"rm -rf {i}")

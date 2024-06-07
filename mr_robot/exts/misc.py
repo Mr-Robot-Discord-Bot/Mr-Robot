@@ -6,7 +6,8 @@ import disnake
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,9 @@ class Misc(commands.Cog):
                 ),
                 inline=False,
             )
-        await interaction.send(embed=embed, components=[delete_button])
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
 
 def setup(client: MrRobot):

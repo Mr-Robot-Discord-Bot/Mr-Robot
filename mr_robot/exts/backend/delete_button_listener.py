@@ -9,7 +9,7 @@ from mr_robot.constants import ButtonCustomId
 logger = logging.getLogger(__name__)
 
 
-class DeleteButtonListener(commands.Cog, slash_command_attr={"dm_permission": False}):
+class DeleteButtonListener(commands.Cog, slash_command_attrs={"dm_permission": False}):
     """Handles Delete Button"""
 
     def __init__(self, client: MrRobot) -> None:
@@ -17,7 +17,7 @@ class DeleteButtonListener(commands.Cog, slash_command_attr={"dm_permission": Fa
 
     # button schema
     # PREFIX:PERMS:USER_ID:MESSAGE_ID
-    @commands.Cog.listener(name="on_button_click")
+    @commands.Cog.listener("on_button_click")
     async def handle_delete_button(
         self, interaction: disnake.MessageInteraction
     ) -> None:
@@ -26,6 +26,10 @@ class DeleteButtonListener(commands.Cog, slash_command_attr={"dm_permission": Fa
             return
         if not interaction.component.custom_id.startswith(ButtonCustomId.delete):
             return
+
+        logger.debug(
+            f"{self.__class__.__name__} recv: {interaction.component.custom_id}"
+        )
 
         custom_id = interaction.component.custom_id.removeprefix(ButtonCustomId.delete)
 
@@ -50,9 +54,9 @@ class DeleteButtonListener(commands.Cog, slash_command_attr={"dm_permission": Fa
                 return
 
         if isinstance(
-            interaction.channel, disnake.guild.GuildMessageable
+            interaction.channel,
+            (disnake.TextChannel, disnake.Thread, disnake.VoiceChannel),
         ) and isinstance(interaction.me, disnake.Member):
-
             if (
                 not hasattr(interaction.channel, "guild")
                 or not (
@@ -64,38 +68,38 @@ class DeleteButtonListener(commands.Cog, slash_command_attr={"dm_permission": Fa
                 await interaction.delete_original_message()
                 return
 
+            await interaction.message.delete()
+
             if not delete_msg or not myperms.manage_messages or not is_orignal_author:
                 return
-        await interaction.message.delete()
 
-        if not delete_msg:
-            return
+            if msg := interaction.bot.get_message(delete_msg):
+                if msg.edited_at:
+                    return
+            else:
+                msg = interaction.channel.get_partial_message(delete_msg)
 
-        if msg := interaction.bot.get_message(delete_msg):
-            if msg.edited_at:
-                return
+            try:
+                await msg.delete()
+            except disnake.NotFound:
+                ...
+            except disnake.Forbidden:
+                logger.warning("Cache is unreliable or something is weird")
         else:
-            msg = interaction.channel.get_partial_message(delete_msg)
+            logger.debug(f"Interaction's channel don't have required type.")
 
-        try:
-            await msg.delete()
-        except disnake.NotFound:
-            ...
-        except disnake.Forbidden:
-            logger.warning("Cache is unreliable or something is weird")
-
-    @commands.Cog.listener()
-    async def on_button_click(self, interaction: disnake.MessageInteraction):
-        if interaction.component.custom_id == "delete":
-            await interaction.response.defer()
-            if interaction.message.interaction:
-                if interaction.message.interaction.author.id == interaction.author.id:
-                    await interaction.delete_original_message()
-                else:
-                    await interaction.send(
-                        ":octagonal_sign: This delete button is not for you :octagonal_sign:",
-                        ephemeral=True,
-                    )
+    # @commands.Cog.listener()
+    # async def on_button_click(self, interaction: disnake.MessageInteraction):
+    #     if interaction.component.custom_id == "delete":
+    #         await interaction.response.defer()
+    #         if interaction.message.interaction:
+    #             if interaction.message.interaction.author.id == interaction.author.id:
+    #                 await interaction.delete_original_message()
+    #             else:
+    #                 await interaction.send(
+    #                     ":octagonal_sign: This delete button is not for you :octagonal_sign:",
+    #                     ephemeral=True,
+    #                 )
 
 
 def setup(client: MrRobot):

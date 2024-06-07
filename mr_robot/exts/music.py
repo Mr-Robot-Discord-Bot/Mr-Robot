@@ -1,10 +1,14 @@
 import logging
+from typing import cast
 
+import disnake
 import mafic
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.constants import Colors
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +18,27 @@ class Music(commands.Cog):
         self.bot = bot
 
     @commands.slash_command(name="music", dm_permission=False)
-    async def music(self, interaction):
+    async def music(self, _):
         """Music Commands"""
         ...
 
+    async def ensure_voice(self, interaction: disnake.GuildCommandInteraction) -> None:
+        """Ensures voice client"""
+        player = cast(mafic.Player, interaction.guild.voice_client)
+        if player is interaction.guild.voice_client:
+            logger.debug("Initializing voice client!")
+            if interaction.author.voice and interaction.author.voice.channel:
+                await interaction.author.voice.channel.connect(cls=mafic.Player)
+
+            else:
+                raise commands.CommandError("User isn't connected to a voice channel.")
+        elif player.current is not None:
+            await player.stop()
+
     @music.sub_command(name="play")
-    async def slash_play(self, interaction, search: str) -> None:
+    async def slash_play(
+        self, interaction: disnake.GuildCommandInteraction, search: str
+    ) -> None:
         """
         Plays music
 
@@ -28,40 +47,33 @@ class Music(commands.Cog):
         search: Search for music
         """
 
-        if interaction.guild.voice_client is None:
-            if interaction.author.voice:
-                await interaction.response.defer()
-                await interaction.author.voice.channel.connect(cls=mafic.Player)
+        await self.ensure_voice(interaction)
 
-            else:
-                embed = Embeds.emb(
-                    Embeds.red,
-                    "Your aren't connected to voice Channel",
-                    "Connect to voice channel",
-                )
-                await interaction.send(embed=embed, ephemeral=True)
-        if not interaction.guild.voice_client:
-            player = await interaction.user.voice.channel.connect(cls=mafic.Player)
-        else:
-            player = interaction.guild.voice_client
+        await interaction.response.defer()
 
         tracks = None
+        player = cast(mafic.Player, interaction.guild.voice_client)
+
         while True:
             try:
                 tracks = await player.fetch_tracks(search)
                 break
-            except mafic.TrackLoadException:
+            except mafic.TrackLoadException as e:
+                logger.error("Fails to load track!", exc_info=e)
                 continue
 
         if not tracks:
             embed = Embeds.emb(
-                Embeds.red,
+                Embeds.blue,
                 "No Tracks Found",
                 "Please Try Searching Something else.",
             )
             return await interaction.send(embed=embed, ephemeral=True)
 
-        track = tracks[0]
+        if isinstance(tracks, mafic.Playlist):
+            track = tracks.tracks[0]
+        else:
+            track = tracks[0]
 
         await player.play(track)
         embed = Embeds.emb(
@@ -73,16 +85,24 @@ class Music(commands.Cog):
             f"Requested by: {interaction.author.mention}",
         )
 
-        await interaction.send(embed=embed, components=[delete_button])
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
     @music.sub_command(name="disconnect")
-    async def slash_stop(self, interaction) -> None:
+    async def slash_stop(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Disconnects the bot from voice channel"""
-        embed = Embeds.emb(Embeds.red, "Voice Channel Disconnected")
-        await interaction.send(embed=embed, ephemeral=True)
+
+        player = cast(mafic.Player, interaction.guild.voice_client)
+        embed = Embeds.emb(Embeds.blue, "Music Player Disconnected")
         if interaction.guild.voice_client is not None:
-            await interaction.guild.voice_client.stop()
-            await interaction.guild.voice_client.disconnect()
+            if interaction.guild.voice_client is None:
+                embed = disnake.Embed(color=Colors.blue, title="Unactive Music Player")
+            else:
+                await player.stop()
+                await player.disconnect()
+
+        await interaction.send(embed=embed, ephemeral=True, delete_after=5)
 
 
 def setup(client: MrRobot):

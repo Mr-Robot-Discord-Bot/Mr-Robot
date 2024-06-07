@@ -43,8 +43,8 @@ class DeleteButton(disnake.ui.Button):
 
         if not emoji:
             if self.style == disnake.ButtonStyle.danger:
-                self.emoji = ":bomb:"
+                self.emoji = "💣"
             else:
-                self.emoji = ":wastebasket:"
+                self.emoji = "🗑️"
         else:
             self.emoji = emoji

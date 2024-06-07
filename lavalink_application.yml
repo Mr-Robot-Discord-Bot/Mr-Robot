@@ -1,0 +1,14 @@
+plugins:
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+
+lavalink:
+  plugins:
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.3.0"
+      snapshot: false
+  server:
+    sources:
+      youtube: false

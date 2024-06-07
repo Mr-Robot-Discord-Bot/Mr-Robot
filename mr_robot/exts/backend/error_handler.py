@@ -194,6 +194,7 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
                 logger.warn(f"Permission error ouccured in {ctx.command}.")  # type: ignore[reportAttributeAccessIssue]
                 await self.handler_bot_missing_perms(ctx, error.original)
             else:
+
                 # Generic Error
                 try:
                     msg = self.make_error_message(
@@ -204,6 +205,9 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
                         "Error occured in building up full context log for an error",
                         exc_info=e,
                     )
+                    msg = "Error ouccured"
+                logger.error(msg, exc_info=error.original)
+
                 # Built in command msg
                 title = "Internal Error"
                 error_str = "".join(
@@ -218,13 +222,13 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
                     error_str = error_str[-3000:]
                 msg = (
                     "Something went wrong internally in the action you were trying to execute. "
-                    "Please report this error with any additional context you have to "
+                    "Please report this error to "
                     f"the [Support Server](https://discord.gg/{Client.support_server})."
                     f"\n\n ```py\n{error_str}\n```"
                 )
                 embed = self.error_embed(title, msg)
         if embed is None:
-            embed = self.error_embed(str(error)[:20], str(error))
+            embed = self.error_embed("", str(error))
 
         await ctx.send_error(embed=embed)  # type: ignore[reportAttributeAccessIssue]
 

@@ -7,36 +7,52 @@ services:
 
   lavalink:
     <<: *restart_policy
-    image: ghcr.io/freyacodes/lavalink:latest
+    image: ghcr.io/lavalink-devs/lavalink:4a2b99f-alpine
     container_name: lavalink
+
     environment:
         - _JAVA_OPTIONS=-Xmx6G
         - SERVER_PORT=2333
         - LAVALINK_SERVER_PASSWORD=youshallnotpass
+
     networks:
         - lavalink
+
     expose:
         - 2333
+
     ports:
         - 2333:2333
+
+    volumes:
+      - ./lavalink_application.yml:/opt/Lavalink/application.yml
 
 
   mr-robot:
     <<: *restart_policy
     image: ghcr.io/mr-robot-discord-bot/mr-robot:latest
     container_name: mr-robot
+    build:
+      context: .
+      dockerfile: Dockerfile
     tty: true
+
     environment:
-      - BOT_TOKEN=YOUR BOT TOKEN
+      - BOT_TOKEN=PUT YOUR BOT TOKEN
       - ON_JOIN_WEBHOOK=WEBHOOK_URL
       - AI_API_KEY=GEMNI AI API KEY
       - GIT_TOKEN=GIT_API_TOKEN
       - GIT_DB_REPO=OWNER/REPO
       - NSFW_API=NSFW API
+
     networks:
-        - lavalink
+      - lavalink
+
     depends_on:
-        - lavalink
+      - lavalink
+
+    volumes:
+      - .:/app
 
 
 networks:
