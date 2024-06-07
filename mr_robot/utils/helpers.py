@@ -2,8 +2,9 @@ import datetime
 import logging
 import random
 import re
-from functools import partial
-from typing import Any, Optional
+import time
+from functools import partial, wraps
+from typing import Any, Awaitable, Callable, Optional
 
 import aiohttp
 import disnake
@@ -116,3 +117,20 @@ async def send_webhook(
             )
         else:
             raise ValueError("Webhook content & embed is empty")
+
+
+def log_elapsed_time[
+    T, **P
+](func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+    @wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        start = time.perf_counter()
+
+        func_ret = await func(*args, **kwargs)
+
+        end = time.perf_counter()
+        logger.debug(f"{func.__name__} took {end - start:.4f}")
+
+        return func_ret
+
+    return wrapper

@@ -19,10 +19,17 @@ PROXY = None
 file_handler = logging.FileHandler(Client.log_file_name, mode="w")
 console_handler = logging.StreamHandler()
 
-file_handler.setLevel(logging.DEBUG)
-console_handler.setLevel(logging.INFO)
+if Client.debug_mode:
+    level = logging.DEBUG
+    console_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.DEBUG)
+else:
+    level = logging.INFO
+    console_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.INFO)
+
 logging.basicConfig(
-    level=logging.NOTSET,
+    level=level,
     format="%(levelname)s - %(name)s - %(filename)s - %(module)s - %(funcName)s - %(message)s",
     handlers=[console_handler, file_handler],
 )
