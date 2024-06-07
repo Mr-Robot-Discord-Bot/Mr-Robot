@@ -22,18 +22,29 @@ class Music(commands.Cog):
         """Music Commands"""
         ...
 
-    async def ensure_voice(self, interaction: disnake.GuildCommandInteraction) -> None:
+    async def ensure_voice(self, interaction: disnake.GuildCommandInteraction) -> bool:
         """Ensures voice client"""
         player = cast(mafic.Player, interaction.guild.voice_client)
         if player is interaction.guild.voice_client:
-            logger.debug("Initializing voice client!")
+            logger.debug(f"Initializing voice client in {interaction.guild.name}.")
             if interaction.author.voice and interaction.author.voice.channel:
                 await interaction.author.voice.channel.connect(cls=mafic.Player)
+                return True
 
             else:
-                raise commands.CommandError("User isn't connected to a voice channel.")
+                embed = Embeds.emb(
+                    Colors.blue,
+                    "Connect to voice channel",
+                    "Your aren't connected to voice Channel",
+                )
+                await interaction.send(
+                    embed=embed,
+                    ephemeral=True,
+                    components=DeleteButton(interaction.author),
+                )
         elif player.current is not None:
             await player.stop()
+        return False
 
     @music.sub_command(name="play")
     async def slash_play(
@@ -47,9 +58,9 @@ class Music(commands.Cog):
         search: Search for music
         """
 
-        await self.ensure_voice(interaction)
-
         await interaction.response.defer()
+
+        await self.ensure_voice(interaction)
 
         tracks = None
         player = cast(mafic.Player, interaction.guild.voice_client)
@@ -77,13 +88,14 @@ class Music(commands.Cog):
 
         await player.play(track)
         embed = Embeds.emb(
-            Embeds.blue,
+            Colors.blue,
             "Now Playing",
             f"Name: [{track.title}]({track.uri})\n"
             f"Author: {track.author}\n"
-            f"Source: {str(track.source).capitalize()}\n"
-            f"Requested by: {interaction.author.mention}",
+            f"Platform: {str(track.source).capitalize()}\n"
+            f"Played by: {interaction.author.mention}",
         )
+        embed.set_image(track.artwork_url)
 
         await interaction.send(
             embed=embed, components=[DeleteButton(interaction.author)]
@@ -97,12 +109,62 @@ class Music(commands.Cog):
         embed = Embeds.emb(Embeds.blue, "Music Player Disconnected")
         if interaction.guild.voice_client is not None:
             if interaction.guild.voice_client is None:
-                embed = disnake.Embed(color=Colors.blue, title="Unactive Music Player")
+                embed = Embeds.emb(Colors.blue, "Unactive Music Player")
             else:
                 await player.stop()
                 await player.disconnect()
 
         await interaction.send(embed=embed, ephemeral=True, delete_after=5)
+
+    @music.sub_command(name="volume")
+    async def slash_volume(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        volume: commands.Range[int, 0, 100],
+    ) -> None:
+        """
+        Set player's volume level
+
+        Parameters
+        ----------
+        volume : Volume level
+        """
+        if interaction.guild.voice_client is None:
+            raise commands.CommandError("No active voice player is present.")
+        player = cast(mafic.Player, interaction.guild.voice_client)
+        await player.set_volume(volume)
+        embed = Embeds.emb(Colors.blue, f"Volume: {volume}%")
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
+
+    @music.sub_command(name="toggle_pause")
+    async def slash_pause(
+        self,
+        interaction: disnake.GuildCommandInteraction,
+        force_pause: bool | None = None,
+    ) -> None:
+        """
+        Pause/Resume the player
+
+        Parameters
+        ----------
+        force_pause : Force pause the player
+        """
+        if interaction.guild.voice_client is None:
+            raise commands.CommandError("No active voice player is present.")
+
+        player = cast(mafic.Player, interaction.guild.voice_client)
+        if force_pause or not player.paused:
+            await player.pause()
+        else:
+            await player.resume()
+        embed = Embeds.emb(
+            Colors.blue, "Player Paused" if player.paused else "Player Resumed"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
 
 def setup(client: MrRobot):

@@ -10,6 +10,7 @@ from disnake.ext.commands.context import AnyContext
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
+from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
@@ -23,9 +24,7 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
 
     @staticmethod
     def error_embed(title: str, description: str) -> disnake.Embed:
-        return disnake.Embed(
-            title=title, description=description, colour=disnake.Colour.red()
-        )
+        return Embeds.emb(disnake.Colour.red(), title, description)
 
     async def handle_user_input_error(
         self, error: commands.UserInputError
