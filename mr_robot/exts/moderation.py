@@ -844,7 +844,8 @@ class Moderation(commands.Cog):
                 Embeds.green,
                 "Nsfw Toggle",
                 f"{channel_or_category.mention} is now {'' if value else 'not'} age-restriced!",
-            )
+            ),
+            components=[DeleteButton(interaction.author)],
         )
 
 
