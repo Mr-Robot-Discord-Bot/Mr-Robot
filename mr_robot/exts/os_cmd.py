@@ -10,6 +10,7 @@ from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
+from mr_robot.utils.git_api import NothingToUpdate
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 
@@ -41,9 +42,12 @@ class Oscmd(commands.Cog):
             logger.info("Skipping Db Push")
             return
         logger.debug("Pushing DB")
-        await self.bot.git.push(
-            file=Path(self.bot.db_name), commit_msg="chore: auto update"
-        )
+        try:
+            await self.bot.git.push(
+                file=Path(self.bot.db_name), commit_msg="chore: auto update"
+            )
+        except NothingToUpdate:
+            logger.debug("Nothing to update")
 
     @owner.sub_command(name="backup", description="Backup the database")
     async def backup(self, interaction: disnake.GuildCommandInteraction):
