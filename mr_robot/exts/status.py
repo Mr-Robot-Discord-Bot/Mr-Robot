@@ -6,7 +6,6 @@ import disnake
 import psutil
 from disnake.ext import commands
 
-from mr_robot.__main__ import PROXY
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
 from mr_robot.utils.extensions import EXTENSIONS
@@ -25,8 +24,6 @@ class Status(commands.Cog):
         await self.bot.db.execute(
             "CREATE TABLE IF NOT EXISTS guilds (guild_id bigint primary key, name text)"
         )
-        if PROXY:
-            logger.info("Using Proxy: %s", PROXY)
         os.system("echo '' > Servers.inf")
         exsisting_guilds = await (
             await self.bot.db.execute("select guild_id, name from guilds")
@@ -65,13 +62,6 @@ class Status(commands.Cog):
                 await self.bot.db.commit()
 
         await self.bot.db.commit()
-        with open("proxy_mode.conf", "r") as file:
-            proxy_mode = file.read()
-        if proxy_mode == "on":
-            await self.bot.change_presence(
-                status=disnake.Status.idle,
-                activity=disnake.Game(name="In Starvation Mode"),
-            )
         await self.bot.change_presence(
             activity=disnake.Streaming(
                 name=f"In {len(self.bot.guilds)} Servers",

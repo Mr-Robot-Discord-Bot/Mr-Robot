@@ -1,0 +1,60 @@
+{
+    "version": 1,
+
+    "disable_exsisting_loggers": false,
+    
+    "formatters": {
+        "simple": {"format": "%(levelname)s: %(message)s"},
+        "expanded": {
+            "format": "%(levelname)s - %(name)s - %(filename)s - %(module)s - %(funcName)s - %(message)s"
+        },
+        "detailed": {
+            "format": "[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s",
+            "datefmt": "%Y-%m-%dT%H:%M:%S%z"
+        }
+    },
+
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout"
+        },
+        "stderr": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "expanded",
+            "stream": "ext://sys.stderr"
+        },
+        "debugfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "detailed",
+            "filename": "logs/debug.log",
+            "maxBytes": 200000000,
+            "backupCount": 3
+        },
+        "errorfile": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "WARNING",
+            "formatter": "detailed",
+            "filename": "logs/error.log",
+            "maxBytes": 200000000,
+            "backupCount": 2
+        },
+        "queue_handler": {
+            "class": "logging.handlers.QueueHandler",
+            "handlers": ["stdout", "stderr", "errorfile", "debugfile"],
+            "respect_handler_level": true
+        }
+
+    },
+
+    "loggers": {
+        "root": {"level": "DEBUG", "handlers": ["queue_handler"]}
+    }
+}
+
+
+
+

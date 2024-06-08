@@ -18,6 +18,7 @@ class Client:
     on_join_webook = getenv("ON_JOIN_WEBHOOK")
     debug_mode = False
     debug_guilds = [1241678951307542538]
+    logging_config_file = "logging_config.json"
 
 
 class ButtonCustomId:
