@@ -39,7 +39,7 @@ class Oscmd(commands.Cog):
             return
         elif self.first_task:
             self.first_task = False
-            logger.info("Skipping Db Push")
+            logger.debug("Skipping Db Push")
             return
         logger.debug("Pushing DB")
         try:
