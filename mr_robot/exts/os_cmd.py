@@ -30,7 +30,7 @@ class Oscmd(commands.Cog):
         """Bot Owner Commands"""
         ...
 
-    @tasks.loop(hours=12)
+    @tasks.loop(hours=1)
     async def pull_push_db(self):
         if not self.bot.git:
             logger.warning(
@@ -41,7 +41,7 @@ class Oscmd(commands.Cog):
             self.first_task = False
             logger.debug("Skipping Db Push")
             return
-        logger.debug("Pushing DB")
+        logger.debug(f"Pushing DB to {Client.github_db_repo}")
         try:
             await self.bot.git.push(
                 file=Path(self.bot.db_name), commit_msg="chore: auto update"
