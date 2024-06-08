@@ -3,6 +3,7 @@ import atexit
 import json
 import logging.config
 import logging.handlers
+import os
 import signal
 import sys
 
@@ -21,12 +22,15 @@ load_dotenv()
 def setup_logging() -> None:
     with open(Client.logging_config_file, "r") as file:
         config = json.load(file)
-
+    try:
+        os.mkdir("logs")
+    except FileExistsError:
+        ...
     logging.config.dictConfig(config)
     queue_handler = logging.getHandlerByName("queue_handler")
     if queue_handler is not None:
-        queue_handler.listener.start()
-        atexit.register(queue_handler.listener.stop)
+        queue_handler.listener.start()  # type: ignore[reportAttributeAccessIssue]
+        atexit.register(queue_handler.listener.stop)  # type: ignore[reportAttributeAccessIssue]
 
 
 async def main():
