@@ -2,7 +2,7 @@
     "version": 1,
 
     "disable_exsisting_loggers": false,
-    
+
     "formatters": {
         "simple": {"format": "%(levelname)s: %(message)s"},
         "expanded": {
@@ -54,7 +54,3 @@
         "root": {"level": "DEBUG", "handlers": ["queue_handler"]}
     }
 }
-
-
-
-
