@@ -69,8 +69,7 @@ class Embeds(disnake.Embed):
         Em.timestamp = datetime.datetime.now()
         Em.set_footer(
             text=Client.name,
-            icon_url="https://cdn.discordapp.com/avatars/1087375480304451727/"
-            "f780c7c8c052c66c89f9270aebd63bc2.png?size=1024",
+            icon_url="https://cdn.discordapp.com/avatars/1239962447285063691/f780c7c8c052c66c89f9270aebd63bc2.webp?size=128",
         )
         return Em
 

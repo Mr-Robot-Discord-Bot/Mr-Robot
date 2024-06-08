@@ -24,8 +24,11 @@ class Music(commands.Cog):
 
     async def ensure_voice(self, interaction: disnake.GuildCommandInteraction) -> bool:
         """Ensures voice client"""
-        player = cast(mafic.Player, interaction.guild.voice_client)
-        if interaction.guild.voice_client is None:
+        if not hasattr(interaction.guild, "voice_client"):
+            raise commands.CommandError(
+                "Seems like i don't have enough perms to play music!"
+            )
+        elif interaction.guild.voice_client is None:
             logger.debug(f"Initializing voice client in {interaction.guild.name}.")
             if interaction.author.voice and interaction.author.voice.channel:
                 await interaction.author.voice.channel.connect(cls=mafic.Player)
@@ -42,8 +45,10 @@ class Music(commands.Cog):
                     ephemeral=True,
                     components=DeleteButton(interaction.author),
                 )
-        elif player.current is not None:
-            await player.stop()
+        else:
+            player = cast(mafic.Player, interaction.guild.voice_client)
+            if player.current is not None:
+                await player.stop()
         return False
 
     @music.sub_command(name="play")
