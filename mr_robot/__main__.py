@@ -15,7 +15,6 @@ from dotenv import load_dotenv
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
 
-logger = logging.getLogger(Client.name)
 load_dotenv()
 
 
@@ -35,6 +34,8 @@ def setup_logging() -> None:
 
 async def main():
     setup_logging()
+    logger = logging.getLogger(Client.name)
+    logger.info("Logger Initialized!")
     async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
             intents=disnake.Intents.all(),
