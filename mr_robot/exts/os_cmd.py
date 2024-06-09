@@ -9,7 +9,7 @@ from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
-from mr_robot.constants import Client
+from mr_robot.constants import Client, Colors
 from mr_robot.utils.git_api import NothingToUpdate
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
@@ -122,7 +122,7 @@ class Oscmd(commands.Cog):
         await interaction.send(link.url, components=[DeleteButton(interaction.author)])
 
     @link.autocomplete("id")
-    async def link_autocomplete(self, inter: disnake.GuildCommandInteraction, inp: str):
+    async def link_autocomplete(self, _, inp: str):
         inp = inp.lower()
         matching_dict = {}
         for guild in self.bot.guilds:
@@ -135,7 +135,7 @@ class Oscmd(commands.Cog):
         return sorted_dict
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
-    async def reboot(self, interaction):
+    async def reboot(self, interaction: disnake.GuildCommandInteraction) -> None:
         await interaction.send(
             embed=Embeds.emb(Embeds.red, "Shutting down"),
             components=[DeleteButton(interaction.author)],
@@ -144,6 +144,67 @@ class Oscmd(commands.Cog):
             status=disnake.Status.dnd, activity=disnake.Game(name="Shutting down")
         )
         exit()
+
+    @owner.sub_command_group(name="extension")
+    async def extension_management(self, _) -> None:
+        """Extension management commands"""
+
+    @extension_management.sub_command(name="load")
+    async def load(
+        self, interaction: disnake.GuildCommandInteraction, extension: str
+    ) -> None:
+        """
+        Loads Extension
+
+        Parameters
+        ----------
+        extension : Extension to load
+        """
+        self.bot.load_extension(extension)
+        embed = Embeds.emb(
+            Colors.green, "Extension Management", f"Successfully loads `{extension}`"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
+
+    @extension_management.sub_command(name="unload")
+    async def unload(
+        self, interaction: disnake.GuildCommandInteraction, extension: str
+    ) -> None:
+        """
+        Unloads Extension
+
+        Parameters
+        ----------
+        extension : Extension to unload
+        """
+        self.bot.unload_extension(extension)
+        embed = Embeds.emb(
+            Colors.red, "Extension Management", f"Successfully unloads `{extension}`"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
+
+    @extension_management.sub_command(name="reload")
+    async def reload(
+        self, interaction: disnake.GuildCommandInteraction, extension: str
+    ) -> None:
+        """
+        Reloads Extension
+
+        Parameters
+        ----------
+        extension : Extension to reload
+        """
+        self.bot.reload_extension(extension)
+        embed = Embeds.emb(
+            Colors.yellow, "Extension Management", f"Successfully reloads `{extension}`"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
 
 def setup(client: MrRobot):

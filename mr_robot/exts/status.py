@@ -8,7 +8,6 @@ from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
-from mr_robot.utils.extensions import EXTENSIONS
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 
@@ -140,8 +139,8 @@ class Status(commands.Cog):
         )
         if self.bot.owner_id == interaction.author.id and Client.debug_mode:
             embed.add_field(
-                "Extension loaded",
-                f"```{'\n'.join(map(lambda x: x.rsplit(".", maxsplit=1)[-1], EXTENSIONS))}```",
+                "Extensions loaded",
+                f"```{'\n'.join(self.bot.extensions)}```",
                 inline=False,
             )
         await interaction.send(
