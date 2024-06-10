@@ -6,6 +6,7 @@ from typing import Dict, List
 import httpx
 import mafic
 from aiocache import cached
+from aiosqlite import Connection
 from disnake.ext import commands
 
 from mr_robot.constants import Client
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, session: httpx.AsyncClient, db, db_name, **kwargs):
+    def __init__(self, session: httpx.AsyncClient, db: Connection, db_name, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)
         self.loop.create_task(self.add_nodes())

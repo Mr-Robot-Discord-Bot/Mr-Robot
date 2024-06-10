@@ -970,13 +970,13 @@ colors = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "mafic"
-version = "2.3.1"
+version = "2.10.0"
 description = "A properly typehinted lavalink client for discord.py, nextcord, disnake and py-cord."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "mafic-2.3.1-py3-none-any.whl", hash = "sha256:1a1f440eae3f79d5f9a79dccd9cc8ff7e93a4503189f13b63e90f4fe8ef84557"},
-    {file = "mafic-2.3.1.tar.gz", hash = "sha256:ca15b513104bcb423fd7e47b7d64d2e2f1a019e62ea3d20ddfa3895b555a7f8e"},
+    {file = "mafic-2.10.0-py3-none-any.whl", hash = "sha256:001214abaa92ebcaef321b297bd5b3386ae4ac29fc0f798770c403318062fcf8"},
+    {file = "mafic-2.10.0.tar.gz", hash = "sha256:dddec9e97808d231379583188286232d408face8b7b4eb3f16bf3c1d8ae8b5b0"},
 ]
 
 [package.dependencies]
@@ -1758,4 +1758,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "28bb6c48cfe191a7698844c345f6c8ae4dcecd9f0c8bbf36ecea7982605af072"
+content-hash = "fa08430a3ab086f5908aa48856727001fa6c559b326b6c9307a462950c34e14a"
