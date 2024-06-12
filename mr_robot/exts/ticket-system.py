@@ -8,7 +8,8 @@ from aiosqlite import Connection
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +258,9 @@ class TicketSystem(commands.Cog):
                         """,
                 )
             )
-        await interaction.send(embeds=embeds, components=[delete_button])
+        await interaction.send(
+            embeds=embeds, components=[DeleteButton(interaction.author)]
+        )
 
     @ticket.sub_command(name="set_config")
     async def setup(

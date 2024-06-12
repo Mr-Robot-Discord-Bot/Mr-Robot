@@ -6,10 +6,11 @@ from typing import Dict, List
 import httpx
 import mafic
 from aiocache import cached
+from aiosqlite import Connection
 from disnake.ext import commands
 
 from mr_robot.constants import Client
-from mr_robot.utils.extensions import EXTENSIONS, walk_extensions
+from mr_robot.utils.extensions import walk_extensions
 from mr_robot.utils.git_api import Git
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, session: httpx.AsyncClient, db, db_name, **kwargs):
+    def __init__(self, session: httpx.AsyncClient, db: Connection, db_name, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)
         self.loop.create_task(self.add_nodes())
@@ -73,8 +74,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
 
     def load_bot_extensions(self) -> None:
         """Loads extensions released by walk_extensions()"""
-        EXTENSIONS.update(walk_extensions())
-        logger.info("Extension loading successful!")
         for ext in walk_extensions():
             logger.info(f"{ext} extension loaded!!")
             self.load_extension(ext)
+        logger.info("Extension loading successful!")

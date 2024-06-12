@@ -1,12 +1,13 @@
 import logging
 
+import disnake
 import google.generativeai as genai
 from disnake.ext import commands
 from google.generativeai.types import BlockedPromptException
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
-from mr_robot.utils.helpers import delete_button
+from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +50,14 @@ class Ai(commands.Cog):
     @commands.slash_command(name="ai", dm_permission=False)
     async def ai(self, _):
         """Interact with ai"""
+        if not Client.gemini_api_key:
+            raise ValueError("Ai api key is not being initialised")
         ...
 
     @ai.sub_command(name="chat")
-    async def slash_ai_generate_text(self, interaction, query: str):
+    async def slash_ai_generate_text(
+        self, interaction: disnake.GuildCommandInteraction, query: str
+    ):
         """
         Talk to Mr Robot AI system
 
@@ -64,7 +69,9 @@ class Ai(commands.Cog):
         try:
             await self.conv.send_message_async(query)
             if self.conv.last:
-                await interaction.send(self.conv.last.text, components=[delete_button])
+                await interaction.send(
+                    self.conv.last.text, components=[DeleteButton(interaction.author)]
+                )
             else:
                 await interaction.send("Ai module didn't responded")
         except BlockedPromptException:

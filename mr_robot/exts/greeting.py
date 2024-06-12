@@ -11,7 +11,8 @@ from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 WELCOME_IMG_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"
@@ -23,10 +24,10 @@ logger = logging.getLogger(__name__)
 class FontDir(Enum):
     """Font Directory"""
 
-    Branda = "../fonts/Branda.ttf"
-    ChrustyRock = "../fonts/ChrustyRock.ttf"
-    Debrosee = "../fonts/Debrosee.ttf"
-    ShortBaby = "../fonts/ShortBaby.ttf"
+    Branda = "mr_robot/fonts/Branda.ttf"
+    ChrustyRock = "mr_robot/fonts/ChrustyRock.ttf"
+    Debrosee = "mr_robot/fonts/Debrosee.ttf"
+    ShortBaby = "mr_robot/fonts/ShortBaby.ttf"
 
 
 class Greetings(commands.Cog):
@@ -90,13 +91,13 @@ class Greetings(commands.Cog):
 
         Parameters
         ----------
-        channel : Channel to send the image
         member : Member who joined/left
-        img_url : URL of the image
         message : Message to send
         font_style : Font style
         theme : Theme color
         outline : Outline width
+        usr_img : URL of user image
+        bg_img : URL of background image
         welcome : Whether to send welcome or goodbye image
         """
         bg = Image.open(bg_img).convert("RGBA")
@@ -128,32 +129,32 @@ class Greetings(commands.Cog):
         )
         font = ImageFont.truetype(font_style, 40)
         txt = "Welcome" if welcome else "Goodbye"
-        w, h = draw.textlength(txt, font=font, direction="ltr")
         draw.text(
-            ((width - w) / 2 + 10, (height - h) // 2 + 100 - 50),
+            (width / 2 + 10, height // 2 + 100 - 50),
             txt,
             font=font,
             fill=theme,
             align="center",
+            anchor="mm",
         )
         txt = member.name
-        w, h = draw.textlength(txt, font=font, direction="ltr")
         draw.text(
-            ((width - w) / 2 + 10, (height - h) // 2 + 100 - 10),
+            (width / 2 + 10, height // 2 + 100 - 10),
             txt,
             font=font,
             fill=theme,
             align="center",
+            anchor="mm",
         )
         if message:
             font = ImageFont.truetype(font_style, 22)
-            w, h = draw.textlength(message, font=font, direction="ltr")
             draw.text(
-                ((width - w) / 2 + 10, (height - h) // 2 + 140),
+                (width / 2 + 10, height // 2 + 140),
                 message,
                 font=font,
                 fill=theme,
                 align="center",
+                anchor="mm",
             )
 
         file = BytesIO()
@@ -247,7 +248,7 @@ class Greetings(commands.Cog):
                 await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
 
     @commands.slash_command(name="greeter", dm_permission=False)
-    async def greeter(self, interaction):
+    async def greeter(self, _):
         """Greeter Settings"""
         ...
 
@@ -294,13 +295,13 @@ class Greetings(commands.Cog):
                 message=message,
                 font_style=font_style,
                 theme=theme,
-                outline=outline,  # type: ignore[reportArgumentType]
+                outline=outline,
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await interaction.send(
                 "This is how it will look like:",
                 file=img_file,
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
 
         except UnidentifiedImageError:

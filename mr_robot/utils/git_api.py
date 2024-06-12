@@ -1,8 +1,13 @@
 import base64
 from pathlib import Path
+from typing import Dict
 
 import aiofiles
 import httpx
+
+
+class NothingToUpdate(Exception):
+    """Raised when the push file is same to source file"""
 
 
 class Git:
@@ -30,12 +35,12 @@ class Git:
             "X-GitHub-Api-Version": "2022-11-28",
         }
 
-    async def pull_data(self, path: str) -> str:
+    async def pull_data(self, path: str) -> Dict:
         url = f"{self.base_url}/{path}"
         r = await self.client.get(url, headers=self.header)
         r.raise_for_status()
         json = r.json()
-        return json.get("sha")
+        return json
 
     async def pull(self, path: str) -> None:
         url = f"{self.base_url}/{path}"
@@ -52,11 +57,13 @@ class Git:
         url = f"{self.base_url}/{file.name}"
         async with aiofiles.open(file, "rb") as f:
             content = await f.read()
-        encoded_content = base64.b64encode(content).decode("utf-8")
-        try:
-            sha = await self.pull_data(file.name)
-        except httpx.HTTPError:
-            sha = None
+        encoded_content = base64.b64encode(content).decode()
+        resp_json = await self.pull_data(file.name)
+        sha = resp_json.get("sha")
+        if encoded_content.replace("\n", "") == resp_json.get("content", "").replace(
+            "\n", ""
+        ):
+            raise NothingToUpdate
         data = {
             "message": commit_msg,
             "committer": {"name": self.username, "email": self.email},
@@ -73,14 +80,15 @@ if __name__ == "__main__":
     async def main():
         async with httpx.AsyncClient() as client:
             git = Git(
-                token="TOKEN",
+                token="GITHUB TOKEN",
                 owner="OWNER",
                 repo="REPO",
-                username="etest",
+                username="test",
                 email="test@test.com",
                 client=client,
             )
-            # await git.pull("test.txt")
+            # r = await git.pull_data("test.txt")
+            # print(r.get("content"))
 
             await git.push(
                 file=Path("test.txt"),

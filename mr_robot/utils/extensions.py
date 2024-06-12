@@ -8,7 +8,7 @@ from mr_robot import exts
 
 logger = logging.getLogger(__name__)
 
-EXTENSIONS = set()
+# EXTENSIONS = set()
 
 
 def unqualify(name: str) -> str:

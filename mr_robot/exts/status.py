@@ -6,15 +6,16 @@ import disnake
 import psutil
 from disnake.ext import commands
 
-from mr_robot.__main__ import PROXY
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.constants import Client
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
 logger = logging.getLogger(__name__)
 
 
 class Status(commands.Cog):
-    def __init__(self, client):
+    def __init__(self, client: MrRobot):
         self.bot = client
 
     @commands.Cog.listener()
@@ -22,8 +23,6 @@ class Status(commands.Cog):
         await self.bot.db.execute(
             "CREATE TABLE IF NOT EXISTS guilds (guild_id bigint primary key, name text)"
         )
-        if PROXY:
-            logger.info("Using Proxy: %s", PROXY)
         os.system("echo '' > Servers.inf")
         exsisting_guilds = await (
             await self.bot.db.execute("select guild_id, name from guilds")
@@ -62,13 +61,6 @@ class Status(commands.Cog):
                 await self.bot.db.commit()
 
         await self.bot.db.commit()
-        with open("proxy_mode.conf", "r") as file:
-            proxy_mode = file.read()
-        if proxy_mode == "on":
-            await self.bot.change_presence(
-                status=disnake.Status.idle,
-                activity=disnake.Game(name="In Starvation Mode"),
-            )
         await self.bot.change_presence(
             activity=disnake.Streaming(
                 name=f"In {len(self.bot.guilds)} Servers",
@@ -97,27 +89,27 @@ class Status(commands.Cog):
 
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(
-            "Shards: ",
+            "Shards ",
             f"`{self.bot.shard_count}`",
         )
         embed.add_field(
-            "Latency: ",
+            "Latency ",
             f"`{int(self.bot.latency * 1000)}ms`",
         )
         embed.add_field(
-            "Uptime: ",
+            "Uptime ",
             disnake.utils.format_dt(self.bot.start_time, style="R"),
         )
         embed.add_field(
-            "Cpu Usage: ",
+            "Cpu Usage ",
             f"`{psutil.cpu_percent()}%`",
         )
         embed.add_field(
-            "Memory Usage: ",
+            "Memory Usage ",
             f"`{psutil.virtual_memory().percent}%`",
         )
         embed.add_field(
-            "Available Usage: ",
+            "Available Usage ",
             f"""`{
                 str(
                     round(
@@ -130,22 +122,30 @@ class Status(commands.Cog):
                 }`""",
         )
         embed.add_field(
-            "Members: ",
+            "Members ",
             f"`{interaction.guild.member_count}`",
         )
         embed.add_field(
-            "Channels: ",
+            "Channels ",
             f"`{len(interaction.guild.channels)}`",
         )
         embed.add_field(
-            "Welcomer: ",
+            "Welcomer ",
             await get_greeter_status("wlcm_channel"),
         )
         embed.add_field(
-            "Goodbyer: ",
+            "Goodbyer ",
             await get_greeter_status("bye_channel"),
         )
-        await interaction.send(embed=embed, components=[delete_button])
+        if self.bot.owner_id == interaction.author.id and Client.debug_mode:
+            embed.add_field(
+                "Extensions loaded",
+                f"```{'\n'.join(self.bot.extensions)}```",
+                inline=False,
+            )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
 
 def setup(client: MrRobot):

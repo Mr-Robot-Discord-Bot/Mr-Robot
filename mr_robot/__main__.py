@@ -1,5 +1,9 @@
 import asyncio
-import logging
+import atexit
+import json
+import logging.config
+import logging.handlers
+import os
 import signal
 import sys
 
@@ -11,37 +15,29 @@ from dotenv import load_dotenv
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
 
-# from mr_robot.utils.helpers import proxy_generator
-
-proxy_mode = False
-PROXY = None
-
-file_handler = logging.FileHandler(Client.log_file_name, mode="w")
-console_handler = logging.StreamHandler()
-
-file_handler.setLevel(logging.DEBUG)
-console_handler.setLevel(logging.INFO)
-logging.basicConfig(
-    level=logging.NOTSET,
-    format="%(levelname)s - %(name)s - %(filename)s - %(module)s - %(funcName)s - %(message)s",
-    handlers=[console_handler, file_handler],
-)
-
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
-logging.getLogger("disnake").setLevel(logging.INFO)
-logging.getLogger("aiosqlite").setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
-
-
 load_dotenv()
 
 
+def setup_logging() -> None:
+    with open(Client.logging_config_file, "r") as file:
+        config = json.load(file)
+    try:
+        os.mkdir("logs")
+    except FileExistsError:
+        ...
+    logging.config.dictConfig(config)
+    queue_handler = logging.getHandlerByName("queue_handler")
+    if queue_handler is not None:
+        queue_handler.listener.start()  # type: ignore[reportAttributeAccessIssue]
+        atexit.register(queue_handler.listener.stop)  # type: ignore[reportAttributeAccessIssue]
+
+
 async def main():
-    global PROXY
+    setup_logging()
+    logger = logging.getLogger(Client.name)
+    logger.info("Logger Initialized!")
     async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
-            proxy=PROXY,
             intents=disnake.Intents.all(),
             session=session,
             db=await aiosqlite.connect(Client.db_name),
@@ -68,11 +64,6 @@ async def main():
             await future
         except asyncio.CancelledError:
             logger.info("Received signal to terminate bot and event loop")
-            # logger.warning(
-            #     "Unable to connect to Discord falling back to proxy mode", exc_info=True
-            # )
-            # proxy_mode = True
-            # PROXY = proxy_generator() if proxy_mode else None
         finally:
             if not client.is_closed():
                 await client.close()

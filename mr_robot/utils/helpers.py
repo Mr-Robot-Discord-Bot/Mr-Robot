@@ -2,8 +2,9 @@ import datetime
 import logging
 import random
 import re
-from functools import partial
-from typing import Any, Optional
+import time
+from functools import partial, wraps
+from typing import Any, Awaitable, Callable, Optional
 
 import aiohttp
 import disnake
@@ -51,18 +52,6 @@ def parse_time(duration: str) -> datetime.timedelta:
     raise ValueError(f"Failed to parse {keys}")
 
 
-delete_button: disnake.ui.Button = disnake.ui.Button(
-    emoji="💣", style=disnake.ButtonStyle.red, custom_id="delete"
-)
-
-
-def url_button_builder(label: str, url: str, emoji: str) -> disnake.ui.Button:
-    """Returns a url button"""
-    return disnake.ui.Button(
-        label=label, url=url, style=disnake.ButtonStyle.link, emoji=emoji
-    )
-
-
 class Embeds(disnake.Embed):
     """Embeds"""
 
@@ -80,8 +69,7 @@ class Embeds(disnake.Embed):
         Em.timestamp = datetime.datetime.now()
         Em.set_footer(
             text=Client.name,
-            icon_url="https://cdn.discordapp.com/avatars/1087375480304451727/"
-            "f780c7c8c052c66c89f9270aebd63bc2.png?size=1024",
+            icon_url="https://cdn.discordapp.com/avatars/1239962447285063691/f780c7c8c052c66c89f9270aebd63bc2.webp?size=128",
         )
         return Em
 
@@ -128,3 +116,20 @@ async def send_webhook(
             )
         else:
             raise ValueError("Webhook content & embed is empty")
+
+
+def log_elapsed_time[
+    T, **P
+](func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+    @wraps(func)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        start = time.perf_counter()
+
+        func_ret = await func(*args, **kwargs)
+
+        end = time.perf_counter()
+        logger.debug(f"{func.__name__} took {end - start:.4f}")
+
+        return func_ret
+
+    return wrapper

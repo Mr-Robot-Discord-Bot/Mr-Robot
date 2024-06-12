@@ -9,10 +9,12 @@ from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
-from mr_robot.utils.helpers import Embeds, delete_button
+from mr_robot.constants import Client, Colors
+from mr_robot.utils.git_api import NothingToUpdate
+from mr_robot.utils.helpers import Embeds
+from mr_robot.utils.messages import DeleteButton
 
-REPO_URL = "https://github.com/mr-robot-discord-bot/mr-robot.git"
-REPO_PATH = REPO_URL.split("/")[-1].split(".")[0]
+REPO_PATH = Client.github_bot_repo.split("/")[-2]
 logger = logging.getLogger(__name__)
 
 
@@ -23,12 +25,12 @@ class Oscmd(commands.Cog):
         self.pull_push_db.start()
 
     @commands.is_owner()
-    @commands.slash_command(name="owner", guild_ids=[1088928716572344471])
-    async def owner(self, interaction):
+    @commands.slash_command(name="owner", guild_ids=Client.debug_guilds)
+    async def owner(self, _):
         """Bot Owner Commands"""
         ...
 
-    @tasks.loop(hours=12)
+    @tasks.loop(hours=1)
     async def pull_push_db(self):
         if not self.bot.git:
             logger.warning(
@@ -37,12 +39,15 @@ class Oscmd(commands.Cog):
             return
         elif self.first_task:
             self.first_task = False
-            logger.info("Skipping Db Push")
+            logger.debug("Skipping Db Push")
             return
-        logger.debug("Pushing DB")
-        await self.bot.git.push(
-            file=Path(self.bot.db_name), commit_msg="chore: auto update"
-        )
+        logger.debug(f"Pushing DB to {Client.github_db_repo}")
+        try:
+            await self.bot.git.push(
+                file=Path(self.bot.db_name), commit_msg="chore: auto update"
+            )
+        except NothingToUpdate:
+            logger.debug("Nothing to update")
 
     @owner.sub_command(name="backup", description="Backup the database")
     async def backup(self, interaction: disnake.GuildCommandInteraction):
@@ -50,7 +55,7 @@ class Oscmd(commands.Cog):
             await self.pull_push_db()
             await interaction.send(
                 embed=Embeds.emb(Embeds.green, "Backup Completed"),
-                components=[delete_button],
+                components=[DeleteButton(interaction.author)],
             )
         except Exception as error:
             raise commands.CommandError(str(error))
@@ -64,7 +69,7 @@ class Oscmd(commands.Cog):
             raise FileNotFoundError
         await interaction.send(
             file=disnake.File(io.BytesIO(await out.stdout.read()), filename="cmd.txt"),
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
         )
 
     @owner.sub_command(name="update", description="Updates the code from gihub")
@@ -73,17 +78,17 @@ class Oscmd(commands.Cog):
             status=disnake.Status.dnd, activity=disnake.Game(name="Update")
         )
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(Embeds.green, "Updating..."),
         )
-        os.system(f"git clone {REPO_URL}")
+        os.system(f"git clone {Client.github_bot_repo}")
         for i in os.listdir():
             if i != REPO_PATH or i != ".env" or i != "Logs" or not i.endswith(".db"):
                 os.system(f"rm -rf {i}")
         os.system(f"mv {REPO_PATH}/* .")
         os.system(f"rm -rf {REPO_PATH}")
         await interaction.send(
-            components=[delete_button],
+            components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(Embeds.green, "Update Completed"),
         )
         os.system("python bot.py")
@@ -114,10 +119,10 @@ class Oscmd(commands.Cog):
         link = await channel.create_invite(
             temporary=True, max_age=int(expire), max_uses=int(number_of_uses)
         )
-        await interaction.send(link.url, components=[delete_button])
+        await interaction.send(link.url, components=[DeleteButton(interaction.author)])
 
     @link.autocomplete("id")
-    async def link_autocomplete(self, inter: disnake.GuildCommandInteraction, inp: str):
+    async def link_autocomplete(self, _, inp: str):
         inp = inp.lower()
         matching_dict = {}
         for guild in self.bot.guilds:
@@ -130,14 +135,76 @@ class Oscmd(commands.Cog):
         return sorted_dict
 
     @owner.sub_command(name="shutdown", description="Shutdown myself")
-    async def reboot(self, interaction):
+    async def reboot(self, interaction: disnake.GuildCommandInteraction) -> None:
         await interaction.send(
-            embed=Embeds.emb(Embeds.red, "Shutting down"), components=[delete_button]
+            embed=Embeds.emb(Embeds.red, "Shutting down"),
+            components=[DeleteButton(interaction.author)],
         )
         await self.bot.change_presence(
             status=disnake.Status.dnd, activity=disnake.Game(name="Shutting down")
         )
         exit()
+
+    @owner.sub_command_group(name="extension")
+    async def extension_management(self, _) -> None:
+        """Extension management commands"""
+
+    @extension_management.sub_command(name="load")
+    async def load(
+        self, interaction: disnake.GuildCommandInteraction, extension: str
+    ) -> None:
+        """
+        Loads Extension
+
+        Parameters
+        ----------
+        extension : Extension to load
+        """
+        self.bot.load_extension(extension)
+        embed = Embeds.emb(
+            Colors.green, "Extension Management", f"Successfully loads `{extension}`"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
+
+    @extension_management.sub_command(name="unload")
+    async def unload(
+        self, interaction: disnake.GuildCommandInteraction, extension: str
+    ) -> None:
+        """
+        Unloads Extension
+
+        Parameters
+        ----------
+        extension : Extension to unload
+        """
+        self.bot.unload_extension(extension)
+        embed = Embeds.emb(
+            Colors.red, "Extension Management", f"Successfully unloads `{extension}`"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
+
+    @extension_management.sub_command(name="reload")
+    async def reload(
+        self, interaction: disnake.GuildCommandInteraction, extension: str
+    ) -> None:
+        """
+        Reloads Extension
+
+        Parameters
+        ----------
+        extension : Extension to reload
+        """
+        self.bot.reload_extension(extension)
+        embed = Embeds.emb(
+            Colors.yellow, "Extension Management", f"Successfully reloads `{extension}`"
+        )
+        await interaction.send(
+            embed=embed, components=[DeleteButton(interaction.author)]
+        )
 
 
 def setup(client: MrRobot):
