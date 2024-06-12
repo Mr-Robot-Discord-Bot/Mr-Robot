@@ -76,7 +76,6 @@ class Music(commands.Cog):
         self,
         interaction: disnake.GuildCommandInteraction,
         search: str,
-        disable_playlist: bool = False,
     ) -> Track:
         player = cast(MyPlayer, interaction.guild.voice_client)
 
@@ -93,9 +92,8 @@ class Music(commands.Cog):
 
         if isinstance(tracks, mafic.Playlist):
             tracks = tracks.tracks
-            if not disable_playlist:
-                if len(tracks) > 1:
-                    player.queue.extend(tracks[1:])
+            if len(tracks) > 1:
+                player.queue.extend(tracks[1:])
         return tracks[0]
 
     async def playlist_play(
@@ -137,14 +135,18 @@ class Music(commands.Cog):
         """
         if not search and not playlist_name:
             raise commands.CommandError(
-                "You need to provide either `search` option or your `playlist_name` !"
+                "You need to provide either `search` argument or your `playlist_name` !"
             )
+        elif search and playlist_name:
+            raise commands.CommandError("You can only provide one argument at a time.")
 
         await interaction.response.defer()
 
         await self.ensure_voice(interaction)
 
         player = cast(MyPlayer, interaction.guild.voice_client)
+        player.queue.clear()
+
         if search:
             track = await self.search_play(interaction, search)
             embed = Embeds.emb(
@@ -156,11 +158,14 @@ class Music(commands.Cog):
                 f"Played by: {interaction.author.mention}",
             )
             embed.set_image(track.artwork_url)
+
         elif playlist_name:
             track = await self.playlist_play(interaction, playlist_name)
             embed = Embeds.emb(Colors.blue, "Now Playing", f"Playlist: {playlist_name}")
+
         else:
             raise commands.CommandError("idk how this reached!")
+
         await player.play(track)
 
         await interaction.send(
@@ -219,16 +224,19 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_track_end(self, event: mafic.TrackEndEvent[MyPlayer]) -> None:
         if event.player.queue:
-            await event.player.play(event.player.queue.pop(0))
+            if event.reason == mafic.EndReason.REPLACED:
+                return
+            track = event.player.queue.pop(0)
+            await event.player.play(track)
 
-    # @slash_play.autocomplete("playlist_name")
-    # async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction):
-    #     logger.info(f"{self!r} {interaction!r} ")
-    #     playlists = await self.bot.db.execute(
-    #         "select name from playlists where user = ?", (interaction.author.id)
-    #     )
-    #     playlists = playlists.fetchall()
-    #     return playlists
+    @slash_play.autocomplete("playlist_name")
+    async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction, _):
+        playlists = await self.bot.db.execute(
+            "select name from playlists where user = ?", (interaction.author.id,)
+        )
+        playlists = await playlists.fetchall()
+        playlists = {x[0] for x in playlists}
+        return playlists
 
     @music.sub_command(name="skip")
     async def skip(self, interaction: disnake.GuildCommandInteraction) -> None:

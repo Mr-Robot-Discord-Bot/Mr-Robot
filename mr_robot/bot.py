@@ -9,7 +9,7 @@ from aiocache import cached
 from aiosqlite import Connection
 from disnake.ext import commands
 
-from mr_robot.constants import Client
+from mr_robot.constants import Client, Lavalink
 from mr_robot.utils.extensions import walk_extensions
 from mr_robot.utils.git_api import Git
 
@@ -61,10 +61,10 @@ class MrRobot(commands.AutoShardedInteractionBot):
             try:
                 await self.wait_until_ready()
                 await self.pool.create_node(
-                    host="lavalink",
-                    port=2333,
-                    label="MAIN",
-                    password="youshallnotpass",
+                    host=Lavalink.host,
+                    port=Lavalink.port,
+                    password=Lavalink.password,
+                    label=Lavalink.label,
                 )
                 break
             except Exception:

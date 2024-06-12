@@ -21,6 +21,15 @@ class Client:
     logging_config_file = "logging_config.json"
 
 
+class Lavalink:
+    """Lavalink Player Constants"""
+
+    host = "lavalink"
+    port = 2333
+    label = "MAIN"
+    password = "youshallnotpass"
+
+
 class ButtonCustomId:
     """Button Custom Ids"""
 
