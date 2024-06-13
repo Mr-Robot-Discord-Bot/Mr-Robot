@@ -41,7 +41,6 @@ async def main():
             intents=disnake.Intents.all(),
             session=session,
             db=await aiosqlite.connect(Client.db_name),
-            db_name=Client.db_name,
         )
         if client.git:
             logger.info("Pulling DB")
