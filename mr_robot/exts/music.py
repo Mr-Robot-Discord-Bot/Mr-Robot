@@ -566,6 +566,15 @@ class Music(commands.Cog):
             embed=embed, components=[DeleteButton(interaction.author)]
         )
 
+    @add_track.autocomplete("playlist")
+    async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction, _):
+        playlists = await self.bot.db.execute(
+            "select name from playlists where user = ?", (interaction.author.id,)
+        )
+        playlists = await playlists.fetchall()
+        playlists = {x[0] for x in playlists}
+        return playlists
+
 
 def setup(client: MrRobot):
     client.add_cog(Music(client))
