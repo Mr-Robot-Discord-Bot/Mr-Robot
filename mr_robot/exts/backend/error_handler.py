@@ -141,7 +141,6 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
         elif isinstance(ctx, disnake.Interaction):
             if ctx.response.is_done():
                 components.insert_item(0, DeleteButton(ctx.author))
-            if ctx.response.is_done():
                 ctx.send_error = partial(ctx.followup.send, ephemeral=True, components=components)  # type: ignore[reportAttributeAccessIssue]
             else:
                 ctx.send_error = partial(ctx.send, ephemeral=True, components=components)  # type: ignore[reportAttributeAccessIssue]
