@@ -37,11 +37,11 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
     ) -> None:
         """Handler for Bot Missing Permissions error"""
         embed = self.error_embed("Permission Failure", str(error))
-        bot_perms = (
-            ctx.channel.permissions_for(  # type:ignore[reportAttributeAccessIssue]
+        bot_perms = disnake.Permissions()
+        if not isinstance(ctx.channel, disnake.PartialMessageable):
+            bot_perms = ctx.channel.permissions_for(
                 ctx.me  # type:ignore[reportAttributeAccessIssue]
             )
-        )
         if bot_perms >= disnake.Permissions(send_messages=True, embed_links=True):
             await ctx.send_error(embed=embed)  # type:ignore[reportAttributeAccessIssue]
         elif bot_perms >= disnake.Permissions(send_messages=True):
@@ -141,7 +141,6 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
         elif isinstance(ctx, disnake.Interaction):
             if ctx.response.is_done():
                 components.insert_item(0, DeleteButton(ctx.author))
-            if ctx.response.is_done():
                 ctx.send_error = partial(ctx.followup.send, ephemeral=True, components=components)  # type: ignore[reportAttributeAccessIssue]
             else:
                 ctx.send_error = partial(ctx.send, ephemeral=True, components=components)  # type: ignore[reportAttributeAccessIssue]
@@ -179,11 +178,14 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
             return
 
         embed: Optional[disnake.Embed] = None
+        should_respond = True
 
         if isinstance(error, commands.UserInputError):
             embed = await self.handle_user_input_error(error)
         elif isinstance(error, commands.CheckFailure):
             embed = await self.handle_check_failure(ctx, error)
+            if embed is None:
+                should_respond = False
         elif isinstance(error, commands.DisabledCommand):
             if not ctx.command.hidden:  # type: ignore[reportAttributeAccessIssue]
                 msg = f"Command `{ctx.invoked_with}` is disabled."  # type: ignore[reportAttributeAccessIssue]
@@ -194,6 +196,7 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
             if isinstance(error.original, disnake.Forbidden):
                 logger.warn(f"Permission error ouccured in {ctx.command}.")  # type: ignore[reportAttributeAccessIssue]
                 await self.handler_bot_missing_perms(ctx, error.original)
+                should_respond = False
             else:
 
                 # Generic Error
@@ -228,6 +231,8 @@ class ErrorHandler(commands.Cog, slash_command_attrs={"dm_permission": False}):
                     f"\n\n ```py\n{error_str}\n```"
                 )
                 embed = self.error_embed(title, msg)
+        if not should_respond:
+            return
         if embed is None:
             embed = self.error_embed("", str(error))
 

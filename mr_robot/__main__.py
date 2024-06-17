@@ -18,7 +18,7 @@ from mr_robot.constants import Client
 load_dotenv()
 
 
-def setup_logging() -> None:
+def setup_logging_modern() -> None:
     with open(Client.logging_config_file, "r") as file:
         config = json.load(file)
     try:
@@ -32,6 +32,26 @@ def setup_logging() -> None:
         atexit.register(queue_handler.listener.stop)  # type: ignore[reportAttributeAccessIssue]
 
 
+def setup_logging() -> None:
+    os.makedirs("logs", exist_ok=True)
+    file_handler = logging.FileHandler(Client.log_file_name, mode="w")
+    console_handler = logging.StreamHandler()
+
+    file_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        handlers=[console_handler, file_handler],
+    )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
+    logging.getLogger("disnake").setLevel(logging.INFO)
+    logging.getLogger("aiosqlite").setLevel(logging.INFO)
+    logging.getLogger("streamlink").disabled = True
+
+
 async def main():
     setup_logging()
     logger = logging.getLogger(Client.name)
@@ -41,7 +61,6 @@ async def main():
             intents=disnake.Intents.all(),
             session=session,
             db=await aiosqlite.connect(Client.db_name),
-            db_name=Client.db_name,
         )
         if client.git:
             logger.info("Pulling DB")

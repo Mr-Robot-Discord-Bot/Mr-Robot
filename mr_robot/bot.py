@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class MrRobot(commands.AutoShardedInteractionBot):
     """Mr Robot Bot"""
 
-    def __init__(self, session: httpx.AsyncClient, db: Connection, db_name, **kwargs):
+    def __init__(self, session: httpx.AsyncClient, db: Connection, **kwargs):
         super().__init__(**kwargs)
         self.pool = mafic.NodePool(self)
         self.loop.create_task(self.add_nodes())
@@ -29,7 +29,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.token = Client.github_token
         self.repo = Client.github_db_repo
         self.git = None
-        self.db_name = db_name
+        self.db_name = Client.db_name
         if self.token and self.repo:
             owner, repo = self.repo.split("/")
             self.git = Git(
