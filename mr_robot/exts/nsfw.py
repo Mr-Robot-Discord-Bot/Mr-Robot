@@ -1,7 +1,7 @@
 import logging
 import random
 from textwrap import shorten
-from typing import Set
+from typing import Literal, Set
 
 import disnake
 from disnake.ext import commands
@@ -31,12 +31,62 @@ class Fun(commands.Cog):
             raise ValueError("Nsfw api is not being initialised")
         await interaction.response.defer()
 
+    async def send_nsfw(
+        self,
+        interaction: disnake.CommandInteraction,
+        platform: Literal["xnxx", "xvideos"],
+        search: str,
+        amount: int,
+    ) -> None:
+        """Generic command to fetch content from nsfw_api"""
+        try:
+            await interaction.send(
+                embed=Embeds.emb(
+                    Embeds.blue,
+                    f"Searching {search}",
+                    "Please wait while we search for your content",
+                )
+            )
+            data = await self.bot._request(f"{nsfw_api}/{platform}/{amount}/{search}")
+            data = data.get("data")
+            for vid in data:
+                await interaction.channel.send(
+                    embed=(
+                        Embeds.emb(
+                            Embeds.blue,
+                            value=f"""
+                            **Name:** {shorten(vid.get("name"), 35, placeholder="...").strip()}
+                            **Description:** {shorten(vid.get("description"), 70, placeholder="...").strip()}
+                            **Upload Date:** {vid.get("upload_date")}
+                            """,
+                        )
+                    ).set_image(url=vid.get("thumbnail")),
+                    components=[
+                        disnake.ui.Button(
+                            url=vid.get("content_url"),
+                            label="Watch Now",
+                            emoji="📺",
+                            style=disnake.ButtonStyle.link,
+                        ),
+                    ],
+                )
+            await interaction.edit_original_response(
+                embed=Embeds.emb(
+                    Embeds.green,
+                    "Search Completed",
+                    f"Showing {len(data)} results for `{search}`",
+                )
+            )
+        except Exception:
+            logger.error(f"Error in {platform.capitalize()}", exc_info=True)
+            raise commands.CommandError("Api Error")
+
     @commands.is_nsfw()
     @slash_nsfw.sub_command(name="xnxx")
     async def xnxx(
         self,
         interaction: disnake.CommandInteraction,
-        search: str = "porn",
+        search: str = "nsfw",
         amount: commands.Range[int, 1, 3] = 1,
     ):
         """
@@ -47,59 +97,13 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        try:
-            await interaction.send(
-                embed=Embeds.emb(
-                    Embeds.blue,
-                    f"Searching {search}",
-                    "Please wait while we search for your content",
-                )
-            )
-            data = await self.bot._request(f"{nsfw_api}/xnxx/{amount}/{search}")
-            data = data.get("data")
-            for vid in data:
-                await interaction.channel.send(
-                    embed=(
-                        Embeds.emb(
-                            Embeds.blue,
-                            value=f"""
-                            **Name:** {shorten(vid.get("name"), 35, placeholder="...").strip()}
-                            **Description:** {shorten(vid.get("description"), 70, placeholder="...").strip()}
-                            **Upload Date:** {vid.get("upload_date")}
-                            """,
-                        )
-                    ).set_image(url=vid.get("thumbnail")),
-                    components=[
-                        disnake.ui.Button(
-                            url=vid.get("content_url"),
-                            label="Watch Now",
-                            emoji="📺",
-                            style=disnake.ButtonStyle.link,
-                        ),
-                    ],
-                )
-            await interaction.edit_original_response(
-                embed=Embeds.emb(
-                    Embeds.green,
-                    "Search Completed",
-                    f"Showing {len(data)} results for `{search}`",
-                )
-            )
-        except Exception:
-            logger.error("Error in Xnxx", exc_info=True)
-            await interaction.edit_original_response(
-                embed=Embeds.emb(
-                    Embeds.red,
-                    "Api Error",
-                    "Please try again later :slight_frown:",
-                ),
-            )
+        await self.send_nsfw(interaction, "xnxx", search, amount)
 
     @xnxx.autocomplete("search")
     async def xnxx_autocomplete(
         self, interaction: disnake.GuildCommandInteraction, name: str
     ):
-        data = await self.bot._request(f"{nsfw_api}/suggestion/xnxx/{name or 'porn'}")
+        data = await self.bot._request(f"{nsfw_api}/suggestion/xnxx/{name or "nsfw"}")
         return {keywords for keywords in data.get("data", [])}
 
     @commands.is_nsfw()
@@ -107,7 +111,7 @@ class Fun(commands.Cog):
     async def xvideos(
         self,
         interaction: disnake.CommandInteraction,
-        search: str = "porn",
+        search: str = "nsfw",
         amount: commands.Range[int, 1, 3] = 1,
     ):
         """
@@ -118,60 +122,12 @@ class Fun(commands.Cog):
         search: What to search?
         amount: How much?
         """
-        try:
-            await interaction.send(
-                embed=Embeds.emb(
-                    Embeds.red,
-                    f"Searching {search}",
-                    "Please wait while we search for your content",
-                )
-            )
-            data = await self.bot._request(f"{nsfw_api}/xvideos/{amount}/{search}")
-            data = data.get("data")
-            for vid in data:
-                await interaction.channel.send(
-                    embed=(
-                        Embeds.emb(
-                            Embeds.blue,
-                            value=f"""
-                            **Name:** {shorten(vid.get("name"), 35, placeholder="...").strip()}
-                            **Description:** {shorten(vid.get("description"), 70, placeholder="...").strip()}
-                            **Upload Date:** {vid.get("upload_date")}
-                            """,
-                        )
-                    ).set_image(url=vid.get("thumbnail")),
-                    components=[
-                        disnake.ui.Button(
-                            url=vid.get("content_url"),
-                            label="Watch Now",
-                            emoji="📺",
-                            style=disnake.ButtonStyle.link,
-                        ),
-                    ],
-                )
-            await interaction.edit_original_response(
-                embed=Embeds.emb(
-                    Embeds.green,
-                    "Search Completed",
-                    f"Showing {len(data)} results for `{search}`",
-                )
-            )
-        except Exception:
-            logger.error("Error in Xvideos", exc_info=True)
-            await interaction.edit_original_response(
-                embed=Embeds.emb(
-                    Embeds.red,
-                    "Api Error",
-                    "Please try again later :slight_frown:",
-                ),
-            )
+        await self.send_nsfw(interaction, "xvideos", search, amount)
 
     @xvideos.autocomplete("search")
-    async def xvideos_autocomplete(
-        self, interaction: disnake.GuildCommandInteraction, name: str
-    ):
+    async def xvideos_autocomplete(self, _, name: str):
         data = await self.bot._request(
-            f"{nsfw_api}/suggestion/xvideos/{name or 'porn'}"
+            f"{nsfw_api}/suggestion/xvideos/{name or "nsfw"}"
         )
         return {keywords for keywords in data.get("data", [])}
 
@@ -179,7 +135,7 @@ class Fun(commands.Cog):
     async def redtube(
         self,
         interaction: disnake.CommandInteraction,
-        search: str = "porn",
+        search: str = "nsfw",
         amount: commands.Range[int, 1, 3] = 1,
     ):
         """
@@ -228,14 +184,8 @@ class Fun(commands.Cog):
                 )
             )
         except Exception:
-            logger.error("Error in Xvideos", exc_info=True)
-            await interaction.edit_original_response(
-                embed=Embeds.emb(
-                    Embeds.red,
-                    "Api Error",
-                    "Please try again later :slight_frown:",
-                ),
-            )
+            logger.error("Error in Redtube", exc_info=True)
+            raise commands.CommandError("Api Error")
 
     @slash_nsfw.sub_command(name="reddit")
     async def reddit(
@@ -243,7 +193,7 @@ class Fun(commands.Cog):
         interaction: disnake.CommandInteraction,
         search: str,
         amount: commands.Range[int, 1, 3] = 1,
-    ):
+    ) -> None:
         """
         Loads content from reddit.com
 
@@ -266,7 +216,7 @@ class Fun(commands.Cog):
             )
             if search not in (await self.reddit_autocomp(interaction, name=search)):
                 URL = (
-                    "https://www.reddit.com/r/porn_gifs/search.json"
+                    "https://www.reddit.com/r/memes/search.json"
                     "?raw_json=1&limit=100&include_over_18=True&type=link"
                     f"&q={search}"
                 )
@@ -350,16 +300,12 @@ class Fun(commands.Cog):
                 ),
             )
 
-    @reddit.autocomplete(  # type: ignore[reportFunctionMemberAccess]
-        "search"
-    )  # FIXME: Seems like there's issue in reddit function's typing
-    async def reddit_autocomp(
-        self, interaction: disnake.CommandInteraction, name: str
-    ) -> Set[str] | None:
+    @reddit.autocomplete("search")
+    async def reddit_autocomp(self, _, name: str) -> Set[str] | None:
         name = name.lower()
         url = (
             "https://www.reddit.com/api/search_reddit_names.json?"
-            f"query={name or 'porn'}&include_over_18=True"
+            f"query={name or "nsfw"}&include_over_18=True"
         )
         data = await self.bot._request(url)
         return set(name for name in data["names"])

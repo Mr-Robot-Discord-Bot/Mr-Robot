@@ -836,7 +836,7 @@ class Moderation(commands.Cog):
         await interaction.response.defer()
         if isinstance(channel_or_category, disnake.CategoryChannel):
             for channel in channel_or_category.channels:
-                await channel.edit(nsfw=value)  # type: ignore[reportCallIssue]
+                await channel.edit(nsfw=value)
         else:
             await channel_or_category.edit(nsfw=value)
         await interaction.send(

@@ -10,6 +10,7 @@ from disnake.ext import commands
 from mafic.track import Track
 
 from mr_robot.bot import MrRobot
+from mr_robot.checks import ensure_voice_connect, ensure_voice_player
 from mr_robot.constants import Colors
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
@@ -53,8 +54,8 @@ class Music(commands.Cog):
         await self.bot.db.execute(SQL_CREATE_TRACKS_TABLE)
         await self.bot.db.commit()
 
-    async def ensure_voice(self, interaction: disnake.GuildCommandInteraction) -> None:
-        """Ensures voice client"""
+    async def connect(self, interaction: disnake.GuildCommandInteraction) -> None:
+        """Connects to voice channel"""
         if not hasattr(interaction.guild, "voice_client"):
             raise commands.CommandError(
                 "Seems like i don't have enough perms to play music!"
@@ -63,9 +64,6 @@ class Music(commands.Cog):
             logger.debug(f"Initializing voice client in {interaction.guild.name}.")
             if interaction.author.voice and interaction.author.voice.channel:
                 await interaction.author.voice.channel.connect(cls=MyPlayer)  # type: ignore[reportArgumentType]
-
-            else:
-                raise commands.CommandError("Connect to a voice channel first!")
 
     @commands.slash_command(name="music", dm_permission=False)
     async def music(self, _):
@@ -119,6 +117,7 @@ class Music(commands.Cog):
         return tracks[0]
 
     @music.sub_command(name="play")
+    @ensure_voice_connect()
     async def slash_play(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -142,7 +141,7 @@ class Music(commands.Cog):
 
         await interaction.response.defer()
 
-        await self.ensure_voice(interaction)
+        await self.connect(interaction)
 
         player = cast(MyPlayer, interaction.guild.voice_client)
         player.queue.clear()
@@ -173,9 +172,9 @@ class Music(commands.Cog):
         )
 
     @music.sub_command(name="boost")
+    @ensure_voice_player()
     async def boost(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Boost the player"""
-        await self.ensure_voice(interaction)
         player = cast(MyPlayer, interaction.guild.voice_client)
         bassboost_equalizer = mafic.Equalizer(
             [mafic.EQBand(idx, 0.30) for idx in range(15)]
@@ -190,9 +189,9 @@ class Music(commands.Cog):
         )
 
     @music.sub_command(name="unboost")
+    @ensure_voice_player()
     async def unboost(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Unboost the player"""
-        await self.ensure_voice(interaction)
         player = cast(MyPlayer, interaction.guild.voice_client)
         await player.remove_filter("boost")
         embed = Embeds.emb(Colors.blue, "Player Unboosted")
@@ -201,6 +200,7 @@ class Music(commands.Cog):
         )
 
     @music.sub_command(name="current")
+    @ensure_voice_player()
     async def current(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Show current playing track"""
         player = cast(MyPlayer, interaction.guild.voice_client)
@@ -229,19 +229,10 @@ class Music(commands.Cog):
             track = event.player.queue.pop(0)
             await event.player.play(track)
 
-    @slash_play.autocomplete("playlist_name")
-    async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction, _):
-        playlists = await self.bot.db.execute(
-            "select name from playlists where user = ?", (interaction.author.id,)
-        )
-        playlists = await playlists.fetchall()
-        playlists = {x[0] for x in playlists}
-        return playlists
-
     @music.sub_command(name="skip")
+    @ensure_voice_player()
     async def skip(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Skips the current track"""
-        await self.ensure_voice(interaction)
         player = cast(MyPlayer, interaction.guild.voice_client)
         await player.stop()
         embed = Embeds.emb(Colors.blue, "Track Skipped")
@@ -250,9 +241,9 @@ class Music(commands.Cog):
         )
 
     @music.sub_command_group(name="queue")
-    async def queue(self, interaction: disnake.GuildCommandInteraction) -> None:
+    @ensure_voice_player()
+    async def queue(self, _) -> None:
         """Queue subcommand group"""
-        await self.ensure_voice(interaction)
 
     @queue.sub_command(name="clear")
     async def clear_queue(self, interaction: disnake.GuildCommandInteraction) -> None:
@@ -341,6 +332,7 @@ class Music(commands.Cog):
         )
 
     @music.sub_command(name="disconnect")
+    @ensure_voice_player()
     async def slash_stop(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Disconnects the bot from voice channel"""
 
@@ -356,6 +348,7 @@ class Music(commands.Cog):
         await interaction.send(embed=embed, ephemeral=True, delete_after=5)
 
     @music.sub_command(name="volume")
+    @ensure_voice_player()
     async def slash_volume(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -368,7 +361,6 @@ class Music(commands.Cog):
         ----------
         volume : Volume level
         """
-        await self.ensure_voice(interaction)
         player = cast(MyPlayer, interaction.guild.voice_client)
         await player.set_volume(volume)
         embed = Embeds.emb(Colors.blue, f"Volume: {volume}%")
@@ -377,6 +369,7 @@ class Music(commands.Cog):
         )
 
     @music.sub_command(name="toggle_pause")
+    @ensure_voice_player()
     async def slash_pause(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -389,8 +382,6 @@ class Music(commands.Cog):
         ----------
         force_pause : Force pause the player
         """
-        await self.ensure_voice(interaction)
-
         player = cast(MyPlayer, interaction.guild.voice_client)
         if force_pause or not player.paused:
             await player.pause()
@@ -404,9 +395,9 @@ class Music(commands.Cog):
         )
 
     @music.sub_command_group(name="playlist")
-    async def playlist(self, interaction: disnake.GuildCommandInteraction) -> None:
+    @ensure_voice_player()
+    async def playlist(self, _) -> None:
         """Playlist subcommand group"""
-        await self.ensure_voice(interaction)
 
     @playlist.sub_command(name="create")
     async def create(
@@ -566,6 +557,7 @@ class Music(commands.Cog):
             embed=embed, components=[DeleteButton(interaction.author)]
         )
 
+    @slash_play.autocomplete("playlist_name")
     @add_track.autocomplete("playlist")
     async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction, _):
         playlists = await self.bot.db.execute(
