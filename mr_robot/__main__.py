@@ -34,7 +34,9 @@ def setup_logging_modern() -> None:
 
 def setup_logging() -> None:
     os.makedirs("logs", exist_ok=True)
-    file_handler = logging.FileHandler(Client.log_file_name, mode="w")
+    file_handler = logging.handlers.RotatingFileHandler(
+        Client.log_file_name, mode="a", maxBytes=(1000000 * 20), backupCount=5
+    )
     console_handler = logging.StreamHandler()
 
     file_handler.setLevel(logging.DEBUG)

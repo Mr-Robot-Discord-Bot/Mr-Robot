@@ -1,5 +1,6 @@
 import logging
 
+import aiosqlite
 import disnake
 from disnake.ext import commands
 
@@ -15,7 +16,7 @@ class Joinalert(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: disnake.Guild):
         """Webhook get's triggered on joining any guild"""
 
         await self.bot.change_presence(
@@ -34,15 +35,17 @@ class Joinalert(commands.Cog):
                 Vanity Invite Link: {guild.vanity_url_code}
                 Members Count: {guild.member_count}
                 """,
-        )
+        ).set_thumbnail(guild.icon)
 
         await self.bot.db.execute(
             "insert into guilds values (?, ?)", (guild.id, guild.name)
         )
         await self.bot.db.commit()
+        if not Client.on_join_webook:
+            return None
         await send_webhook(
             embed=embed,
-            webhook_url=Client.on_join_webook,  # type: ignore[reportArgumentType]
+            webhook_url=Client.on_join_webook,
             username="Guild Join Logger",
             avatar_url="https://cdn.discordapp.com/avatars"
             "/1087375480304451727/f780c7c8c052c66c89f9270"
@@ -50,7 +53,7 @@ class Joinalert(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild: disnake.Guild):
         if not guild.members:
             return
 
@@ -70,20 +73,25 @@ class Joinalert(commands.Cog):
                 Vanity Invite Link: {guild.vanity_url_code}
                 Members Count: {guild.member_count}
                 """,
-        )
+        ).set_thumbnail(guild.icon)
         tables = await (
             await self.bot.db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             )
         ).fetchall()
         for (table,) in tables:
-            await self.bot.db.execute(
-                f"delete from {table} where guild_id = ?", (guild.id,)
-            )
+            try:
+                await self.bot.db.execute(
+                    f"delete from {table} where guild_id = ?", (guild.id,)
+                )
+            except aiosqlite.OperationalError:
+                ...
         await self.bot.db.commit()
+        if not Client.on_join_webook:
+            return None
         await send_webhook(
             embed=embed,
-            webhook_url=Client.on_join_webook,  # type: ignore[reportArgumentType]
+            webhook_url=Client.on_join_webook,
             username="Guild Leave Logger",
             avatar_url="https://cdn.discordapp.com/avatars/10"
             "87375480304451727/f780c7c8c052c66c89f9270aebd63b"

@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Literal
 
+import aiosqlite
 import disnake
 import psutil
 from disnake.ext import commands
@@ -55,9 +56,12 @@ class Status(commands.Cog):
                     )
                 ).fetchall()
                 for (table,) in tables:
-                    await self.bot.db.execute(
-                        f"delete from {table} where guild_id = ?", (guild[0],)
-                    )
+                    try:
+                        await self.bot.db.execute(
+                            f"delete from {table} where guild_id = ?", (guild[0],)
+                        )
+                    except aiosqlite.OperationalError:
+                        ...
                 await self.bot.db.commit()
 
         await self.bot.db.commit()
