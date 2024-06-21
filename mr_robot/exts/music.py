@@ -30,7 +30,8 @@ SQL_CREATE_TRACKS_TABLE = """
 create table if not exists tracks (
         id integer,
         track text,
-        foreign key (id) references playlists (id)
+        foreign key (id) references playlists (id),
+        unique(id, track)
         )
 """
 
@@ -160,7 +161,12 @@ class Music(commands.Cog):
 
         elif playlist_name:
             track = await self.playlist_play(interaction, playlist_name)
-            embed = Embeds.emb(Colors.blue, "Now Playing", f"Playlist: {playlist_name}")
+            embed = Embeds.emb(
+                Colors.blue,
+                "Now Playing",
+                f"Playlist: {playlist_name}\n"
+                f"Total Tracks: {len(player.queue) + 1}\n",
+            )
 
         else:
             raise commands.CommandError("idk how this reached!")
@@ -542,11 +548,15 @@ class Music(commands.Cog):
         if playlist_id is None:
             raise commands.CommandError("No such playlist found!")
 
-        await self.bot.db.execute(
-            "insert into tracks (id, track) values (?, ?)",
-            (playlist_id[0], trackk.id),
-        )
-        await self.bot.db.commit()
+        try:
+            await self.bot.db.execute(
+                "insert into tracks (id, track) values (?, ?)",
+                (playlist_id[0], trackk.id),
+            )
+            await self.bot.db.commit()
+        except IntegrityError:
+            raise commands.CommandError("This track is already in your playlist")
+
         embed = Embeds.emb(
             Colors.blue,
             "Track Added",

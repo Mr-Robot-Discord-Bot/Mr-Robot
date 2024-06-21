@@ -146,10 +146,8 @@ class TicketSystem(commands.Cog):
         await self.bot.db.commit()
 
     @commands.slash_command(name="ticket", dm_permission=False)
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
-    async def ticket(self, interaction: disnake.GuildCommandInteraction):
+    @commands.has_permissions(manage_guild=True)
+    async def ticket(self, _):
         """Ticket System"""
 
     @ticket.sub_command(name="set_button")
