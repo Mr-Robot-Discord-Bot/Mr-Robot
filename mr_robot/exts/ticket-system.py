@@ -248,13 +248,13 @@ class TicketSystem(commands.Cog):
                     color,
                     Configs(config).name,
                     f"""
-                        **Title:** {title}
-                        **Description:** {description}
-                        **Color:** {disnake.Color(color) if color else "None"}
-                        **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
-                        **Category:** {interaction.guild.get_channel(category_id)}
-                        **Image:** {f"[Click To See]({image})" if image else "None"}
-                        """,
+                    **Title:** {title}
+                    **Description:** {description}\n
+                    **Color:** {disnake.Color(color) if color else "None"}
+                    **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
+                    **Category:** {interaction.guild.get_channel(category_id)}
+                    **Image:** {f"[Click To See]({image})" if image else "None"}
+                    """,
                 )
             )
         await interaction.send(
