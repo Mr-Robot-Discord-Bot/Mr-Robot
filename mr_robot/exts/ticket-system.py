@@ -249,7 +249,9 @@ class TicketSystem(commands.Cog):
                     Configs(config).name,
                     f"""
                     **Title:** {title}
-                    **Description:** {description}\n
+                    **Description:** ```
+                    {description}
+                    ```
                     **Color:** {disnake.Color(color) if color else "None"}
                     **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
                     **Category:** {interaction.guild.get_channel(category_id)}
