@@ -63,6 +63,7 @@ class Ticket(disnake.ui.Modal):
     async def callback(self, interaction: disnake.ModalInteraction):
         if not interaction.guild or not self.category or not self.user_or_role:
             return
+        await interaction.response.defer()
         title_channel = interaction.text_values["title_channel"]
         description_channel = interaction.text_values["description_channel"]
         image_channel = interaction.text_values["image"]

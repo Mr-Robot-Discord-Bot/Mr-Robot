@@ -43,6 +43,7 @@ class EmbedModal(disnake.ui.Modal):
     async def callback(self, interaction: disnake.ModalInteraction):
         if not interaction.guild:
             return
+        await interaction.response.defer()
         title = interaction.text_values["title"]
         content = interaction.text_values["body"]
         image = interaction.text_values["image"]
