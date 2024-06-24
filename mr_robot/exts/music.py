@@ -1,5 +1,6 @@
 import logging
 import random
+from io import BytesIO
 from typing import cast
 
 import disnake
@@ -261,9 +262,9 @@ class Music(commands.Cog):
             embed=embed, components=[DeleteButton(interaction.author)]
         )
 
-    @queue.sub_command(name="list")
+    @queue.sub_command(name="show")
     async def list_queue(self, interaction: disnake.GuildCommandInteraction) -> None:
-        """List first 20 tracks in queue"""
+        """Shows first 20 tracks in queue"""
         player = cast(MyPlayer, interaction.guild.voice_client)
         if not player.queue:
             embed = Embeds.emb(Colors.blue, "Queue Empty")
@@ -491,33 +492,101 @@ class Music(commands.Cog):
             embed=embed, components=[DeleteButton(interaction.author)]
         )
 
-    @playlist.sub_command(name="list")
-    async def list(self, interaction: disnake.GuildCommandInteraction) -> None:
-        """List all playlists"""
-        playlists = await self.bot.db.execute(
-            "select name from playlists where user = ?", (interaction.author.id,)
+    @playlist.sub_command(name="show")
+    async def list_tracks(
+        self, interaction: disnake.GuildCommandInteraction, playlist: str
+    ) -> None:
+        """
+        Shows all tracks in playlist
+
+        Parameters
+        ----------
+        playlist : Name of the playlist
+        """
+        # Use Paginator
+        playlist_id = await self.bot.db.execute(
+            "select id from playlists where name = ? and user = ? ",
+            (playlist, interaction.author.id),
         )
-        playlists = await playlists.fetchall()
+        playlist_id = await playlist_id.fetchone()
+        if playlist_id is None:
+            raise commands.CommandError("No such playlist found!")
 
-        if not playlists:
-            embed = Embeds.emb(
-                Colors.blue, "No Playlists", "You don't have any playlists!"
-            )
-            await interaction.send(
-                embed=embed, components=[DeleteButton(interaction.author)]
-            )
-            return
+        (playlist_id,) = playlist_id
+        tracks = await self.bot.db.execute(
+            "select track from tracks where id = ?", (playlist_id,)
+        )
+        tracks = await tracks.fetchall()
+        if not tracks:
+            raise commands.CommandError(f"No track found in `{playlist}`")
+        player = cast(MyPlayer, interaction.guild.voice_client)
+        tracks = map(lambda x: x[0], tracks)
+        tracks = await player.node.decode_tracks(list(tracks))
+        tracks = map(lambda x: f"{x[0]}) {x[1].title}", enumerate(tracks, start=1))
+        tracks = list(tracks)
+        parsed_tracks = bytes(
+            f"Total Tracks: {len(tracks)}\n\n{"\n".join(tracks)}",
+            encoding="utf-8",
+        )
+        file = disnake.File(
+            fp=BytesIO(parsed_tracks), filename=f'Tracks in "{playlist}" playlist.txt'
+        )
+        await interaction.send(file=file, components=[DeleteButton(interaction.author)])
 
+    @playlist.sub_command(name="remove")
+    async def delete_track(
+        self, interaction: disnake.GuildCommandInteraction, playlist: str, index: int
+    ) -> None:
+        """
+        Remove a track from playlist
+
+        Parameters
+        ----------
+        playlist : Name of the playlist
+        index: Use /music playlist show to get index
+        """
+
+        playlist_id = await self.bot.db.execute(
+            "select id from playlists where name = ? and user = ?",
+            (playlist, interaction.author.id),
+        )
+        playlist_id = await playlist_id.fetchone()
+        if playlist_id is None:
+            raise commands.CommandError("No such playlist found!")
+        (playlist_id,) = playlist_id
+        tracks = await self.bot.db.execute(
+            "select track from tracks where id = ?", (playlist_id,)
+        )
+        tracks = await tracks.fetchall()
+        if tracks is None:
+            raise commands.CommandError("This playlist is already empty")
+        tracks = [x for x, in tracks]
+        try:
+            if index <= 0:
+                raise IndexError
+            tracks_to_delete = tracks[index - 1]
+        except IndexError:
+            raise commands.CommandError(
+                "Index is out of range!"
+                " Use `/music playlist show` command to get index."
+            )
+        await self.bot.db.execute(
+            "delete from tracks where id = ? and track = ?",
+            (playlist_id, tracks_to_delete),
+        )
+        await self.bot.db.commit()
+
+        player = cast(MyPlayer, interaction.guild.voice_client)
+        track = await player.node.decode_track(tracks_to_delete)
         embed = Embeds.emb(
-            Colors.blue,
-            "Playlists",
-            f'```{"\n".join([f"{idx}) {playlist[0]}" for idx, playlist in enumerate(playlists, start=1)])}```',
+            Embeds.blue, "Track Removed", f"[{track.title}]({track.uri})"
         )
+        embed.set_image(url=track.artwork_url)
         await interaction.send(
             embed=embed, components=[DeleteButton(interaction.author)]
         )
 
-    @playlist.sub_command(name="add_track")
+    @playlist.sub_command(name="add")
     async def add_track(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -569,6 +638,8 @@ class Music(commands.Cog):
 
     @slash_play.autocomplete("playlist_name")
     @add_track.autocomplete("playlist")
+    @list_tracks.autocomplete("playlist")
+    @delete_track.autocomplete("playlist")
     async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction, _):
         playlists = await self.bot.db.execute(
             "select name from playlists where user = ?", (interaction.author.id,)
