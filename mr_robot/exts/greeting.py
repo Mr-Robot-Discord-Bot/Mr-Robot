@@ -423,7 +423,7 @@ class Greetings(commands.Cog):
 
         Parameters
         ----------
-        greeter: Greeter to unplug
+        feature: Greeter to unplug
         """
         await interaction.response.defer(ephemeral=True)
         if feature == "Welcome Channel":
