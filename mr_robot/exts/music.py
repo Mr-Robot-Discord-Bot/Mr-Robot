@@ -1,3 +1,4 @@
+import itertools
 import logging
 import random
 from io import BytesIO
@@ -15,6 +16,7 @@ from mr_robot.checks import ensure_voice_connect, ensure_voice_player
 from mr_robot.constants import Colors
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
+from mr_robot.utils.paginator import Paginator
 
 logger = logging.getLogger(__name__)
 
@@ -264,20 +266,28 @@ class Music(commands.Cog):
 
     @queue.sub_command(name="show")
     async def list_queue(self, interaction: disnake.GuildCommandInteraction) -> None:
-        """Shows first 20 tracks in queue"""
+        """Shows tracks in queue"""
         player = cast(MyPlayer, interaction.guild.voice_client)
         if not player.queue:
             embed = Embeds.emb(Colors.blue, "Queue Empty")
-        else:
-            tracks = "\n".join(
-                [
-                    f"{idx+1}) [{track.title}]({track.uri})"
-                    for idx, track in enumerate(player.queue[:20])
-                ]
+            await interaction.send(
+                embed=embed, components=[DeleteButton(interaction.author)]
             )
-            embed = Embeds.emb(Colors.blue, "Queue", tracks)
+            return
+        tracks = [
+            f"{idx+1}) [{track.title}]({track.uri})"
+            for idx, track in enumerate(player.queue)
+        ]
+        tracks_grps = list(itertools.batched(tracks, 10))
+        embeds = []
+        for track_grp in tracks_grps:
+            embed = disnake.Embed(title="Queue List", color=Colors.blue)
+            embed.description = "\n".join(track_grp)
+            embed.description += f"\n\nTotal Tracks: {len(tracks)}"
+            embeds.append(embed)
         await interaction.send(
-            embed=embed, components=[DeleteButton(interaction.author)]
+            embed=embeds[0],
+            view=Paginator(embeds),
         )
 
     @queue.sub_command(name="remove")
@@ -503,7 +513,6 @@ class Music(commands.Cog):
         ----------
         playlist : Name of the playlist
         """
-        # Use Paginator
         playlist_id = await self.bot.db.execute(
             "select id from playlists where name = ? and user = ? ",
             (playlist, interaction.author.id),
@@ -522,16 +531,22 @@ class Music(commands.Cog):
         player = cast(MyPlayer, interaction.guild.voice_client)
         tracks = map(lambda x: x[0], tracks)
         tracks = await player.node.decode_tracks(list(tracks))
-        tracks = map(lambda x: f"{x[0]}) {x[1].title}", enumerate(tracks, start=1))
+        tracks = map(
+            lambda x: f"{x[0]}) [{x[1].title}]({x[1].uri})",
+            enumerate(tracks, start=1),
+        )
         tracks = list(tracks)
-        parsed_tracks = bytes(
-            f"Total Tracks: {len(tracks)}\n\n{"\n".join(tracks)}",
-            encoding="utf-8",
+        tracks_grps = list(itertools.batched(tracks, 10))
+        embeds = []
+        for track_grp in tracks_grps:
+            embed = disnake.Embed(title="Tracks List", color=Colors.blue)
+            embed.description = "\n".join(track_grp)
+            embed.description += f"\n\nTotal Tracks: {len(tracks)}"
+            embeds.append(embed)
+        await interaction.send(
+            embed=embeds[0],
+            view=Paginator(embeds),
         )
-        file = disnake.File(
-            fp=BytesIO(parsed_tracks), filename=f'Tracks in "{playlist}" playlist.txt'
-        )
-        await interaction.send(file=file, components=[DeleteButton(interaction.author)])
 
     @playlist.sub_command(name="remove")
     async def delete_track(
