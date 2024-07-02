@@ -41,11 +41,11 @@ class Paginator(disnake.ui.View):
             embed=self.embeds[self.index], view=self
         )
 
-    # @disnake.ui.button(emoji="🗑️", style=disnake.ButtonStyle.red)
-    # async def remove(self, _, interaction: disnake.MessageInteraction):
-    #     """Delete Button"""
-    #     msg = await interaction.original_response()
-    #     await msg.delete()
+    @disnake.ui.button(emoji="🗑️", style=disnake.ButtonStyle.red)
+    async def remove(self, _, interaction: disnake.MessageInteraction):
+        """Delete Button"""
+        await interaction.response.defer()
+        await interaction.delete_original_response()
 
     @disnake.ui.button(emoji="▶", style=disnake.ButtonStyle.secondary)
     async def next_page(self, _, interaction: disnake.MessageInteraction) -> None:
