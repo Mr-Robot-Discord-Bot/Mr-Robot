@@ -253,9 +253,7 @@ class Greetings(commands.Cog):
         ...
 
     @greeter.sub_command(name="plug")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_guild=True)
     async def slash_set(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -414,9 +412,7 @@ class Greetings(commands.Cog):
         name="unplug",
         description="Unset's the features of channel in the server",
     )
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_guild=True)
     async def slash_unset(
         self,
         interaction,
@@ -427,7 +423,7 @@ class Greetings(commands.Cog):
 
         Parameters
         ----------
-        greeter: Greeter to unplug
+        feature: Greeter to unplug
         """
         await interaction.response.defer(ephemeral=True)
         if feature == "Welcome Channel":

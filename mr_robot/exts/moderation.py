@@ -30,25 +30,23 @@ class Moderation(commands.Cog):
         self.check_temprole.start()
 
     @commands.slash_command(name="mod", dm_permission=False)
-    async def mod(self, interaction: disnake.CommandInteraction):
+    async def mod(self, _):
         """Moderation Commands"""
 
         ...
 
     @mod.sub_command_group(name="server")
-    async def server(self, interaction):
+    async def server(self, _):
         """Commands for server"""
         ...
 
     @mod.sub_command_group(name="user")
-    async def user(self, interaction):
+    async def user(self, _):
         """Commands for user"""
         ...
 
     @user.sub_command(name="temprole")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_roles=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_roles=True)
     async def slash_temprole(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -169,9 +167,7 @@ class Moderation(commands.Cog):
                     ...
 
     @user.sub_command(name="addrole")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_roles=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_roles=True)
     async def slash_addrole(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -186,7 +182,10 @@ class Moderation(commands.Cog):
         user : User to add role
         role : Role to add
         """
-        role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore[reportAssignmentType]
+        get_role = disnake.utils.get(user.guild.roles, name=str(role))
+        if get_role is None:
+            raise commands.CommandError(f"{role.mention} not found")
+        role = get_role
         await user.add_roles(role)
         await interaction.send(
             components=[DeleteButton(interaction.author)],
@@ -208,9 +207,7 @@ class Moderation(commands.Cog):
             ...
 
     @user.sub_command(name="removerole")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_roles=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_roles=True)
     async def slash_rmrole(self, interaction, user: disnake.Member, role: disnake.Role):
         """
         Removes the roles
@@ -220,7 +217,10 @@ class Moderation(commands.Cog):
         user : User to remove role
         role : Role to remove
         """
-        role = disnake.utils.get(user.guild.roles, name=str(role))  # type: ignore[reportAssignmentType]
+        get_role = disnake.utils.get(user.guild.roles, name=str(role))
+        if get_role is None:
+            raise commands.CommandError(f"{role.mention} not found")
+        role = get_role
         await user.remove_roles(role)
         await interaction.send(
             components=[DeleteButton(interaction.author)],
@@ -243,7 +243,7 @@ class Moderation(commands.Cog):
             ...
 
     @user.sub_command(name="unban")
-    @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))  # type: ignore[reportArgumentType]
+    @commands.has_permissions(ban_members=True)
     async def slash_unban(
         self, interaction: disnake.GuildCommandInteraction, member: str
     ):
@@ -284,7 +284,7 @@ class Moderation(commands.Cog):
         return sorted_dict
 
     @user.sub_command(name="ban")
-    @commands.check_any(commands.is_owner(), commands.has_permissions(ban_members=True))  # type: ignore[reportArgumentType]
+    @commands.has_permissions(ban_members=True)
     async def slash_ban(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -318,9 +318,7 @@ class Moderation(commands.Cog):
         await member.ban(clean_history_duration=604800, reason=reason)
 
     @user.sub_command(name="timeout")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(moderate_members=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(moderate_members=True)
     async def slash_edit(
         self,
         interaction,
@@ -367,9 +365,7 @@ class Moderation(commands.Cog):
         )
 
     @user.sub_command(name="kick")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(kick_members=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(kick_members=True)
     async def slash_kick(self, interaction, member: disnake.Member, reason=None):
         """
         Kicks the member
@@ -399,9 +395,7 @@ class Moderation(commands.Cog):
         await member.kick(reason=reason)
 
     @user.sub_command(name="dm")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(moderate_members=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(moderate_members=True)
     async def slash_dm_custom(
         self, interaction, member: disnake.Member, title: str, message: str
     ):
@@ -428,9 +422,7 @@ class Moderation(commands.Cog):
             )
 
     @user.sub_command(name="warn")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(moderate_members=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(moderate_members=True)
     async def slash_warn(self, interaction, member: disnake.Member, message: str):
         """
         Warns the user
@@ -456,9 +448,7 @@ class Moderation(commands.Cog):
             ...
 
     @user.sub_command(name="roleall")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_guild=True)
     async def roleall(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -509,9 +499,7 @@ class Moderation(commands.Cog):
             )
 
     @server.sub_command(name="clear")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_messages=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_messages=True)
     async def slash_clear(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -548,9 +536,7 @@ class Moderation(commands.Cog):
         )
 
     @server.sub_command(name="lock")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def lock(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -577,9 +563,7 @@ class Moderation(commands.Cog):
         )
 
     @server.sub_command(name="unlock")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def unlock(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -606,9 +590,7 @@ class Moderation(commands.Cog):
         )
 
     @server.sub_command(name="hide")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def hide(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -635,9 +617,7 @@ class Moderation(commands.Cog):
         )
 
     @server.sub_command(name="unhide")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def unhide(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -665,9 +645,7 @@ class Moderation(commands.Cog):
         )
 
     @server.sub_command(name="nuke")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def nuke(
         self, interaction: disnake.CommandInteraction, channel: disnake.TextChannel
     ):
@@ -680,9 +658,7 @@ class Moderation(commands.Cog):
         """
         try:
             await interaction.send(
-                embed=Embeds.emb(
-                    Embeds.yellow, "Nuke", f"Nuke for {channel.mention} initiated!"
-                ),
+                embed=Embeds.emb(Embeds.yellow, "Nuke", f"Nuking {channel.mention}!"),
                 components=[DeleteButton(interaction.author)],
             )
             new_channel = await channel.clone()
@@ -702,9 +678,7 @@ class Moderation(commands.Cog):
             )
 
     @server.sub_command(name="delete")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def delete(
         self,
         interaction: disnake.GuildCommandInteraction,
@@ -756,9 +730,7 @@ class Moderation(commands.Cog):
         await category.delete()
 
     @server.sub_command(name="clone")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_channels=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_channels=True)
     async def clone(
         self,
         interaction: disnake.CommandInteraction,
@@ -775,12 +747,17 @@ class Moderation(commands.Cog):
         """
         try:
             new_channel = await channel.clone(name=new_channel_name)
-            _text = f"Cloned {channel.mention}!"
-            if new_channel_name:
-                _text = f"Cloned {channel.mention} -> {new_channel.mention}!"
+            _text = f"Cloned {channel.mention} -> {new_channel.mention}!"
             await interaction.send(
                 embed=Embeds.emb(Embeds.yellow, "Clone", _text),
-                components=[DeleteButton(interaction.author)],
+                components=[
+                    DeleteButton(interaction.author),
+                    disnake.ui.Button(
+                        style=disnake.ButtonStyle.url,
+                        url=new_channel.jump_url,
+                        label="Go to new channel",
+                    ),
+                ],
             )
         except disnake.errors.Forbidden:
             await interaction.send(
@@ -793,9 +770,7 @@ class Moderation(commands.Cog):
             )
 
     @server.sub_command(name="transfer_ownership")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_guild=True)
     async def transfer_ownership(
         self, interaction: disnake.GuildCommandInteraction, member: disnake.Member
     ):
@@ -816,9 +791,7 @@ class Moderation(commands.Cog):
         )
 
     @server.sub_command(name="nsfw_toggle")
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
+    @commands.has_permissions(manage_guild=True)
     async def nsfw_toggle(
         self,
         interaction: disnake.GuildCommandInteraction,

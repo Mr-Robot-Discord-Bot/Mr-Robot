@@ -43,6 +43,7 @@ class EmbedModal(disnake.ui.Modal):
     async def callback(self, interaction: disnake.ModalInteraction):
         if not interaction.guild:
             return
+        await interaction.response.defer()
         title = interaction.text_values["title"]
         content = interaction.text_values["body"]
         image = interaction.text_values["image"]
@@ -143,7 +144,11 @@ class Misc(commands.Cog):
             roles.add(interaction.guild.get_role(dat[0]))
         if roles:
             embed.add_field(
-                name="Temporary Roles" if len(user_temp_dat) > 1 else "Temporary Role",
+                name=(
+                    "Temporary Roles"
+                    if len(list(user_temp_dat)) > 1
+                    else "Temporary Role"
+                ),
                 value="\n".join(
                     [
                         f"{role.mention if ( role := interaction.guild.get_role(dat[0])) else ''}:crossed_swords:{disnake.utils.format_dt(datetime.fromtimestamp(dat[1]))}"

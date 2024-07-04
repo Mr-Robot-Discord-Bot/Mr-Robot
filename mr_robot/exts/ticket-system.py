@@ -63,6 +63,7 @@ class Ticket(disnake.ui.Modal):
     async def callback(self, interaction: disnake.ModalInteraction):
         if not interaction.guild or not self.category or not self.user_or_role:
             return
+        await interaction.response.defer()
         title_channel = interaction.text_values["title_channel"]
         description_channel = interaction.text_values["description_channel"]
         image_channel = interaction.text_values["image"]
@@ -108,10 +109,10 @@ class Ticket(disnake.ui.Modal):
         await self.db.commit()
         await interaction.send(
             embed=Embeds.emb(
-                Embeds.green, f"{Configs(self.config).name} Config Created!"
+                Embeds.green, f"`{Configs(self.config).name}` config created!"
             ),
             ephemeral=True,
-            delete_after=2,
+            components=[DeleteButton(interaction.author)],
         )
 
     async def on_error(self, error: Exception, inter: disnake.ModalInteraction):  # type: ignore[reportIncompatibleMethodOverride]
@@ -146,10 +147,8 @@ class TicketSystem(commands.Cog):
         await self.bot.db.commit()
 
     @commands.slash_command(name="ticket", dm_permission=False)
-    @commands.check_any(
-        commands.is_owner(), commands.has_permissions(manage_guild=True)  # type: ignore[reportArgumentType]
-    )
-    async def ticket(self, interaction: disnake.GuildCommandInteraction):
+    @commands.has_permissions(manage_guild=True)
+    async def ticket(self, _):
         """Ticket System"""
 
     @ticket.sub_command(name="set_button")
@@ -191,7 +190,7 @@ class TicketSystem(commands.Cog):
             await interaction.send(
                 embed=Embeds.emb(
                     Embeds.red,
-                    "Message is not from the me!",
+                    "Message is not created by me!",
                     "Use `/embed` to create one",
                 )
             )
@@ -249,13 +248,13 @@ class TicketSystem(commands.Cog):
                     color,
                     Configs(config).name,
                     f"""
-                        **Title:** {title}
-                        **Description:** {description}
-                        **Color:** {disnake.Color(color) if color else "None"}
-                        **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
-                        **Category:** {interaction.guild.get_channel(category_id)}
-                        **Image:** {f"[Click To See]({image})" if image else "None"}
-                        """,
+                    **Title:** {title}
+                    **Description:** \n{description}\n
+                    **Color:** {disnake.Color(color) if color else "None"}
+                    **User/Role:** {interaction.guild.get_role(user_or_role_id) or interaction.guild.get_member(user_or_role_id)}
+                    **Category:** {interaction.guild.get_channel(category_id)}
+                    **Image:** {f"[Click To See]({image})" if image else "None"}
+                    """,
                 )
             )
         await interaction.send(
@@ -296,9 +295,9 @@ class TicketSystem(commands.Cog):
         result = await (
             await self.bot.db.execute(
                 """
-                                            select channel_id from ticket_status
-                                            where guild_id = ? and user_id = ?
-                                            """,
+                select channel_id from ticket_status
+                where guild_id = ? and user_id = ?
+                """,
                 (member.guild.id, member.id),
             )
         ).fetchone()
@@ -309,9 +308,9 @@ class TicketSystem(commands.Cog):
                 await channel.delete()
                 await self.bot.db.execute(
                     """
-                                        delete from ticket_status where
-                                        guild_id = ? and user_id = ? and channel_id = ?
-                                        """,
+                    delete from ticket_status where
+                    guild_id = ? and user_id = ? and channel_id = ?
+                    """,
                     (member.guild.id, member.id, channel_id),
                 )
                 await self.bot.db.commit()
@@ -324,16 +323,22 @@ class TicketSystem(commands.Cog):
             user_id = int(interaction.component.custom_id.split("-")[-1])
             await self.bot.db.execute(
                 """
-                    delete from ticket_status where
-                    guild_id = ? and user_id = ? and channel_id = ?
-                    """,
+                delete from ticket_status where
+                guild_id = ? and user_id = ? and channel_id = ?
+                """,
                 (interaction.guild.id, user_id, interaction.channel.id),
             )
             await self.bot.db.commit()
-            await interaction.channel.delete()  # type: ignore[reportAttributeAccessIssue]
+            if not isinstance(interaction.channel, disnake.PartialMessageable):
+                await interaction.channel.delete()
+            else:
+                logger.warning(
+                    f"Fails to delete {interaction.channel} in {interaction.guild.name}"
+                )
 
+        # ticket button schema: ticket-{config}
         elif interaction.component.custom_id.startswith("ticket"):
-            ticket_config_id = interaction.component.custom_id.split("-")[-1]
+            ticket_config_id = int(interaction.component.custom_id.split("-")[-1])
             result = await (
                 await self.bot.db.execute(
                     """
@@ -368,7 +373,7 @@ class TicketSystem(commands.Cog):
                         ephemeral=True,
                     )
                     return
-                category = interaction.guild.get_channel(category_id)
+                category = interaction.guild.get_channel(int(category_id))
                 if not category:
                     return
                 user_or_role = interaction.guild.get_role(user_or_role_id)
@@ -429,10 +434,15 @@ class TicketSystem(commands.Cog):
                     ],
                 )
                 await interaction.send(
-                    embed=Embeds.emb(
-                        Embeds.green, "Ticket Created!", f"### {channel.mention}"
-                    ),
+                    embed=Embeds.emb(Embeds.green, "Ticket Created!"),
                     ephemeral=True,
+                    components=[
+                        disnake.ui.Button(
+                            style=disnake.ButtonStyle.url,
+                            label="Go to your ticket",
+                            url=channel.jump_url,
+                        )
+                    ],
                 )
                 await self.bot.db.commit()
 
