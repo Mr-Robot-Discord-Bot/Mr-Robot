@@ -1,11 +1,12 @@
 import logging
 
-import aiosqlite
 import disnake
+import sqlalchemy
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
+from mr_robot.database import Guild
 from mr_robot.utils.helpers import Embeds, send_webhook
 
 logger = logging.getLogger(__name__)
@@ -37,10 +38,11 @@ class Joinalert(commands.Cog):
                 """,
         ).set_thumbnail(guild.icon)
 
-        await self.bot.db.execute(
-            "insert into guilds values (?, ?)", (guild.id, guild.name)
-        )
-        await self.bot.db.commit()
+        async with self.bot.db.begin() as session:
+            sql_query = Guild(id=guild.id, name=guild.name)
+            session.add(sql_query)
+            await session.commit()
+            logger.debug(f"Added {sql_query} to db.")
         if not Client.on_join_webook:
             return None
         await send_webhook(
@@ -74,21 +76,16 @@ class Joinalert(commands.Cog):
                 Members Count: {guild.member_count}
                 """,
         ).set_thumbnail(guild.icon)
-        tables = await (
-            await self.bot.db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            )
-        ).fetchall()
-        for (table,) in tables:
-            try:
-                await self.bot.db.execute(
-                    f"delete from {table} where guild_id = ?", (guild.id,)
-                )
-            except aiosqlite.OperationalError:
-                ...
-        await self.bot.db.commit()
+
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.delete(Guild).where(Guild.id == guild.id)
+            await session.execute(sql_query)
+            await session.commit()
+            logger.debug(f"Removing {Guild(id=guild.id, name=guild.name)}")
+
         if not Client.on_join_webook:
             return None
+
         await send_webhook(
             embed=embed,
             webhook_url=Client.on_join_webook,

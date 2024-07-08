@@ -3,30 +3,21 @@ import logging
 from typing import Optional, Union
 
 import disnake
+import sqlalchemy
 from disnake.ext import commands, tasks
+from sqlalchemy.exc import IntegrityError
 
 from mr_robot.bot import MrRobot
+from mr_robot.database import TempRole
 from mr_robot.utils.helpers import Embeds, parse_time
 from mr_robot.utils.messages import DeleteButton
 
-MISSING = "MISSING"
 logger = logging.getLogger(__name__)
 
 
 class Moderation(commands.Cog):
     def __init__(self, client: MrRobot):
         self.bot = client
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.bot.db.execute(
-            """
-                CREATE TABLE IF NOT EXISTS temprole (
-                    guild_id bigint, user_id bigint, role_id bigint, expiration decimal
-                    )
-                """
-        )
-        await self.bot.db.commit()
         self.check_temprole.start()
 
     @commands.slash_command(name="mod", dm_permission=False)
@@ -37,12 +28,12 @@ class Moderation(commands.Cog):
 
     @mod.sub_command_group(name="server")
     async def server(self, _):
-        """Commands for server"""
+        """Commands related to server"""
         ...
 
     @mod.sub_command_group(name="user")
     async def user(self, _):
-        """Commands for user"""
+        """Commands related to user"""
         ...
 
     @user.sub_command(name="temprole")
@@ -69,30 +60,37 @@ class Moderation(commands.Cog):
             raise commands.BadArgument(
                 "Invalid Duration, try eg: `3 week`, `9 day`, `27 hour`, `1 year`"
             )
-        expiry = tenure.timestamp()
+        expiry = str(tenure.timestamp())
         await user.add_roles(role)
-        if await (
-            await self.bot.db.execute(
-                """
-                SELECT * FROM temprole WHERE guild_id = ? AND user_id = ? AND role_id = ?
-                """,
-                (interaction.guild.id, user.id, role.id),
+
+        async with self.bot.db.begin() as session:
+            # Could't use session.merge as it will require id argument too which is unkown here
+            sql_query = sqlalchemy.select(TempRole).where(
+                TempRole.guild_id == interaction.guild.id,
+                TempRole.user_id == user.id,
+                TempRole.role_id == role.id,
             )
-        ).fetchone():
-            await self.bot.db.execute(
-                """
-                UPDATE temprole SET expiration = ? WHERE guild_id = ? AND user_id = ? AND role_id = ?
-                """,
-                (expiry, interaction.guild.id, user.id, role.id),
+            logger.info(
+                f"Checking {interaction.guild.id=}, {user.id=}, {role.id=}, {expiry=}"
             )
-        else:
-            await self.bot.db.execute(
-                """
-                INSERT INTO temprole (guild_id, user_id, role_id, expiration) VALUES (?, ?, ?, ?)
-                """,
-                (interaction.guild.id, user.id, role.id, expiry),
-            )
-        await self.bot.db.commit()
+            result = await session.scalars(sql_query)
+            temprole = result.one_or_none()
+
+            if temprole is None:
+                sql_query = TempRole(
+                    guild_id=interaction.guild.id,
+                    user_id=user.id,
+                    role_id=role.id,
+                    expiration=expiry,
+                )
+                session.add(sql_query)
+                logger.debug(f"Added {sql_query} in db.")
+            else:
+                logger.debug(f"Updating {temprole} in db.")
+                temprole.expiration = expiry
+
+            await session.commit()
+
         await interaction.send(
             components=[DeleteButton(interaction.author)],
             embed=Embeds.emb(
@@ -114,43 +112,44 @@ class Moderation(commands.Cog):
 
     @tasks.loop()
     async def check_temprole(self):
-        rows = await (
-            await self.bot.db.execute(
-                """
-            SELECT guild_id, user_id, role_id, expiration FROM temprole
-            """
-            )
-        ).fetchall()
-        for row in rows:
-            (guild_id, user_id, role_id, expiration) = row
-            expiration = datetime.datetime.fromtimestamp(expiration)
-            guild = self.bot.get_guild(guild_id)
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(TempRole)
+            result = await session.scalars(sql_query)
+            result = result.all()
+        for temprole in result:
+            expiration = datetime.datetime.fromtimestamp(float(temprole.expiration))
+            guild = self.bot.get_guild(temprole.guild_id)
             if not guild:
                 continue
-            user = guild.get_member(user_id)
-            role = disnake.utils.get(guild.roles, id=role_id)
+            user = guild.get_member(temprole.user_id)
+            role = disnake.utils.get(guild.roles, id=temprole.role_id)
             if not guild or not role:
                 continue
             elif not user:
-                logger.info(f"User not found {user_id} Deleting it!")
-                await self.bot.db.execute(
-                    """
-                    DELETE FROM temprole WHERE guild_id = ? AND user_id = ?
-                    """,
-                    (guild_id, user_id),
-                )
-                await self.bot.db.commit()
+
+                async with self.bot.db.begin() as session:
+                    sql_query = sqlalchemy.delete(TempRole).where(
+                        TempRole.guild_id == temprole.guild_id,
+                        TempRole.user_id == temprole.user_id,
+                    )
+                    await session.execute(sql_query)
+                    await session.commit()
+                    logger.debug(f"User not found. Deleting {temprole}.")
+
                 continue
             if expiration <= datetime.datetime.utcnow():
-                logger.info(f"Removing {role} from {user}")
+                logger.debug(f"Removing '{role}' role from {user}")
                 await user.remove_roles(role)
-                await self.bot.db.execute(
-                    """
-                    DELETE FROM temprole WHERE guild_id = ? AND user_id = ? AND role_id = ?
-                    """,
-                    (guild_id, user_id, role_id),
-                )
-                await self.bot.db.commit()
+
+                async with self.bot.db.begin() as session:
+                    sql_query = sqlalchemy.delete(TempRole).where(
+                        TempRole.guild_id == temprole.guild_id,
+                        TempRole.user_id == temprole.user_id,
+                    )
+                    await session.execute(sql_query)
+                    await session.commit()
+                    logger.debug(f"Removing {temprole} from db.")
+
                 try:
                     await user.send(
                         embed=Embeds.emb(

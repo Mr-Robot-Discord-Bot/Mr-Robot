@@ -1,12 +1,11 @@
 import itertools
 import logging
 import random
-from io import BytesIO
 from typing import cast
 
 import disnake
 import mafic
-from aiosqlite import IntegrityError
+import sqlalchemy
 from disnake.abc import Connectable
 from disnake.ext import commands
 from mafic.track import Track
@@ -14,29 +13,12 @@ from mafic.track import Track
 from mr_robot.bot import MrRobot
 from mr_robot.checks import ensure_voice_connect, ensure_voice_player
 from mr_robot.constants import Colors
+from mr_robot.database import Playlists, Tracks
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 from mr_robot.utils.paginator import Paginator
 
 logger = logging.getLogger(__name__)
-
-SQL_CREATE_PLAYLISTS_TABLE = """
-create table if not exists playlists (
-        id integer primary key autoincrement,
-        name text,
-        user bigint,
-        last_accessed timestamp default current_timestamp,
-        unique(user, name)
-        )
-"""
-SQL_CREATE_TRACKS_TABLE = """
-create table if not exists tracks (
-        id integer,
-        track text,
-        foreign key (id) references playlists (id),
-        unique(id, track)
-        )
-"""
 
 
 class MyPlayer(mafic.Player[MrRobot]):
@@ -50,13 +32,6 @@ class Music(commands.Cog):
     def __init__(self, bot: MrRobot):
         self.bot = bot
         self.max_playlist_limit = 5
-
-    @commands.Cog.listener()
-    async def on_ready(self) -> None:
-        await self.bot.db.execute(SQL_CREATE_PLAYLISTS_TABLE)
-        await self.bot.db.commit()
-        await self.bot.db.execute(SQL_CREATE_TRACKS_TABLE)
-        await self.bot.db.commit()
 
     async def connect(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Connects to voice channel"""
@@ -101,20 +76,21 @@ class Music(commands.Cog):
     async def playlist_play(
         self, interaction: disnake.GuildCommandInteraction, playlist_name: str
     ) -> Track:
-        playlists = await self.bot.db.execute(
-            "select id from playlists where name = ? and user = ?",
-            (playlist_name, interaction.author.id),
-        )
-        playlists = await playlists.fetchone()
-        if playlists is None:
-            raise commands.CommandError("No such playlist found!")
-        tracks = await self.bot.db.execute(
-            "select track from tracks where id = ?", (playlists[0],)
-        )
-        if not (tracks := set(await tracks.fetchall())):
-            raise commands.CommandError("No tracks found in the playlist!")
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(Playlists).where(
+                Playlists.name == playlist_name,
+                Playlists.user_id == interaction.author.id,
+            )
+            result = await session.scalars(sql_query)
+            playlists = result.one_or_none()
+            if playlists is None:
+                raise commands.CommandError("No such playlist found!")
+            if not playlists.tracks:
+                raise commands.CommandError("No tracks found in the playlist!")
         player = cast(MyPlayer, interaction.guild.voice_client)
-        tracks = [await player.node.decode_track(track[0]) for track in tracks]
+        tracks = [
+            await player.node.decode_track(track.track) for track in playlists.tracks
+        ]
 
         if len(tracks) > 1:
             player.queue.extend(tracks[1:])
@@ -427,40 +403,40 @@ class Music(commands.Cog):
         ----------
         name : Name of the playlist
         """
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(Playlists).where(
+                Playlists.user_id == interaction.author.id
+            )
+            playlists = await session.scalars(sql_query)
+            playlists = playlists.all()
 
-        count = await self.bot.db.execute(
-            "select count(*) from playlists where user = ?", (interaction.author.id,)
-        )
-        count = await count.fetchone()
-
-        if count is None:
-            raise commands.CommandError("Failed to fetch playlist count")
-
-        if count[0] >= self.max_playlist_limit:
+        if len(playlists) >= self.max_playlist_limit:
             embed = Embeds.emb(
                 Colors.red,
                 "Playlist Limit Exceeded",
-                f"Max limit is {self.max_playlist_limit} !\n"
+                f"Max limit is {self.max_playlist_limit} !"
                 " Please delete some playlists to create new ones.",
             )
             await interaction.send(
                 embed=embed, components=[DeleteButton(interaction.author)]
             )
-            return
-        try:
-            await self.bot.db.execute(
-                "insert into playlists (name, user) values (?, ?)",
-                (name, interaction.author.id),
-            )
-            await self.bot.db.commit()
-        except IntegrityError:
+            return None
+        elif name in {playlist.name for playlist in playlists}:
             embed = Embeds.emb(
-                Colors.red, "Playlist Exists", f"Playlist `{name}` already exists!"
+                Colors.red,
+                "Playlist Exists",
+                f"Playlist `{name}` already exists! Try another name.",
             )
             await interaction.send(
                 embed=embed, components=[DeleteButton(interaction.author)]
             )
-            return
+            return None
+
+        async with self.bot.db.begin() as session:
+            sql_query = Playlists(name=name, user_id=interaction.author.id)
+            session.add(sql_query)
+            await session.commit()
+            logger.debug(f"Added {sql_query} in db.")
 
         embed = Embeds.emb(
             Colors.blue, "Playlist Created", f"Playlist `{name}` created successfully!"
@@ -471,7 +447,7 @@ class Music(commands.Cog):
 
     @playlist.sub_command(name="delete")
     async def delete(
-        self, interaction: disnake.GuildCommandInteraction, name: str
+        self, interaction: disnake.GuildCommandInteraction, playlist: str
     ) -> None:
         """
         Delete a playlist
@@ -480,23 +456,21 @@ class Music(commands.Cog):
         ----------
         name : Name of the playlist
         """
-        playlist_id = await self.bot.db.execute(
-            "select id from playlists where name = ? and user = ?",
-            (name, interaction.author.id),
-        )
-        playlist_id = await playlist_id.fetchone()
-        await self.bot.db.execute(
-            "delete from playlists where name = ? and user = ?",
-            (name, interaction.author.id),
-        )
-        if playlist_id is not None:
-            await self.bot.db.execute(
-                "delete from tracks where id = ?",
-                (playlist_id[0],),
+
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.delete(Playlists).where(
+                Playlists.name == playlist, Playlists.user_id == interaction.author.id
             )
-        await self.bot.db.commit()
+            await session.execute(sql_query)
+            await session.commit()
+
+            logger.debug(
+                f"Removed {Playlists(name=playlist, user_id=interaction.author.id)} from db."
+            )
         embed = Embeds.emb(
-            Colors.blue, "Playlist Deleted", f"Playlist `{name}` deleted successfully!"
+            Colors.blue,
+            "Playlist Deleted",
+            f"Playlist `{playlist}` deleted successfully!",
         )
         await interaction.send(
             embed=embed, components=[DeleteButton(interaction.author)]
@@ -513,23 +487,20 @@ class Music(commands.Cog):
         ----------
         playlist : Name of the playlist
         """
-        playlist_id = await self.bot.db.execute(
-            "select id from playlists where name = ? and user = ? ",
-            (playlist, interaction.author.id),
-        )
-        playlist_id = await playlist_id.fetchone()
-        if playlist_id is None:
-            raise commands.CommandError("No such playlist found!")
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(Playlists).where(
+                Playlists.name == playlist,
+                Playlists.user_id == interaction.author.id,
+            )
+            playlists = await session.scalars(sql_query)
+            playlists = playlists.one_or_none()
+            if playlists is None:
+                raise commands.CommandError("No such playlist found!")
 
-        (playlist_id,) = playlist_id
-        tracks = await self.bot.db.execute(
-            "select track from tracks where id = ?", (playlist_id,)
-        )
-        tracks = await tracks.fetchall()
-        if not tracks:
+        if not playlists.tracks:
             raise commands.CommandError(f"No track found in `{playlist}`")
         player = cast(MyPlayer, interaction.guild.voice_client)
-        tracks = map(lambda x: x[0], tracks)
+        tracks = map(lambda x: x.track, playlists.tracks)
         tracks = await player.node.decode_tracks(list(tracks))
         tracks = map(
             lambda x: f"{x[0]}) [{x[1].title}]({x[1].uri})",
@@ -561,38 +532,39 @@ class Music(commands.Cog):
         index: Use /music playlist show to get index
         """
 
-        playlist_id = await self.bot.db.execute(
-            "select id from playlists where name = ? and user = ?",
-            (playlist, interaction.author.id),
-        )
-        playlist_id = await playlist_id.fetchone()
-        if playlist_id is None:
-            raise commands.CommandError("No such playlist found!")
-        (playlist_id,) = playlist_id
-        tracks = await self.bot.db.execute(
-            "select track from tracks where id = ?", (playlist_id,)
-        )
-        tracks = await tracks.fetchall()
-        if tracks is None:
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(Playlists).where(
+                Playlists.name == playlist,
+                Playlists.user_id == interaction.author.id,
+            )
+            playlists = await session.scalars(sql_query)
+            playlists = playlists.one_or_none()
+            if playlists is None:
+                raise commands.CommandError("No such playlist found!")
+        if not playlists.tracks:
             raise commands.CommandError("This playlist is already empty")
-        tracks = [x for x, in tracks]
         try:
             if index <= 0:
                 raise IndexError
-            tracks_to_delete = tracks[index - 1]
+            tracks_to_delete = playlists.tracks[index - 1]
         except IndexError:
             raise commands.CommandError(
                 "Index is out of range!"
                 " Use `/music playlist show` command to get index."
             )
-        await self.bot.db.execute(
-            "delete from tracks where id = ? and track = ?",
-            (playlist_id, tracks_to_delete),
-        )
-        await self.bot.db.commit()
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.delete(Tracks).where(
+                Tracks.playlist_id == playlists.id,
+                Tracks.track == tracks_to_delete.track,
+            )
+            await session.execute(sql_query)
+            await session.commit()
+            logger.debug(
+                f"Removing {Tracks(id=playlists.id, playlist_id=playlists.id, track=playlists.tracks)} from db."
+            )
 
         player = cast(MyPlayer, interaction.guild.voice_client)
-        track = await player.node.decode_track(tracks_to_delete)
+        track = await player.node.decode_track(tracks_to_delete.track)
         embed = Embeds.emb(
             Embeds.blue, "Track Removed", f"[{track.title}]({track.uri})"
         )
@@ -624,28 +596,37 @@ class Music(commands.Cog):
         elif tracks is None:
             raise commands.CommandError("No track found!")
         trackk = tracks[0]
-        playlist_id = await self.bot.db.execute(
-            "select id from playlists where name = ? and user = ?",
-            (playlist, interaction.author.id),
-        )
-        playlist_id = await playlist_id.fetchone()
-        if playlist_id is None:
-            raise commands.CommandError("No such playlist found!")
 
-        try:
-            await self.bot.db.execute(
-                "insert into tracks (id, track) values (?, ?)",
-                (playlist_id[0], trackk.id),
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(Playlists).where(
+                Playlists.name == playlist, Playlists.user_id == interaction.author.id
             )
-            await self.bot.db.commit()
-        except IntegrityError:
-            raise commands.CommandError("This track is already in your playlist")
+            playlistt = await session.scalars(sql_query)
+            playlistt = playlistt.one_or_none()
 
-        embed = Embeds.emb(
-            Colors.blue,
-            "Track Added",
-            f"Track [{trackk.title}]({trackk.uri}) added to playlist `{playlist}`",
-        )
+            if playlistt is None:
+                raise commands.CommandError("No such playlist found!")
+
+            if len(playlistt.tracks) >= 100:
+                raise commands.CommandError(
+                    f"Max tracks limit reached for `{playlist}`"
+                )
+            elif trackk.id in {track.track for track in playlistt.tracks}:
+                raise commands.CommandError(
+                    f"`{track}` track already present in `{playlist}` playlist."
+                )
+
+            sql_query = Tracks(playlist_id=playlistt.id, track=trackk.id)
+            session.add(sql_query)
+            await session.commit()
+            logger.debug(f"Added {sql_query} in db.")
+
+            embed = Embeds.emb(
+                Colors.blue,
+                "Track Added",
+                f"Track [{trackk.title}]({trackk.uri}) added to playlist `{playlist}`",
+            )
+
         embed.set_image(trackk.artwork_url)
         await interaction.send(
             embed=embed, components=[DeleteButton(interaction.author)]
@@ -654,14 +635,26 @@ class Music(commands.Cog):
     @slash_play.autocomplete("playlist_name")
     @add_track.autocomplete("playlist")
     @list_tracks.autocomplete("playlist")
+    @delete.autocomplete("playlist")
     @delete_track.autocomplete("playlist")
-    async def playlist_autocomp(self, interaction: disnake.GuildCommandInteraction, _):
-        playlists = await self.bot.db.execute(
-            "select name from playlists where user = ?", (interaction.author.id,)
-        )
-        playlists = await playlists.fetchall()
-        playlists = {x[0] for x in playlists}
-        return playlists
+    async def playlist_autocomp(
+        self, interaction: disnake.GuildCommandInteraction, inp: str
+    ):
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(Playlists).where(
+                Playlists.user_id == interaction.author.id
+            )
+            playlists = await session.scalars(sql_query)
+            playlists = playlists.all()
+        playlists = {x.name for x in playlists}
+        inp = inp.lower()
+        matching = set()
+        for playlist in playlists:
+            if inp in playlist:
+                matching.add(playlist)
+
+        sorted_dict = set(sorted(matching, key=lambda x: x.index(inp))[:25])
+        return sorted_dict
 
 
 def setup(client: MrRobot):

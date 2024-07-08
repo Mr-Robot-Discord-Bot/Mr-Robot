@@ -7,13 +7,14 @@ import os
 import signal
 import sys
 
-import aiosqlite
 import disnake
 import httpx
 from dotenv import load_dotenv
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 from mr_robot.bot import MrRobot
-from mr_robot.constants import Client
+from mr_robot.constants import Client, Database
 
 load_dotenv()
 
@@ -42,16 +43,23 @@ def setup_logging() -> None:
     file_handler.setLevel(logging.DEBUG)
     console_handler.setLevel(logging.INFO)
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.NOTSET,
         format="[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S%z",
         handlers=[console_handler, file_handler],
     )
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("mafic").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("disnake").setLevel(logging.INFO)
-    logging.getLogger("aiosqlite").setLevel(logging.INFO)
     logging.getLogger("streamlink").disabled = True
+
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, _):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 async def main():
@@ -61,12 +69,12 @@ async def main():
     async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
             intents=disnake.Intents.all(),
-            session=session,
-            db=await aiosqlite.connect(Client.db_name),
+            http_session=session,
         )
+        await client.init_db()
         if client.git:
             logger.info("Pulling DB")
-            await client.git.pull(Client.db_name)
+            await client.git.pull(Database.db_name)
         try:
             client.load_bot_extensions()
         except Exception:
@@ -86,8 +94,10 @@ async def main():
         except asyncio.CancelledError:
             logger.info("Received signal to terminate bot and event loop")
         finally:
+            logger.warning("Closing Client")
             if not client.is_closed():
                 await client.close()
+            exit()
 
 
 if __name__ == "__main__":

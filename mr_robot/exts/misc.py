@@ -3,9 +3,11 @@ from datetime import datetime
 from typing import Set, Union
 
 import disnake
+import sqlalchemy
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
+from mr_robot.database import TempRole
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 
@@ -133,15 +135,15 @@ class Misc(commands.Cog):
             value=", ".join([role.mention for role in member.roles]),
             inline=False,
         )
-        user_temp_dat = await (
-            await self.bot.db.execute(
-                "select role_id, expiration from temprole where user_id = ? and guild_id = ?",
-                (member.id, interaction.guild.id),
+        async with self.bot.db.begin() as session:
+            sql_query = sqlalchemy.select(TempRole).where(
+                TempRole.user_id == member.id, TempRole.guild_id == interaction.guild.id
             )
-        ).fetchall()
+            result = await session.scalars(sql_query)
+            user_temp_dat = result.all()
         roles: Set = set()
         for dat in user_temp_dat:
-            roles.add(interaction.guild.get_role(dat[0]))
+            roles.add(interaction.guild.get_role(dat.role_id))
         if roles:
             embed.add_field(
                 name=(
@@ -151,7 +153,7 @@ class Misc(commands.Cog):
                 ),
                 value="\n".join(
                     [
-                        f"{role.mention if ( role := interaction.guild.get_role(dat[0])) else ''}:crossed_swords:{disnake.utils.format_dt(datetime.fromtimestamp(dat[1]))}"
+                        f"{role.mention if ( role := interaction.guild.get_role(dat.role_id)) else ''}:crossed_swords:{disnake.utils.format_dt(datetime.fromtimestamp(dat.expiration))}"
                         for dat in user_temp_dat
                     ]
                 ),

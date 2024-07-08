@@ -6,11 +6,13 @@ from io import BytesIO
 from typing import Optional
 
 import disnake
+import sqlalchemy
 from aiocache import cached
 from disnake.ext import commands
 from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 
 from mr_robot.bot import MrRobot
+from mr_robot.database.greeter import Greeter
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 
@@ -35,42 +37,19 @@ class Greetings(commands.Cog):
         self.bot = bot
         self.loop = asyncio.get_running_loop()
 
-    @commands.Cog.listener()
-    async def on_ready(self) -> None:
-        await self.bot.db.execute(
-            """
-                CREATE TABLE IF NOT EXISTS greeter (
-                    guild_id bigint primary key,
-                    wlcm_channel bigint,
-                    wlcm_img text,
-                    wlcm_theme text,
-                    wlcm_font_style text,
-                    wlcm_outline tinyint,
-                    wlcm_message text,
-                    bye_channel bigint,
-                    bye_img text,
-                    bye_theme text,
-                    bye_font_style text,
-                    bye_outline tinyint,
-                    bye_message text
-                    )
-                """
-        )
-        await self.bot.db.commit()
-
     @cached(60 * 60 * 24)
     async def __request_bg(self, url: str) -> BytesIO:
         buffer = BytesIO()
-        async with self.bot.session.stream("GET", url=url) as resp:
-            logger.info(f"Requesting background: {url}")
+        async with self.bot.http_session.stream("GET", url=url) as resp:
+            logger.debug(f"Requesting background: {url}")
             async for data in resp.aiter_bytes():
                 buffer.write(data)
         return buffer
 
     async def __request_usr(self, url: str):
         buffer = BytesIO()
-        async with self.bot.session.stream("GET", url=url) as resp:
-            logger.info(f"Requesting background: {url}")
+        async with self.bot.http_session.stream("GET", url=url) as resp:
+            logger.debug(f"Requesting background: {url}")
             async for data in resp.aiter_bytes():
                 buffer.write(data)
         return buffer
@@ -164,88 +143,60 @@ class Greetings(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        result = await (
-            await self.bot.db.execute(
-                """
-            SELECT wlcm_img, wlcm_theme, wlcm_font_style,
-            wlcm_outline, wlcm_message, wlcm_channel
-            FROM greeter WHERE guild_id = ?
-            """,
-                (member.guild.id,),
+        async with self.bot.db.begin() as session:
+            result = await session.scalars(
+                sqlalchemy.select(Greeter).where(Greeter.guild_id == member.guild.id)
             )
-        ).fetchone()
-        if result:
-            (
-                wlcm_img,
-                wlcm_theme,
-                wlcm_font_style,
-                wlcm_outline,
-                wlcm_message,
-                wlcm_channel,
-            ) = result
-            if not wlcm_channel:
-                return
-            member_channel = self.bot.get_channel(wlcm_channel)
-            if member_channel:
-                bg_img = await self.__request_bg(wlcm_img)
-                usr_img = await self.__request_usr(
-                    member.display_avatar.with_size(128).url
-                )
-                gen_img = functools.partial(
-                    self.send_img,
-                    member=member,
-                    usr_img=usr_img,
-                    bg_img=bg_img,
-                    message=wlcm_message,
-                    font_style=wlcm_font_style,
-                    theme=wlcm_theme,
-                    outline=wlcm_outline,
-                )
-                img_file = await self.loop.run_in_executor(None, gen_img)
-                await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
-                await member_channel.send(member.mention, delete_after=3)  # type: ignore[reportAttributeAccessIssue]
+            greeter_db = result.one_or_none()
+
+        if (
+            greeter_db
+            and greeter_db.wlcm_channel
+            and (member_channel := self.bot.get_channel(greeter_db.wlcm_channel))
+        ):
+            bg_img = await self.__request_bg(greeter_db.wlcm_image)
+            usr_img = await self.__request_usr(member.display_avatar.with_size(128).url)
+            gen_img = functools.partial(
+                self.send_img,
+                member=member,
+                usr_img=usr_img,
+                bg_img=bg_img,
+                message=greeter_db.wlcm_msg,
+                font_style=FontDir(greeter_db.wlcm_fontstyle),
+                theme=greeter_db.wlcm_theme or "",
+                outline=greeter_db.wlcm_outline or 0,
+            )
+            img_file = await self.loop.run_in_executor(None, gen_img)
+            await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
+            await member_channel.send(member.mention, delete_after=3)  # type: ignore[reportAttributeAccessIssue]
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        result = await (
-            await self.bot.db.execute(
-                """
-            SELECT bye_img, bye_theme, bye_font_style,
-            bye_outline, bye_message, bye_channel
-            FROM greeter WHERE guild_id = ?
-            """,
-                (member.guild.id,),
+        async with self.bot.db.begin() as session:
+            result = await session.scalars(
+                sqlalchemy.select(Greeter).where(Greeter.guild_id == member.guild.id)
             )
-        ).fetchone()
-        if result:
-            (
-                bye_img,
-                bye_theme,
-                bye_font_style,
-                bye_outline,
-                bye_message,
-                bye_channel,
-            ) = result
-            if not bye_channel:
-                return
-            member_channel = self.bot.get_channel(bye_channel)
-            if member_channel:
-                bg_img = await self.__request_bg(bye_img)
-                usr_img = await self.__request_usr(
-                    member.display_avatar.with_size(128).url
-                )
-                gen_img = functools.partial(
-                    self.send_img,
-                    member=member,
-                    usr_img=usr_img,
-                    bg_img=bg_img,
-                    message=bye_message,
-                    font_style=bye_font_style,
-                    theme=bye_theme,
-                    outline=bye_outline,
-                )
-                img_file = await self.loop.run_in_executor(None, gen_img)
-                await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
+            greeter_db = result.one_or_none()
+
+        if (
+            greeter_db
+            and greeter_db.bye_channel
+            and (member_channel := self.bot.get_channel(greeter_db.bye_channel))
+        ):
+            bg_img = await self.__request_bg(greeter_db.bye_image)
+            usr_img = await self.__request_usr(member.display_avatar.with_size(128).url)
+            gen_img = functools.partial(
+                self.send_img,
+                member=member,
+                usr_img=usr_img,
+                bg_img=bg_img,
+                message=greeter_db.bye_msg,
+                font_style=FontDir(greeter_db.bye_fontstyle),
+                theme=greeter_db.bye_theme or "",
+                outline=greeter_db.bye_outline or 0,
+            )
+            img_file = await self.loop.run_in_executor(None, gen_img)
+            await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
 
     @commands.slash_command(name="greeter", dm_permission=False)
     async def greeter(self, _):
@@ -258,11 +209,12 @@ class Greetings(commands.Cog):
         self,
         interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
-        font_style: FontDir,
+        font_style: FontDir = FontDir.ShortBaby,
         feature: str = commands.Param(choices=["Welcome Channel", "Goodbye Channel"]),
         img_url: str = WELCOME_IMG_URL,
         theme: str = commands.Param(
-            choices=["red", "blue", "green", "black", "white", "yellow"]
+            default="white",
+            choices=["red", "blue", "green", "black", "white", "yellow"],
         ),
         outline: commands.Range[int, 0, 5] = 4,
         message: Optional[str] = None,
@@ -280,6 +232,7 @@ class Greetings(commands.Cog):
         outline: The outline of the text
         message: The message to send
         """
+        font_style = getattr(font_style, "value", font_style)
         try:
             bg_img = await self.__request_bg(img_url)
             usr_img = await self.__request_usr(
@@ -305,108 +258,47 @@ class Greetings(commands.Cog):
         except UnidentifiedImageError:
             raise commands.BadArgument("Invalid Image URL")
         if feature == "Welcome Channel":
-            if await (
-                await self.bot.db.execute(
-                    "SELECT wlcm_channel FROM greeter WHERE guild_id = ?",
-                    (interaction.guild.id,),
-                )
-            ).fetchone():
-                await self.bot.db.execute(
-                    """
-                        UPDATE greeter SET wlcm_channel = ?,
-                        wlcm_img = ?, wlcm_font_style = ?,
-                        wlcm_outline = ?, wlcm_message = ?,
-                        wlcm_theme = ? WHERE guild_id = ?
-                        """,
-                    (
-                        channel.id,
-                        img_url,
-                        font_style,
-                        outline,
-                        message,
-                        theme,
-                        interaction.guild.id,
-                    ),
-                )
-            else:
-                await self.bot.db.execute(
-                    """
-                    INSERT INTO greeter (guild_id, wlcm_channel,
-                    wlcm_img, wlcm_font_style, wlcm_outline,
-                    wlcm_message, wlcm_theme)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        interaction.guild.id,
-                        channel.id,
-                        img_url,
-                        font_style,
-                        outline,
-                        message,
-                        theme,
-                    ),
-                )
-
-            await interaction.followup.send(
-                embed=Embeds.emb(
-                    Embeds.green,
-                    "Welcome Channel Set Successfully",
-                    f"Channel: {channel.mention}",
-                ),
-                ephemeral=True,
+            sql_query = Greeter(
+                id=interaction.guild.id,
+                guild_id=interaction.guild.id,
+                wlcm_channel=channel.id,
+                wlcm_image=img_url,
+                wlcm_fontstyle=font_style,
+                wlcm_outline=outline,
+                wlcm_msg=message,
+                wlcm_theme=theme,
             )
+
         elif feature == "Goodbye Channel":
-            if await (
-                await self.bot.db.execute(
-                    "SELECT wlcm_channel FROM greeter WHERE guild_id = ?",
-                    (interaction.guild.id,),
-                )
-            ).fetchone():
-                await self.bot.db.execute(
-                    """
-                        UPDATE greeter SET bye_channel = ?,
-                        bye_img = ?, bye_font_style = ?,
-                        bye_outline = ?, bye_message = ?,
-                        bye_theme = ? WHERE guild_id = ?
-                        """,
-                    (
-                        channel.id,
-                        img_url,
-                        font_style,
-                        outline,
-                        message,
-                        theme,
-                        interaction.guild.id,
-                    ),
-                )
-            else:
-                await self.bot.db.execute(
-                    """
-                    INSERT INTO greeter (guild_id, bye_channel,
-                    bye_img, bye_font_style, bye_outline,
-                    bye_message, bye_theme)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        interaction.guild.id,
-                        channel.id,
-                        img_url,
-                        font_style,
-                        outline,
-                        message,
-                        theme,
-                    ),
-                )
-
-            await interaction.followup.send(
-                embed=Embeds.emb(
-                    Embeds.green,
-                    "Goodbye Channel Set Successfully",
-                    f"Channel: {channel.mention}",
-                ),
-                ephemeral=True,
+            sql_query = Greeter(
+                id=interaction.guild.id,
+                guild_id=interaction.guild.id,
+                bye_channel=channel.id,
+                bye_image=img_url,
+                bye_fontstyle=font_style,
+                bye_outline=outline,
+                bye_msg=message,
+                bye_theme=theme,
             )
-        await self.bot.db.commit()
+        else:
+            raise commands.CommandError("This should never reach here")
+
+        async with self.bot.db.begin() as session:
+            await session.merge(sql_query)
+            await session.commit()
+
+        await interaction.followup.send(
+            embed=Embeds.emb(
+                Embeds.green,
+                (
+                    "Goodbye channel set successfully"
+                    if feature == "Goodbye Channel"
+                    else "Welcome channel set successfully"
+                ),
+                f"Channel: {channel.mention}",
+            ),
+            ephemeral=True,
+        )
 
     @greeter.sub_command(
         name="unplug",
@@ -427,38 +319,47 @@ class Greetings(commands.Cog):
         """
         await interaction.response.defer(ephemeral=True)
         if feature == "Welcome Channel":
-            if await (
-                await self.bot.db.execute(
-                    "SELECT wlcm_channel FROM greeter WHERE guild_id = ?",
-                    (interaction.guild.id,),
-                )
-            ).fetchone():
-                await self.bot.db.execute(
-                    "UPDATE greeter SET wlcm_channel = NULL WHERE guild_id = ?",
-                    (interaction.guild.id,),
-                )
-
-            await interaction.send(
-                embed=Embeds.emb(Embeds.red, "Welcome Channel Unset Sucessfully"),
-                ephemeral=True,
+            sql_query = Greeter(
+                id=interaction.guild.id,
+                guild_id=interaction.guild.id,
+                wlcm_channel=None,
+                wlcm_image=None,
+                wlcm_fontstyle=None,
+                wlcm_outline=None,
+                wlcm_msg=None,
+                wlcm_theme=None,
             )
+
         elif feature == "Goodbye Channel":
-            if await (
-                await self.bot.db.execute(
-                    "SELECT bye_channel FROM greeter WHERE guild_id = ?",
-                    (interaction.guild.id,),
-                )
-            ).fetchone():
-                await self.bot.db.execute(
-                    "UPDATE greeter SET bye_channel = NULL WHERE guild_id = ?",
-                    (interaction.guild.id,),
-                )
-
-            await interaction.send(
-                embed=Embeds.emb(Embeds.red, "Goodbye Channel Unset Sucessfully"),
-                ephemeral=True,
+            sql_query = Greeter(
+                id=interaction.guild.id,
+                guild_id=interaction.guild.id,
+                bye_channel=None,
+                bye_image=None,
+                bye_fontstyle=None,
+                bye_outline=None,
+                bye_msg=None,
+                bye_theme=None,
             )
-        await self.bot.db.commit()
+        else:
+            raise commands.CommandError("This should never reach here")
+
+        async with self.bot.db.begin() as session:
+            await session.merge(sql_query)
+            await session.commit()
+
+        await interaction.followup.send(
+            embed=Embeds.emb(
+                Embeds.green,
+                (
+                    "Goodbye channel unset successfully"
+                    if feature == "Goodbye Channel"
+                    else "Welcome channel unset successfully"
+                ),
+                f"Channel: {interaction.channel.mention}",
+            ),
+            ephemeral=True,
+        )
 
 
 def setup(client: MrRobot):

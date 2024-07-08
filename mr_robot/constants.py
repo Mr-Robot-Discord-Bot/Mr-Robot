@@ -7,7 +7,6 @@ class Client:
     name = "Mr Robot"
     token = getenv("BOT_TOKEN")
     log_file_name = "logs/info.log"
-    db_name = "mr-robot.db"
     github_db_repo = getenv("GIT_DB_REPO")
     github_token = getenv("GIT_TOKEN")
     github_bot_repo = "https://github.com/Mr-Robot-Discord-Bot/Mr-Robot/"
@@ -45,3 +44,8 @@ class Colors:
     black = 0x000000
     orange = 0xFFA500
     yellow = 0xFFFF00
+
+
+class Database:
+    db_name = "mr_robot.db"
+    uri = f"sqlite+aiosqlite:///{db_name}"

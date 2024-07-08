@@ -9,7 +9,8 @@ from disnake.abc import PrivateChannel
 from disnake.ext import commands, tasks
 
 from mr_robot.bot import MrRobot
-from mr_robot.constants import Client, Colors
+from mr_robot.constants import Client, Colors, Database
+from mr_robot.utils.extensions import walk_extensions
 from mr_robot.utils.git_api import NothingToUpdate
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
@@ -44,7 +45,7 @@ class Oscmd(commands.Cog):
         logger.debug(f"Pushing DB to {Client.github_db_repo}")
         try:
             await self.bot.git.push(
-                file=Path(self.bot.db_name), commit_msg="chore: auto update"
+                file=Path(Database.db_name), commit_msg="chore: auto update"
             )
         except NothingToUpdate:
             logger.debug("Nothing to update")
@@ -205,6 +206,18 @@ class Oscmd(commands.Cog):
         await interaction.send(
             embed=embed, components=[DeleteButton(interaction.author)]
         )
+
+    @reload.autocomplete("extension")
+    @load.autocomplete("extension")
+    @unload.autocomplete("extension")
+    def extension_suggestion(self, _, inp: str):
+        inp = inp.lower()
+        matching = set()
+        for ext in walk_extensions():
+            if inp in ext:
+                matching.add(ext)
+        sorted_dict = set(sorted(matching, key=lambda x: x.index(inp))[:25])
+        return sorted_dict
 
 
 def setup(client: MrRobot):

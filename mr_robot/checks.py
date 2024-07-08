@@ -6,11 +6,12 @@ from disnake.ext import commands
 
 def ensure_voice_connect() -> Callable:
     def predicate(interaction: disnake.GuildCommandInteraction) -> bool:
-        if interaction.author.voice is None:
+        if interaction.author.voice is None or interaction.author.voice.channel is None:
             raise commands.CommandError("You aren't connected to voice channel")
         elif (
             interaction.guild.voice_client is not None
-            and interaction.author.voice != interaction.guild.voice_client.channel.id
+            and interaction.author.voice.channel.id
+            != interaction.guild.voice_client.channel.id
         ):
             raise commands.CommandError("You must be in the same voice channel.")
         return True

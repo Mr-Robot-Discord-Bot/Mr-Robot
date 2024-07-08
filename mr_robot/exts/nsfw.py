@@ -87,7 +87,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "nsfw",
-        amount: commands.Range[int, 1, 3] = 1,
+        amount: commands.Range[int, 1, 5] = 1,
     ):
         """
         Loads content from xnxx.com
@@ -112,7 +112,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "nsfw",
-        amount: commands.Range[int, 1, 3] = 1,
+        amount: commands.Range[int, 1, 5] = 1,
     ):
         """
         Loads content from xvideos.com
@@ -136,7 +136,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str = "nsfw",
-        amount: commands.Range[int, 1, 3] = 1,
+        amount: commands.Range[int, 1, 5] = 1,
     ):
         """
         Loads content from redtube.com
@@ -192,7 +192,7 @@ class Fun(commands.Cog):
         self,
         interaction: disnake.CommandInteraction,
         search: str,
-        amount: commands.Range[int, 1, 3] = 1,
+        amount: commands.Range[int, 1, 5] = 1,
     ) -> None:
         """
         Loads content from reddit.com
