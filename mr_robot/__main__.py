@@ -74,7 +74,14 @@ async def main():
         await client.init_db()
         if client.git:
             logger.info("Pulling DB")
-            await client.git.pull(Database.db_name)
+            try:
+                await client.git.pull(Database.db_name)
+            except httpx.HTTPStatusError:
+                logger.warn(f"Failed to pull {Database.db_name} from github.")
+            except (httpx.ConnectError, httpx.ConnectTimeout):
+                logger.error("Failed to connect with github", exc_info=True)
+                await client.close()
+
         try:
             client.load_bot_extensions()
         except Exception:
