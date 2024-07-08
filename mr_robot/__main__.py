@@ -77,7 +77,7 @@ async def main():
             try:
                 await client.git.pull(Database.db_name)
             except httpx.HTTPStatusError:
-                logger.warn(f"Failed to pull {Database.db_name} from github.")
+                logger.warning(f"Failed to pull {Database.db_name} from github.")
             except (httpx.ConnectError, httpx.ConnectTimeout):
                 logger.error("Failed to connect with github", exc_info=True)
                 await client.close()
