@@ -194,6 +194,7 @@ class Greetings(commands.Cog):
                 font_style=FontDir(greeter_db.bye_fontstyle),
                 theme=greeter_db.bye_theme or "",
                 outline=greeter_db.bye_outline or 0,
+                welcome=False,
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await member_channel.send(file=img_file)  # type: ignore[reportAttributeAccessIssue]
@@ -232,7 +233,7 @@ class Greetings(commands.Cog):
         outline: The outline of the text
         message: The message to send
         """
-        font_style = getattr(font_style, "value", font_style)
+        # font_style = getattr(font_style, "value", font_style)
         try:
             bg_img = await self.__request_bg(img_url)
             usr_img = await self.__request_usr(
@@ -247,6 +248,7 @@ class Greetings(commands.Cog):
                 font_style=font_style,
                 theme=theme,
                 outline=outline,
+                welcome=(False if feature == "Goodbye Channel" else True),
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await interaction.send(
@@ -263,7 +265,7 @@ class Greetings(commands.Cog):
                 guild_id=interaction.guild.id,
                 wlcm_channel=channel.id,
                 wlcm_image=img_url,
-                wlcm_fontstyle=font_style,
+                wlcm_fontstyle=font_style.value,
                 wlcm_outline=outline,
                 wlcm_msg=message,
                 wlcm_theme=theme,
@@ -275,7 +277,7 @@ class Greetings(commands.Cog):
                 guild_id=interaction.guild.id,
                 bye_channel=channel.id,
                 bye_image=img_url,
-                bye_fontstyle=font_style,
+                bye_fontstyle=font_style.value,
                 bye_outline=outline,
                 bye_msg=message,
                 bye_theme=theme,
