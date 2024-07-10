@@ -53,6 +53,8 @@ def setup_logging() -> None:
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("disnake").setLevel(logging.INFO)
     logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
+    logging.getLogger("sqlite3").setLevel(logging.WARNING)
+    logging.getLogger("core").setLevel(logging.WARNING)
     logging.getLogger("streamlink").disabled = True
 
 

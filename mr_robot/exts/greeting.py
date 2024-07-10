@@ -106,7 +106,7 @@ class Greetings(commands.Cog):
             outline=theme,
             width=outline,
         )
-        font = ImageFont.truetype(font_style, 40)
+        font = ImageFont.truetype(font_style.value, 40)
         txt = "Welcome" if welcome else "Goodbye"
         draw.text(
             (width / 2 + 10, height // 2 + 100 - 50),
@@ -126,7 +126,7 @@ class Greetings(commands.Cog):
             anchor="mm",
         )
         if message:
-            font = ImageFont.truetype(font_style, 22)
+            font = ImageFont.truetype(font_style.value, 22)
             draw.text(
                 (width / 2 + 10, height // 2 + 140),
                 message,
