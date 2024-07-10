@@ -43,7 +43,7 @@ def setup_logging() -> None:
     file_handler.setLevel(logging.DEBUG)
     console_handler.setLevel(logging.INFO)
     logging.basicConfig(
-        level=logging.NOTSET,
+        level=logging.DEBUG,
         format="[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S%z",
         handlers=[console_handler, file_handler],
