@@ -19,6 +19,8 @@ from mr_robot.utils.messages import DeleteButton
 WELCOME_IMG_URL = (
     "https://upload.wikimedia.org/wikipedia/commons/8/89/HD_transparent_picture.png"
 )
+WELCOME = "Welcome"
+GOODBYE = "Goodbye"
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +213,7 @@ class Greetings(commands.Cog):
         interaction: disnake.GuildCommandInteraction,
         channel: disnake.TextChannel,
         font_style: FontDir = FontDir.ShortBaby,
-        feature: str = commands.Param(choices=["Welcome Channel", "Goodbye Channel"]),
+        greeter_type: str = commands.Param(choices=[WELCOME, GOODBYE]),
         img_url: str = WELCOME_IMG_URL,
         theme: str = commands.Param(
             default="white",
@@ -226,14 +228,13 @@ class Greetings(commands.Cog):
         Parameters
         ----------
         channel: The channel where to plug greeter
-        feature: The greeter to plug
+        greeter_type: The greeter type to plug
         img_url: The url of the image to use
         font_style: The font style to use
         theme: The theme of the text
         outline: The outline of the text
         message: The message to send
         """
-        # font_style = getattr(font_style, "value", font_style)
         try:
             bg_img = await self.__request_bg(img_url)
             usr_img = await self.__request_usr(
@@ -248,7 +249,7 @@ class Greetings(commands.Cog):
                 font_style=font_style,
                 theme=theme,
                 outline=outline,
-                welcome=(False if feature == "Goodbye Channel" else True),
+                welcome=(False if greeter_type == GOODBYE else True),
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
             await interaction.send(
@@ -259,7 +260,7 @@ class Greetings(commands.Cog):
 
         except UnidentifiedImageError:
             raise commands.BadArgument("Invalid Image URL")
-        if feature == "Welcome Channel":
+        if greeter_type == WELCOME:
             sql_query = Greeter(
                 id=interaction.guild.id,
                 guild_id=interaction.guild.id,
@@ -271,7 +272,7 @@ class Greetings(commands.Cog):
                 wlcm_theme=theme,
             )
 
-        elif feature == "Goodbye Channel":
+        elif greeter_type == GOODBYE:
             sql_query = Greeter(
                 id=interaction.guild.id,
                 guild_id=interaction.guild.id,
@@ -294,7 +295,7 @@ class Greetings(commands.Cog):
                 Embeds.green,
                 (
                     "Goodbye channel set successfully"
-                    if feature == "Goodbye Channel"
+                    if greeter_type == GOODBYE
                     else "Welcome channel set successfully"
                 ),
                 f"Channel: {channel.mention}",
@@ -304,23 +305,23 @@ class Greetings(commands.Cog):
 
     @greeter.sub_command(
         name="unplug",
-        description="Unset's the features of channel in the server",
+        description="Unset's the greeter of channel in the server",
     )
     @commands.has_permissions(manage_guild=True)
     async def slash_unset(
         self,
         interaction,
-        feature: str = commands.Param(choices=["Welcome Channel", "Goodbye Channel"]),
+        greeter_type: str = commands.Param(choices=[WELCOME, GOODBYE]),
     ):
         """
         Unplugs greeter
 
         Parameters
         ----------
-        feature: Greeter to unplug
+        greeter_type: Greeter type to unplug
         """
         await interaction.response.defer(ephemeral=True)
-        if feature == "Welcome Channel":
+        if greeter_type == WELCOME:
             sql_query = Greeter(
                 id=interaction.guild.id,
                 guild_id=interaction.guild.id,
@@ -332,7 +333,7 @@ class Greetings(commands.Cog):
                 wlcm_theme=None,
             )
 
-        elif feature == "Goodbye Channel":
+        elif greeter_type == GOODBYE:
             sql_query = Greeter(
                 id=interaction.guild.id,
                 guild_id=interaction.guild.id,
@@ -355,7 +356,7 @@ class Greetings(commands.Cog):
                 Embeds.green,
                 (
                     "Goodbye channel unset successfully"
-                    if feature == "Goodbye Channel"
+                    if greeter_type == GOODBYE
                     else "Welcome channel unset successfully"
                 ),
                 f"Channel: {interaction.channel.mention}",
