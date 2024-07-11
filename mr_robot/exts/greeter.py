@@ -235,6 +235,7 @@ class Greetings(commands.Cog):
         outline: The outline of the text
         message: The message to send
         """
+        await interaction.send("Please wait, processing!")
         try:
             bg_img = await self.__request_bg(img_url)
             usr_img = await self.__request_usr(
@@ -252,7 +253,7 @@ class Greetings(commands.Cog):
                 welcome=(False if greeter_type == GOODBYE else True),
             )
             img_file = await self.loop.run_in_executor(None, gen_img)
-            await interaction.send(
+            await interaction.edit_original_response(
                 "This is how it will look like:",
                 file=img_file,
                 components=[DeleteButton(interaction.author)],
