@@ -7,6 +7,7 @@ import signal
 import sys
 from pathlib import Path
 
+import coloredlogs
 import disnake
 import httpx
 from dotenv import load_dotenv
@@ -34,22 +35,28 @@ def setup_logging() -> None:
 
     log_file = Path(Client.log_file_name)
     log_file.parent.mkdir(exist_ok=True)
-    formatter = logging.Formatter(
-        "[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d|%(filename)s|%(name)s] %(asctime)s: %(message)s"
+
+    formatter = "[ %(levelname)s | %(name)s | %(module)s | L%(lineno)d ] %(asctime)s: %(message)s"
+    file_formatter = logging.Formatter(
+        "[ %(levelname)s | %(name)s | %(module)s | %(funcName)s | %(filename)s | L%(lineno)d ] %(asctime)s: %(message)s"
     )
 
     file_handler = logging.handlers.RotatingFileHandler(
         log_file, mode="a", maxBytes=(1000000 * 20), backupCount=5
     )
-    file_handler.setFormatter(formatter)
+    file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
 
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    root_logger.addHandler(console_handler)
+    # console_handler = logging.StreamHandler()
+    # console_handler.setFormatter(formatter)
+    # root_logger.addHandler(console_handler)
 
     file_handler.setLevel(logging.DEBUG)
-    console_handler.setLevel(logging.INFO)
+    # console_handler.setLevel(logging.INFO)
+
+    coloredlogs.install(
+        level=logging.DEBUG, stream=sys.stdout, logger=root_logger, fmt=formatter
+    )
 
     root_logger.setLevel(logging.DEBUG)
     logging.getLogger("httpx").setLevel(logging.WARNING)
