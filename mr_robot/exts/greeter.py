@@ -118,7 +118,7 @@ class Greetings(commands.Cog):
             align="center",
             anchor="mm",
         )
-        txt = member.name
+        txt = member.display_name
         draw.text(
             (width / 2 + 10, height // 2 + 100 - 10),
             txt,

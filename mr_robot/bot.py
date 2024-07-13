@@ -30,6 +30,7 @@ class MrRobot(commands.AutoShardedInteractionBot):
         self.token = Client.github_token
         self.repo = Client.github_db_repo
         self.git = None
+        self.db_exsists = True
         self.db_engine = create_async_engine(Database.uri)
         self.db_session = async_sessionmaker(
             self.db_engine, expire_on_commit=False, class_=AsyncSession

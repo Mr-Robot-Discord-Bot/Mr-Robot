@@ -38,7 +38,7 @@ class Oscmd(commands.Cog):
                 "Db info related env vars are not set, Hence db won't update"
             )
             return
-        elif self.first_task:
+        elif self.first_task and not self.bot.db_exsists:
             self.first_task = False
             logger.debug("Skipping Db Push")
             return

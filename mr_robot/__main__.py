@@ -3,9 +3,9 @@ import atexit
 import json
 import logging.config
 import logging.handlers
-import os
 import signal
 import sys
+from pathlib import Path
 
 import disnake
 import httpx
@@ -22,10 +22,6 @@ load_dotenv()
 def setup_logging_modern() -> None:
     with open(Client.logging_config_file, "r") as file:
         config = json.load(file)
-    try:
-        os.mkdir("logs")
-    except FileExistsError:
-        ...
     logging.config.dictConfig(config)
     queue_handler = logging.getHandlerByName("queue_handler")
     if queue_handler is not None:
@@ -34,28 +30,49 @@ def setup_logging_modern() -> None:
 
 
 def setup_logging() -> None:
-    os.makedirs("logs", exist_ok=True)
-    file_handler = logging.handlers.RotatingFileHandler(
-        Client.log_file_name, mode="a", maxBytes=(1000000 * 20), backupCount=5
+    root_logger = logging.getLogger()
+
+    log_file = Path(Client.log_file_name)
+    log_file.parent.mkdir(exist_ok=True)
+    formatter = logging.Formatter(
+        "[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s"
     )
+
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_file, mode="a", maxBytes=(1000000 * 20), backupCount=5
+    )
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+
     console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
 
     file_handler.setLevel(logging.DEBUG)
     console_handler.setLevel(logging.INFO)
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S%z",
-        handlers=[console_handler, file_handler],
-    )
+
+    root_logger.setLevel(logging.DEBUG)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("mafic").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("disnake").setLevel(logging.INFO)
-    logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
-    logging.getLogger("sqlite3").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("core").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.engine.Engine").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+    logging.getLogger("sqlalchemy.orm").setLevel(logging.WARNING)
+    logging.getLogger("sqlite3").setLevel(logging.WARNING)
+    logging.getLogger("sqlite3.Cursor").setLevel(logging.WARNING)
+    logging.getLogger("sqlite3.Connection").setLevel(logging.WARNING)
     logging.getLogger("streamlink").disabled = True
+
+    root_logger.info("Logger Initialized!")
+
+
+#     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+#     for logger in loggers:
+#         print(logger.name)
+#         logger.setLevel(logging.WARNING)
 
 
 @event.listens_for(Engine, "connect")
@@ -68,7 +85,6 @@ def set_sqlite_pragma(dbapi_connection, _):
 async def main():
     setup_logging()
     logger = logging.getLogger(Client.name)
-    logger.info("Logger Initialized!")
     async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
             intents=disnake.Intents.all(),
@@ -76,9 +92,14 @@ async def main():
         )
         await client.init_db()
         if client.git:
-            logger.info("Pulling DB")
             try:
-                await client.git.pull(Database.db_name)
+                if not Path(Database.db_name).exists():
+                    logger.info("Pulling DB")
+                    client.db_exsists = False
+                    await client.git.pull(Database.db_name)
+                else:
+                    logger.info("Db file found!")
+                    client.db_exsists = True
             except httpx.HTTPStatusError:
                 logger.warning(f"Failed to pull {Database.db_name} from github.")
             except (httpx.ConnectError, httpx.ConnectTimeout):
