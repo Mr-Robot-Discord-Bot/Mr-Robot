@@ -35,7 +35,7 @@ def setup_logging() -> None:
     log_file = Path(Client.log_file_name)
     log_file.parent.mkdir(exist_ok=True)
     formatter = logging.Formatter(
-        "[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d] %(asctime)s: %(message)s"
+        "[%(levelname)s|%(module)s|%(funcName)s|L%(lineno)d|%(filename)s|%(name)s] %(asctime)s: %(message)s"
     )
 
     file_handler = logging.handlers.RotatingFileHandler(
@@ -61,18 +61,10 @@ def setup_logging() -> None:
     logging.getLogger("sqlalchemy.engine.Engine").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.orm").setLevel(logging.WARNING)
-    logging.getLogger("sqlite3").setLevel(logging.WARNING)
-    logging.getLogger("sqlite3.Cursor").setLevel(logging.WARNING)
-    logging.getLogger("sqlite3.Connection").setLevel(logging.WARNING)
+    logging.getLogger("aiosqlite").setLevel(logging.WARNING)
     logging.getLogger("streamlink").disabled = True
 
     root_logger.info("Logger Initialized!")
-
-
-#     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-#     for logger in loggers:
-#         print(logger.name)
-#         logger.setLevel(logging.WARNING)
 
 
 @event.listens_for(Engine, "connect")

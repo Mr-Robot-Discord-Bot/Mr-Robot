@@ -7,8 +7,7 @@ import httpx
 import mafic
 from aiocache import cached
 from disnake.ext import commands
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from mr_robot.constants import Client, Database, Lavalink
 from mr_robot.database import Base
