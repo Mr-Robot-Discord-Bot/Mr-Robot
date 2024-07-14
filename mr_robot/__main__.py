@@ -42,7 +42,11 @@ def setup_logging() -> None:
     )
 
     file_handler = logging.handlers.RotatingFileHandler(
-        log_file, mode="a", maxBytes=(1000000 * 20), backupCount=5
+        log_file,
+        mode="a",
+        # File handler rotates log every 5 MB
+        maxBytes=5 * (2**20),
+        backupCount=10,
     )
     file_handler.setFormatter(file_formatter)
     root_logger.addHandler(file_handler)
@@ -54,6 +58,13 @@ def setup_logging() -> None:
     file_handler.setLevel(logging.DEBUG)
     # console_handler.setLevel(logging.INFO)
 
+    coloredlogs.DEFAULT_LEVEL_STYLES = {
+        **coloredlogs.DEFAULT_LEVEL_STYLES,
+        "critical": {"color": "red"},
+        "warning": {"color": "yellow"},
+        "info": {"color": "green"},
+        "debug": {"color": "white"},
+    }
     coloredlogs.install(
         level=logging.DEBUG, stream=sys.stdout, logger=root_logger, fmt=formatter
     )
