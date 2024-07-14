@@ -10,11 +10,9 @@ import aiohttp
 import disnake
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 
 from mr_robot.constants import Client
 
-load_dotenv()
 logger = logging.getLogger(__name__)
 
 

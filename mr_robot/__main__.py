@@ -10,9 +10,9 @@ import httpx
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
+import mr_robot.log
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client, Database
-from mr_robot.log import setup_logging
 
 
 @event.listens_for(Engine, "connect")
@@ -23,7 +23,7 @@ def set_sqlite_pragma(dbapi_connection, _):
 
 
 async def main():
-    setup_logging()
+    mr_robot.log.setup_logging()
     logger = logging.getLogger(Client.name)
     async with httpx.AsyncClient(timeout=httpx.Timeout(None)) as session:
         client = MrRobot(
