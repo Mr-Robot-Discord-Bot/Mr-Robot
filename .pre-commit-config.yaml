@@ -14,4 +14,4 @@ repos:
     hooks:
     -   id: isort
         exclude: '^(env)'
-        args: ["profile", "--black"]
+        args: ["--profile", "black"]
