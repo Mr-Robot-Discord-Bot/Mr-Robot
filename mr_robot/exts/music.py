@@ -1,12 +1,11 @@
 import itertools
 import logging
 import random
-from typing import cast
+from typing import Literal, cast
 
 import disnake
 import mafic
 import sqlalchemy
-from disnake.abc import Connectable
 from disnake.ext import commands
 from mafic.track import Track
 
@@ -14,18 +13,12 @@ from mr_robot.bot import MrRobot
 from mr_robot.checks import ensure_voice_connect, ensure_voice_player
 from mr_robot.constants import Colors
 from mr_robot.database import Playlists, Tracks
+from mr_robot.exts.player import NONE, PLAYLIST, TRACK, Player
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 from mr_robot.utils.paginator import Paginator
 
 logger = logging.getLogger(__name__)
-
-
-class MyPlayer(mafic.Player[MrRobot]):
-    def __init__(self, client: MrRobot, channel: Connectable) -> None:
-        super().__init__(client, channel)
-
-        self.queue: list[Track] = []
 
 
 class Music(commands.Cog):
@@ -42,7 +35,7 @@ class Music(commands.Cog):
         elif interaction.guild.voice_client is None:
             logger.debug(f"Initializing voice client in {interaction.guild.name}.")
             if interaction.author.voice and interaction.author.voice.channel:
-                await interaction.author.voice.channel.connect(cls=MyPlayer)  # type: ignore[reportArgumentType]
+                await interaction.author.voice.channel.connect(cls=Player)  # type: ignore[reportArgumentType]
 
     @commands.slash_command(name="music", dm_permission=False)
     async def music(self, _):
@@ -54,7 +47,7 @@ class Music(commands.Cog):
         interaction: disnake.GuildCommandInteraction,
         search: str,
     ) -> Track:
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
 
         while True:
             try:
@@ -87,7 +80,7 @@ class Music(commands.Cog):
                 raise commands.CommandError("No such playlist found!")
             if not playlists.tracks:
                 raise commands.CommandError("No tracks found in the playlist!")
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         tracks = [
             await player.node.decode_track(track.track) for track in playlists.tracks
         ]
@@ -103,6 +96,7 @@ class Music(commands.Cog):
         interaction: disnake.GuildCommandInteraction,
         search: str | None = None,
         playlist_name: str | None = None,
+        loop: Literal["NONE", "PLAYLIST", "TRACK"] = NONE,
     ) -> None:
         """
         Plays music
@@ -111,6 +105,7 @@ class Music(commands.Cog):
         ----------
         search: Search for music
         playlist_name: Playlist name
+        loop: Loop mode
         """
         if not search and not playlist_name:
             raise commands.CommandError(
@@ -123,8 +118,8 @@ class Music(commands.Cog):
 
         await self.connect(interaction)
 
-        player = cast(MyPlayer, interaction.guild.voice_client)
-        player.queue.clear()
+        player = cast(Player, interaction.guild.voice_client)
+        await player.destroy()
 
         if search:
             track = await self.search_play(interaction, search)
@@ -134,6 +129,7 @@ class Music(commands.Cog):
                 f"Name: [{track.title}]({track.uri})\n"
                 f"Author: {track.author}\n"
                 f"Platform: {str(track.source).capitalize()}\n"
+                f"Loop: {loop}\n"
                 f"Played by: {interaction.author.mention}",
             )
             embed.set_image(track.artwork_url)
@@ -144,11 +140,17 @@ class Music(commands.Cog):
                 Colors.blue,
                 "Now Playing",
                 f"Playlist: {playlist_name}\n"
-                f"Total Tracks: {len(player.queue) + 1}\n",
+                f"Total Tracks: {len(player.queue) + 1}\n"
+                f"Loop: {loop}\n",
             )
 
         else:
             raise commands.CommandError("idk how this reached!")
+
+        if len(player.queue) < 2 and loop == PLAYLIST:
+            raise commands.CommandError(f"Insufficient playlists size for {loop} mode")
+        player.loop = loop
+        player.queue.append(track) if player.queue != NONE else None
 
         await player.play(track)
 
@@ -160,9 +162,9 @@ class Music(commands.Cog):
     @ensure_voice_player()
     async def boost(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Boost the player"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         bassboost_equalizer = mafic.Equalizer(
-            [mafic.EQBand(idx, 0.30) for idx in range(15)]
+            [mafic.EQBand(idx, 1.00) for idx in range(15)]
         )
 
         bassboost_filter = mafic.Filter(equalizer=bassboost_equalizer)
@@ -177,7 +179,7 @@ class Music(commands.Cog):
     @ensure_voice_player()
     async def unboost(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Unboost the player"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         await player.remove_filter("boost")
         embed = Embeds.emb(Colors.blue, "Player Unboosted")
         await interaction.send(
@@ -188,7 +190,7 @@ class Music(commands.Cog):
     @ensure_voice_player()
     async def current(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Show current playing track"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         if player.current is None:
             embed = Embeds.emb(Colors.blue, "No Track Playing")
         else:
@@ -207,18 +209,21 @@ class Music(commands.Cog):
         )
 
     @commands.Cog.listener()
-    async def on_track_end(self, event: mafic.TrackEndEvent[MyPlayer]) -> None:
-        if event.player.queue:
+    async def on_track_end(self, event: mafic.TrackEndEvent[Player]) -> None:
+        player: Player = event.player
+        if player.queue:
             if event.reason == mafic.EndReason.REPLACED:
                 return
-            track = event.player.queue.pop(0)
-            await event.player.play(track)
+            track = player.queue.pop(0)
+            await player.play(track)
+            if player.loop != NONE:
+                player.queue.append(track)
 
     @music.sub_command(name="skip")
     @ensure_voice_player()
     async def skip(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Skips the current track"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         await player.stop()
         embed = Embeds.emb(Colors.blue, "Track Skipped")
         await interaction.send(
@@ -233,7 +238,7 @@ class Music(commands.Cog):
     @queue.sub_command(name="clear")
     async def clear_queue(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Clears music queue"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         player.queue = []
         embed = Embeds.emb(Colors.blue, "Queue Cleared")
         await interaction.send(
@@ -243,7 +248,7 @@ class Music(commands.Cog):
     @queue.sub_command(name="show")
     async def list_queue(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Shows tracks in queue"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         if not player.queue:
             embed = Embeds.emb(Colors.blue, "Queue Empty")
             await interaction.send(
@@ -271,7 +276,7 @@ class Music(commands.Cog):
         self, interaction: disnake.GuildCommandInteraction, index: int
     ) -> None:
         """Remove a track from queue"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         if not player.queue:
             embed = Embeds.emb(Colors.blue, "Queue Empty")
         else:
@@ -291,7 +296,7 @@ class Music(commands.Cog):
     @queue.sub_command(name="shuffle")
     async def shuffle_queue(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Shuffle the queue"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         if not player.queue:
             embed = Embeds.emb(Colors.blue, "Queue Empty")
         else:
@@ -306,7 +311,7 @@ class Music(commands.Cog):
         self, interaction: disnake.GuildCommandInteraction, search: str
     ) -> None:
         """Add a track to queue"""
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         tracks = await player.fetch_tracks(search)
         if isinstance(tracks, mafic.Playlist):
             tracks = tracks.tracks
@@ -329,7 +334,7 @@ class Music(commands.Cog):
     async def slash_stop(self, interaction: disnake.GuildCommandInteraction) -> None:
         """Disconnects the bot from voice channel"""
 
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         embed = Embeds.emb(Embeds.blue, "Music Player Disconnected")
         if interaction.guild.voice_client is not None:
             if interaction.guild.voice_client is None:
@@ -354,7 +359,7 @@ class Music(commands.Cog):
         ----------
         volume : Volume level
         """
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         await player.set_volume(volume)
         embed = Embeds.emb(Colors.blue, f"Volume: {volume}%")
         await interaction.send(
@@ -375,7 +380,7 @@ class Music(commands.Cog):
         ----------
         force_pause : Force pause the player
         """
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         if force_pause or not player.paused:
             await player.pause()
         else:
@@ -499,7 +504,7 @@ class Music(commands.Cog):
 
         if not playlists.tracks:
             raise commands.CommandError(f"No track found in `{playlist}`")
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         tracks = map(lambda x: x.track, playlists.tracks)
         tracks = await player.node.decode_tracks(list(tracks))
         tracks = map(
@@ -563,7 +568,7 @@ class Music(commands.Cog):
                 f"Removing {Tracks(id=playlists.id, playlist_id=playlists.id, track=playlists.tracks)} from db."
             )
 
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         track = await player.node.decode_track(tracks_to_delete.track)
         embed = Embeds.emb(
             Embeds.blue, "Track Removed", f"[{track.title}]({track.uri})"
@@ -589,7 +594,7 @@ class Music(commands.Cog):
         track : Track to add
         """
         await interaction.response.defer()
-        player = cast(MyPlayer, interaction.guild.voice_client)
+        player = cast(Player, interaction.guild.voice_client)
         tracks = await player.fetch_tracks(track)
         if isinstance(tracks, mafic.Playlist):
             tracks = tracks.tracks
