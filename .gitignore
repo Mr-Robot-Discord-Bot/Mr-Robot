@@ -7,3 +7,4 @@ Servers.inf
 lavalink_server/logs
 ip.txt
 *.db
+/logs

@@ -22,6 +22,8 @@ pynacl = "^1.5.0"
 httpx = "^0.27.0"
 googletrans-py = "^4.0.0"
 mafic = "~2.10.0"
+sqlalchemy = "^2.0.31"
+colorama = "^0.4.6"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"

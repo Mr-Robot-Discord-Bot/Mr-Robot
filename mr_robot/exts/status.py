@@ -1,14 +1,14 @@
 import logging
-import os
 from typing import Literal
 
-import aiosqlite
 import disnake
 import psutil
+import sqlalchemy
 from disnake.ext import commands
 
 from mr_robot.bot import MrRobot
 from mr_robot.constants import Client
+from mr_robot.database import Greeter, Guild
 from mr_robot.utils.helpers import Embeds
 from mr_robot.utils.messages import DeleteButton
 
@@ -21,50 +21,30 @@ class Status(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.bot.db.execute(
-            "CREATE TABLE IF NOT EXISTS guilds (guild_id bigint primary key, name text)"
-        )
-        os.system("echo '' > Servers.inf")
-        exsisting_guilds = await (
-            await self.bot.db.execute("select guild_id, name from guilds")
-        ).fetchall()
-        logger.debug(exsisting_guilds)
-        for guild in self.bot.guilds:
-            with open("Servers.inf", "a+") as stats:
-                stats.write(
-                    f"\n\n [+] {guild.name} --> {', '.join([ f'{channel.name} [{channel.id}]' for channel in guild.channels])} \n"
-                )
-            if guild.id not in {guild[0] for guild in exsisting_guilds}:
-                logger.info("Adding Guild: %s", guild)
-                await self.bot.db.execute(
-                    "INSERT INTO guilds (guild_id, name) VALUES (?, ?)",
-                    (guild.id, guild.name),
-                )
-            else:
-                logger.info("Updating Guild: %s", guild)
-                await self.bot.db.execute(
-                    "update guilds set name = ? where guild_id = ?",
-                    (guild.name, guild.id),
-                )
 
-        for guild in exsisting_guilds:
-            if guild[0] not in {guild.id for guild in self.bot.guilds}:
-                logger.info("Removing Guild: %s", guild[1])
-                tables = await (
-                    await self.bot.db.execute(
-                        "SELECT name FROM sqlite_master WHERE type='table'"
-                    )
-                ).fetchall()
-                for (table,) in tables:
-                    try:
-                        await self.bot.db.execute(
-                            f"delete from {table} where guild_id = ?", (guild[0],)
-                        )
-                    except aiosqlite.OperationalError:
-                        ...
-                await self.bot.db.commit()
+        async with self.bot.db.begin() as session:
 
-        await self.bot.db.commit()
+            # Merge Guilds
+            for guild in self.bot.guilds:
+                await session.merge(Guild(id=guild.id, name=guild.name))
+                logger.debug("Merged Guild: %s", guild)
+
+            # Retrieve Guilds
+            existing_guilds = await session.scalars(sqlalchemy.select(Guild))
+            existing_guilds = existing_guilds.all()
+            logger.debug(f"{existing_guilds=}")
+            await session.commit()
+
+        # Db clean up
+        bot_guildids = {guild.id for guild in self.bot.guilds}
+        async with self.bot.db.begin() as session:
+            for guild in existing_guilds:
+                if guild.id not in bot_guildids:
+                    logger.debug(f"Removed {Guild(id=guild.id, name=guild.name)}.")
+                    sql_query = sqlalchemy.delete(Guild).where(Guild.id == guild.id)
+                    await session.execute(sql_query)
+                    await session.commit()
+
         await self.bot.change_presence(
             activity=disnake.Streaming(
                 name=f"In {len(self.bot.guilds)} Servers",
@@ -77,19 +57,16 @@ class Status(commands.Cog):
         """Shows status of the bot"""
 
         async def get_greeter_status(feature: Literal["wlcm_channel", "bye_channel"]):
-            result = await (
-                await self.bot.db.execute(
-                    f"""
-                    select {feature} from greeter
-                    where guild_id = ?
-                    """,
-                    (interaction.guild.id,),
+            async with self.bot.db.begin() as session:
+                sql_query = sqlalchemy.select(Greeter).where(
+                    Greeter.guild_id == interaction.guild.id
                 )
-            ).fetchone()
-            if result and result != (None,):
-                return ":white_check_mark:"
-            else:
+                result = await session.scalars(sql_query)
+                result = result.one_or_none()
+            if getattr(result, feature, None) is None:
                 return ":x:"
+            else:
+                return ":white_check_mark:"
 
         embed = Embeds.emb(Embeds.green, "Status")
         embed.add_field(

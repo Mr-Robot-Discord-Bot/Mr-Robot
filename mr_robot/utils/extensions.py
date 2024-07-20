@@ -25,7 +25,7 @@ def walk_extensions() -> Generator[str, None, None]:
     for module in pkgutil.walk_packages(
         exts.__path__, f"{exts.__name__}.", onerror=on_error
     ):
-        if unqualify(module.name).startswith == "_":
+        if unqualify(module.name).startswith("_"):
             # Ignore module/package names starting with an underscore
             continue
         imported = importlib.import_module(module.name)
