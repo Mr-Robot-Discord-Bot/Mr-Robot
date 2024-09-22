@@ -64,6 +64,8 @@ async def main():
             await future
         except asyncio.CancelledError:
             logger.info("Received signal to terminate bot and event loop")
+        except Exception as e:
+            logger.info(f"Client got closed due to: {e}")
         finally:
             logger.warning("Closing Client")
             if not client.is_closed():
