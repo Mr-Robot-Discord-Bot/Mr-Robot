@@ -8,3 +8,4 @@ lavalink_server/logs
 ip.txt
 *.db
 /logs
+docker-compose-dev.yaml
