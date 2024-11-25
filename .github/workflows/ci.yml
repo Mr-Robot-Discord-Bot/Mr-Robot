@@ -1,0 +1,78 @@
+name: CI
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+  
+permissions:
+  read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.11", "3.12" ]
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run pre-commit
+      id: pre-commit
+      uses: pre-commit/action@v3.0.1
+      
+  pyright:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.11", "3.12" ]
+      fail-fast: false
+    continue-on-error: ${{ matrix.experimental }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          cache: 'pip'
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -r requirements.txt
+
+
+      - name: Run Pyright (Linux)
+        uses: jakebailey/pyright-action@v2.2.1
+        with:
+          pylance-version: latest-release
+          python-platform: "Linux"
+          python-version: ${{ matrix.python-version }}
+          warnings: true
+      
+      - name: Run Pyright (Windows)
+        uses: jakebailey/pyright-action@v2.2.1
+        with:
+          pylance-version: latest-release
+          python-platform: "Windows"
+          python-version: ${{ matrix.python-version }}
+          warnings: true
+
+  check: # This job does nothing and is only used for the branch protection
+    if: always()
+    needs:
+      - pre-commit
+      - pyright
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
